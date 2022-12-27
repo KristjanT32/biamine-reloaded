@@ -1,0 +1,9 @@
+# This is the language information file for ${project.name} ${project.version}
+
+# This is the list of languages that the plugin supports. If you'd like to add your own,
+# create your own localization file by copying the main language file (en-US.yml),
+# translating it to whatever language you'd like and renaming it to [languageCode].yml
+# Please do not forget to add the language code to the list below, for the plugin to
+# know you've added a translation.
+languages:
+  - en-US

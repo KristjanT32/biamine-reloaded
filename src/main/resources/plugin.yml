@@ -1,0 +1,12 @@
+name: Biamine-Reloaded
+version: '${project.version}'
+main: krisapps.biaminereloaded.BiamineReloaded
+api-version: 1.15
+prefix: "|BiaMineReloaded|"
+authors: [ _TheTechGuy_ ]
+description: A remake of BiaMine, my Minecraft Biathlon plugin.
+
+commands:
+  createbiathlon:
+    description: "Creates a new instance of BiaMine's biathlon game."
+    usage: "/createbiathlon <gameID>"
