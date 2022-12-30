@@ -1,2 +1,21 @@
 errors:
   insufficient-parameters: "&cInsufficient parameters provided!"
+  invalid-syntax: "&cInvalid syntax."
+  too-many-parameters: "&cToo many parameters have been provided for the command."
+  player-not-found: "&cCould not find the specified player."
+  player-offline: "&cThe specified target is currently offline."
+
+commands:
+  createbiathlon:
+    success: "&aSuccessfully created a new instance &l%instance%&r&a! &b(Preparation time: &e%preptime%&b, Final countdown: &e%countdown%&r&b)"
+    failure: "&cSomething went wrong while creating the instance!"
+    already-exists: "&eThe specified ID is already used by an instance!"
+    info: "&eYou can now setup and configure your instance using the following commands:\n
+            &e&l*&r&aUse &d/setscoreboardconf &ato set a custom scoreboard configuration to be used in the game.\n
+            &e&l*&r&aUse &d/setexclusionlist &ato specify a saved or new exclusion list for the game.\n
+            &e&l*&r&aUse &d/setplayers &ato only start the game with the specified players.\n
+            &e&l*&r&aUse &d/settimerformat &ato setup the format which the timer will use."
+  deletebiathlon:
+    success: "&aThe instance &b%instance% &r&ahas been deleted."
+    failure: "&cSomething went wrong while deleting the instance. Check the logs for more info."
+    not-found: "&c&l404 &r&c- The specified instance could not be found."

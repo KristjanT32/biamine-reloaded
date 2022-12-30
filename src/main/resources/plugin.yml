@@ -7,6 +7,62 @@ authors: [ _TheTechGuy_ ]
 description: A remake of BiaMine, my Minecraft Biathlon plugin.
 
 commands:
+  # Game Creation
   createbiathlon:
     description: "Creates a new instance of BiaMine's biathlon game."
     usage: "/createbiathlon <gameID>"
+  deletebiathlon:
+    description: "Deletes a created instance of BiaMine's biathlon game."
+    usage: "/deletebiathlon <gameID>"
+
+  # Game Management
+  startgame:
+    description: "Starts a BiaMine Biathlon game."
+    usage: "/startgame <gameID> <shootings> <players[]>"
+  finishgame:
+    description: "Finishes a BiaMine Biathlon game."
+    usage: "/finishgame <gameID> [reason]"
+  forcestopgame:
+    description: "Forcefully terminates an in-progress BiaMine Biathlon game."
+    usage: "/forcestopgame <gameID>"
+  pausegame:
+    description: "Pauses an in-progress BiaMine Biathlon game."
+    usage: "/pausegame <gameID>"
+  resumegame:
+    description: "Resumes a paused BiaMine Biathlon game."
+    usage: "/resumegame <gameID>"
+  resetgame:
+    description: "Resets an in-progress BiaMine Biathlon game."
+    usage: "/resetgame <gameID>"
+
+  # Scoreboard Customization
+  scoreboardconfig:
+    description: "Manages custom scoreboard configurations."
+    usage: "/scoreboardconfig <createConfig|deleteConfig|(confID)>\n
+            /scoreboardconfig <createConfig> <configID>\n
+            /scoreboardconfig <confID> <header|footer|timerPosition|timerFormat|[playersParticipating, playersNotFinished, shootings]|label>
+		      			      <headerContent|footerContent|timerPositionInteger|timerFormat|lineNumber|labelContent|> 
+           "
+  # Game Setup
+  setscoreboardconf:
+    description: "Sets a custom scoreboard configuration for a game to use."
+    usage: "/setscoreboardconf <gameID> <confID>"
+  setexclusionlist:
+    description: "Sets a custom exclusion list for a game to use."
+    usage: "/setexclusionlist <gameID> <listID|list>"
+  setplayers:
+    description: "Specifies the players that participate in a BiaMine Biathlon game."
+    usage: "/setplayers <gameID> <players[]>"
+  settimerformat:
+    description: "Set a format for the timer used in-game."
+    usage: "/settimerformat <gameID> <format>"
+  setfinishmessage:
+    description: "Set a message to be used for when a player finishes."
+    usage: "/setfinishmessage <gameID> <message>"
+  setcheckpointmessage:
+    description: "Set a message to be used for when a player crosses a checkpoint."
+    usage: "/setcheckpointmessage <gameID> <message>"
+
+
+
+

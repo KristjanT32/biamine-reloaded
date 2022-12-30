@@ -3,6 +3,8 @@ package krisapps.biaminereloaded.data;
 import krisapps.biaminereloaded.BiamineReloaded;
 import krisapps.biaminereloaded.types.SaveablePropertyType;
 
+import java.util.ArrayList;
+
 public class BiaMineDataUtility {
 
     private final String GAME_FILE_PATH_PREFIX = "games.";
@@ -39,6 +41,23 @@ public class BiaMineDataUtility {
     public boolean gameExists(String gameID) {
         return main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + gameID) != null
                 ;
+    }
+
+    public boolean createGame(String gameID, int prepTime, int countdown, String displayName) {
+        main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".preparationTime", prepTime);
+        main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".countdownTime", countdown);
+        main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".displayName", displayName);
+        main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".exclude", new ArrayList<>());
+        main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".scoreboardConfiguration", "default");
+        main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".timerFormat", "default");
+
+        return main.saveGames();
+    }
+
+    public boolean deleteGame(String gameID) {
+        main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID, null);
+
+        return main.saveGames();
     }
 
     public String getCurrentLanguage() {

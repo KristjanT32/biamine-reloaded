@@ -253,4 +253,48 @@ public final class BiamineReloaded extends JavaPlugin {
         }
 
     }
+
+    public boolean saveGames() {
+        try {
+            pluginGames.save(gameFile);
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            getLogger().warning("An error occurred while trying to save the Game File.");
+            return false;
+        }
+    }
+
+    public boolean saveExclusions() {
+        try {
+            pluginExclusionLists.save(exclusionListFile);
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            getLogger().warning("An error occured while trying to save the Exclusions File.");
+            return false;
+        }
+    }
+
+    public boolean saveCoredata() {
+        try {
+            pluginData.save(dataFile);
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            getLogger().warning("An error occurred while trying to save the Core Data File.");
+            return false;
+        }
+    }
+
+    public boolean saveScoreboards() {
+        try {
+            pluginScoreboardConfig.save(scoreboardConfigFile);
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            getLogger().warning("An error occurred while trying to save the Scoreboard Configurations File.");
+            return false;
+        }
+    }
 }
