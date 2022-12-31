@@ -51,6 +51,14 @@ public class LocalizationUtility {
         }
     }
 
+    /**
+     * Gets a phrase from the localization file in the language currently set.
+     * This only returns the string, no manipulations are made with it.
+     *
+     * @param id The phraseID within the localization file.
+     * @return The phrase in the current language.
+     */
+
     public String getLocalizedPhrase(String id) {
         if (lang == null) {
             setupCurrentLanguageFile();

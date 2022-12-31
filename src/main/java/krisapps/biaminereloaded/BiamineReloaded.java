@@ -7,7 +7,9 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,6 +36,10 @@ public final class BiamineReloaded extends JavaPlugin {
 
     public FileConfiguration pluginLocalization;
     public File localizationFile = new File(getDataFolder(), "/localization/localization.yml");
+
+    // LOGGING
+
+    File logFile = new File(getDataFolder(), "biamine.log");
 
 
     @Override
@@ -295,6 +301,16 @@ public final class BiamineReloaded extends JavaPlugin {
             e.printStackTrace();
             getLogger().warning("An error occurred while trying to save the Scoreboard Configurations File.");
             return false;
+        }
+    }
+
+    public void appendToLog(String msg) {
+        try {
+            BufferedWriter bw = new BufferedWriter(new FileWriter(logFile, true));
+            bw.append(msg);
+            bw.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 }

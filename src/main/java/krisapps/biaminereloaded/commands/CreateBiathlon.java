@@ -2,7 +2,7 @@ package krisapps.biaminereloaded.commands;
 
 import krisapps.biaminereloaded.BiamineReloaded;
 import krisapps.biaminereloaded.data.BiaMineDataUtility;
-import krisapps.biaminereloaded.types.ErrorType;
+import krisapps.biaminereloaded.types.GenericErrorType;
 import krisapps.biaminereloaded.types.Placeholder;
 import krisapps.biaminereloaded.utilities.LocalizationUtility;
 import krisapps.biaminereloaded.utilities.MessageUtility;
@@ -55,7 +55,7 @@ public class CreateBiathlon implements CommandExecutor {
 
 
         } else {
-            messages.sendError(sender, ErrorType.INSUFFICIENT_PARAMETERS, null);
+            messages.sendError(sender, GenericErrorType.INSUFFICIENT_PARAMETERS);
         }
 
         return true;

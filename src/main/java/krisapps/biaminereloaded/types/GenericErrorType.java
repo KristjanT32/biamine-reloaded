@@ -1,6 +1,6 @@
 package krisapps.biaminereloaded.types;
 
-public enum ErrorType {
+public enum GenericErrorType {
     INSUFFICIENT_PARAMETERS,
     TOO_MANY_PARAMETERS,
     INVALID_SYNTAX,
