@@ -2,8 +2,12 @@ package krisapps.biaminereloaded.data;
 
 import krisapps.biaminereloaded.BiamineReloaded;
 import krisapps.biaminereloaded.types.SaveablePropertyType;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class BiaMineDataUtility {
 
@@ -39,8 +43,11 @@ public class BiaMineDataUtility {
     }
 
     public boolean gameExists(String gameID) {
-        return main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + gameID) != null
-                ;
+        return main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + gameID) != null;
+    }
+
+    public Set<String> getGames() {
+        return main.pluginGames.getConfigurationSection("games") == null ? new LinkedHashSet<>() : main.pluginGames.getConfigurationSection("games").getKeys(false);
     }
 
     public boolean createGame(String gameID, int prepTime, int countdown, String displayName) {
@@ -58,6 +65,42 @@ public class BiaMineDataUtility {
         main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID, null);
 
         return main.saveGames();
+    }
+
+    public ArrayList getExclusionListByID(String id) {
+        return main.pluginExclusionLists.getList(EXCLUSIONS_FILE_PATH_PREFIX + id) == null ? new ArrayList<>() : (ArrayList) main.pluginExclusionLists.getList(EXCLUSIONS_FILE_PATH_PREFIX + id);
+    }
+
+    public org.bukkit.Location getStartLocationFirstBound(String game) {
+        if (main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + game + ".start") != null) {
+            org.bukkit.Location loc1 = new org.bukkit.Location(Bukkit.getWorlds().get(0), main.pluginGames.getDouble(GAME_FILE_PATH_PREFIX + game + ".start.bound1.x"), main.pluginGames.getDouble(GAME_FILE_PATH_PREFIX + game + ".start.bound1.y"), main.pluginGames.getDouble(GAME_FILE_PATH_PREFIX + game + ".start.bound1.z"));
+            return loc1;
+        }
+        return null;
+    }
+
+    public org.bukkit.Location getStartLocationSecondBound(String game) {
+        if (main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + game + ".start") != null) {
+            org.bukkit.Location loc2 = new org.bukkit.Location(Bukkit.getWorlds().get(0), main.pluginGames.getDouble(GAME_FILE_PATH_PREFIX + game + ".start.bound2.x"), main.pluginGames.getDouble(GAME_FILE_PATH_PREFIX + game + ".start.bound2.y"), main.pluginGames.getDouble(GAME_FILE_PATH_PREFIX + game + ".start.bound2.z"));
+            return loc2;
+        }
+        return null;
+    }
+
+    public void setStartLocation(String game, int bound, Player p) {
+        if (gameExists(game)) {
+            switch (bound) {
+                case 1:
+                case 2:
+                    main.pluginGames.set(GAME_FILE_PATH_PREFIX + game + ".start.bound" + bound + ".x", p.getLocation().getX());
+                    main.pluginGames.set(GAME_FILE_PATH_PREFIX + game + ".start.bound" + bound + ".y", p.getLocation().getY());
+                    main.pluginGames.set(GAME_FILE_PATH_PREFIX + game + ".start.bound" + bound + ".z", p.getLocation().getZ());
+                    main.saveGames();
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 
     public String getCurrentLanguage() {

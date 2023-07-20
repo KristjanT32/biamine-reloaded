@@ -30,7 +30,7 @@ public class ScoreboardManager {
         propertyToSet.addEntry("|");
         propertyToSet.setPrefix(ChatColor.translateAlternateColorCodes('&', text));
 
-        gameObjective.getScore(ChatColor.BLACK + "" + ChatColor.WHITE).setScore(lineNumber);
+        gameObjective.getScore(ChatColor.BLACK + String.valueOf(ChatColor.WHITE)).setScore(lineNumber);
     }
 
     private void updateScoreboardEntry(String entry, String newContent) {
@@ -38,12 +38,12 @@ public class ScoreboardManager {
         propertyToUpdate.setPrefix(ChatColor.translateAlternateColorCodes('&', newContent));
     }
 
-    public void setupScoreboard(String scoreboardConfigurationID, BiamineBiathlon gameInfoObject) {
+    public void setupScoreboard(BiamineBiathlon gameInfoObject) {
 
-        this.currentScoreboardConfiguration = scoreboardConfigurationID;
-        this.timerFormat = main.pluginScoreboardConfig.getString(scoreboardConfigurationID + ".timerFormat");
+        this.currentScoreboardConfiguration = gameInfoObject.scoreboardConfig;
+        this.timerFormat = main.pluginScoreboardConfig.getString(gameInfoObject.scoreboardConfig + ".timerFormat");
 
-        refreshScoreboardData(scoreboardConfigurationID, gameInfoObject);
+        refreshScoreboardData(gameInfoObject.scoreboardConfig, gameInfoObject);
     }
 
     public void refreshScoreboardData(String scoreboardConfigurationID, BiamineBiathlon gameInfo) {

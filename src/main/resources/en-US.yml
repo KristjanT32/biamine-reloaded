@@ -19,3 +19,6 @@ commands:
     success: "&aThe instance &b%instance% &r&ahas been deleted."
     failure: "&cSomething went wrong while deleting the instance. Check the logs for more info."
     not-found: "&c&l404 &r&c- The specified instance could not be found."
+  listgames:
+    nogames: "&cSorry, but there are no games yet."
+    prefix-game: "&bGame &e"

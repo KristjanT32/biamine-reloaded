@@ -6,4 +6,5 @@ public enum GenericErrorType {
     INVALID_SYNTAX,
     PLAYER_NOT_FOUND,
     TARGET_OFFLINE,
+    INVALID_GAME,
 }

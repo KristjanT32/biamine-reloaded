@@ -7,7 +7,6 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 
 public class LocalizationUtility {
@@ -39,13 +38,7 @@ public class LocalizationUtility {
         try {
             lang.load(languageFile);
             main.getLogger().info("Language file loaded successfully!");
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            main.getLogger().warning("Failed to load " + languageFile.getName() + " due to: " + e.getMessage());
-        } catch (IOException e) {
-            e.printStackTrace();
-            main.getLogger().warning("Failed to load " + languageFile.getName() + " due to: " + e.getMessage());
-        } catch (InvalidConfigurationException e) {
+        } catch (IOException | InvalidConfigurationException e) {
             e.printStackTrace();
             main.getLogger().warning("Failed to load " + languageFile.getName() + " due to: " + e.getMessage());
         }

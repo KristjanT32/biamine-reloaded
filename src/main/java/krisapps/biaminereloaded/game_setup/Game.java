@@ -1,18 +1,22 @@
 package krisapps.biaminereloaded.game_setup;
 
 import krisapps.biaminereloaded.BiamineReloaded;
+import krisapps.biaminereloaded.data.BiaMineDataUtility;
 import krisapps.biaminereloaded.logging.BiaMineLogger;
+import krisapps.biaminereloaded.scoreboard.ScoreboardManager;
 import krisapps.biaminereloaded.utilities.LocalizationUtility;
 import krisapps.biaminereloaded.utilities.MessageUtility;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Game {
 
-    public Player[] players;
+    public ArrayList<Player> players;
     public Location startLocation_bound1;
     public Location startLocation_bound2;
 
@@ -24,16 +28,19 @@ public class Game {
     BiamineBiathlon currentGameInfo;
     MessageUtility messages;
     LocalizationUtility localizationUtility;
+    BiaMineDataUtility dataUtility;
 
     public Game(String id, BiamineBiathlon gameInfo, BiamineReloaded main) {
         this.currentGameID = id;
         this.currentGameInfo = gameInfo;
         this.main = main;
+        this.players = new ArrayList<>();
 
         activeGameLogger = new BiaMineLogger("BiaMine", "Active Game", main);
         gameSetupLogger = new BiaMineLogger("BiaMine", "Game Setup", main);
         messages = new MessageUtility(main);
         localizationUtility = new LocalizationUtility(main);
+        dataUtility = new BiaMineDataUtility(main);
     }
 
     Random random = new Random();
@@ -54,6 +61,18 @@ public class Game {
         return min + ThreadLocalRandom.current().nextDouble(Math.abs(max - min + 1));
     }
 
+    private void gatherPlayers() {
+        gameSetupLogger.logInfo("Gathering players...");
+        if (currentGameInfo != null) {
+            ArrayList<String> excluded = dataUtility.getExclusionListByID(currentGameInfo.exclusionList);
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                if (!excluded.contains(p.getName())) {
+                    players.add(p);
+                }
+            }
+        }
+    }
+
 
     public void teleportToStart() {
         gameSetupLogger.logInfo("Teleporting players to the start...");
@@ -64,15 +83,31 @@ public class Game {
 
     public void startGame() {
         gameSetupLogger.logInfo("Starting BiaMine Biathlon instance '" + currentGameID + "' [...]");
+        gatherPlayers();
         teleportToStart();
         startPreparationPeriod();
     }
 
     private void startPreparationPeriod() {
+        Runnable prep = new Runnable() {
+            @Override
+            public void run() {
 
+            }
+        };
+        prep.run();
+        initScoreboard();
+        startFinalCountdown();
     }
 
     private void startFinalCountdown() {
+        haltPlayers();
+        Runnable final_countdown = new Runnable() {
+            @Override
+            public void run() {
+
+            }
+        };
 
     }
 
@@ -82,6 +117,12 @@ public class Game {
 
     private void releasePlayers() {
 
+    }
+
+    private void initScoreboard() {
+        ScoreboardManager manager = new ScoreboardManager(main);
+        manager.setupScoreboard(currentGameInfo);
+        manager.showScoreboard();
     }
 
 

@@ -40,6 +40,9 @@ public class MessageUtility {
             case INVALID_SYNTAX:
                 target.sendMessage(ChatColor.translateAlternateColorCodes('&', localizationUtility.getLocalizedPhrase("errors.invalid-syntax")));
                 break;
+            case INVALID_GAME:
+                target.sendMessage(ChatColor.translateAlternateColorCodes('&', localizationUtility.getLocalizedPhrase("errors.invalid-game")));
+                break;
         }
     }
 

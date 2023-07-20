@@ -1,6 +1,6 @@
 package krisapps.biaminereloaded;
 
-import krisapps.biaminereloaded.commands.CreateBiathlon;
+import krisapps.biaminereloaded.commands.*;
 import krisapps.biaminereloaded.utilities.LocalizationUtility;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -206,6 +206,10 @@ public final class BiamineReloaded extends JavaPlugin {
         getLogger().info("Registering commands...");
 
         getCommand("createbiathlon").setExecutor(new CreateBiathlon(this));
+        getCommand("deletebiathlon").setExecutor(new DeleteBiathlon(this));
+        getCommand("setstart").setExecutor(new SetStart(this));
+        getCommand("listgames").setExecutor(new ListGames(this));
+        getCommand("testflight").setExecutor(new TestGame(this));
 
         getLogger().info("Registering commands complete!");
     }
