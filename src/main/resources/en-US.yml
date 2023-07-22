@@ -22,3 +22,54 @@ commands:
   listgames:
     nogames: "&cSorry, but there are no games yet."
     prefix-game: "&bGame &e"
+  startgame:
+    starting-notice: "&eThe BiaMine game instance is now starting. &aHave a good game!"
+    start-error: "&aSomething went wrong, while trying to start instance &b&l%instance%&r&a: &e%error%"
+    runtime-error: "&aThe game has been terminated due to the following error on instance &b&l%instance%&r&a: &e%error%"
+  sconfig:
+    create-error-insuff: "&cInsufficient parameters. &eTo create a new scoreboard configuration, please provide the &l&bid&r&e."
+    create-error-exist: "&cA scoreboard configuration with this id already exists. If you'd like to overwrite existing scoreboard configurations, add &e-f &cat the end of the command."
+    create-error-save: "&cSomething went wrong while creating this configuration. Check the logs for more info."
+    create-error-unknownswitch: "&cUnknown switch &b&l%switch%&r&c. To overwrite existing scoreboard configurations, use &e-f&c."
+    create-success-creation: "&aScoreboard configuration successfully created. &eYou may now edit it by using &b/sconfig edit &d%id%&7 <property> <operation> <numberOfLines>"
+
+    delete-error-insuff: "&cInsufficient parameters. &eTo delete an existing scoreboard configuration, please provide the &l&bid&r&e."
+    delete-error-notfound: "&cUnknown configuration &b&l%configuration%&r&c. Are you sure you typed the correct id?"
+    delete-error-delete: "&cSomething went wrong while applying the latest changes. Check the logs for more info."
+    delete-success-deleted: "&aSuccessfully deleted &b%id%&a."
+
+    edit-error-insuff: "&cInsufficient parameters. &eTo edit an existing scoreboard configuration, please provide the &l&bid&r&e, &l&bthe property to edit&r&e, &l&bthe operation to perform&r&e and &l&bthe new lineNumber&r&e."
+    edit-error-notfound: "&cUnknown configuration &b&l%configuration%&r&c. Are you sure you typed the correct id?"
+    edit-error-save: "&cSomething went wrong while applying the latest changes. Check the logs for more info."
+    edit-error-findprop: "&cFailed to move the property - no such property was found on the configuration. Has it been already moved?"
+
+    edit-success-moveto: "&dMoved &b%target% &dto line &a%newline%&d. &e(switched positions with the property on line &a%newline%&e)"
+    edit-success-raiselower: "&dApplied operation &b%operation% &6by &a%modifier% to property &b%target%&d on line &b%targetLine%."
+    edit-success-change: "&dChanged the property on line &a%old%&d to &b%newprop%&d (the old property was overwritten)"
+
+    edit-noch-lower: "&eReached the lower limit (nothing changed, since property reached line 8)."
+    edit-noch-raise: "&eReached the upper limit (nothing changed, since property reached line 1)."
+
+    edit-unknownline: "&cCould not recognize property or line. &bIf you'd like to edit a property, provide a valid property (exists on the scoreboard). If you'd like to edit a line directly, provide a line number."
+    edit-customedit: "&dApplied the following change: content on &bline %lineNumber% &dchanged to &f\"&b%newValue%&f\" &d(&e%editType%&d)"
+    edit-linecleared: "&dApplied the following change: content on &bline %lineNumber% &ereset&d. (line cleared)"
+
+    list-item: "- &bConfiguration &e%item%"
+    list-empty: "&cThere are no scoreboard configurations yet."
+
+    show-error-insuff: "&cInsufficient parameters. &eTo preview a scoreboard configuration, please provide the &l&bid&r&e."
+    show-error-notfound: "&cUnknown configuration &b&l%configuration%&r&c. Are you sure you typed the correct id?"
+    show-result: "&e#&f| &ePreview for &b%id% 
+                  \n&e1&f| &b%line1%
+                  \n&e2&f| &e%line2%
+                  \n&e3&f| &b%line3%
+                  \n&e4&f| &e%line4%
+                  \n&e5&f| &b%line5%
+                  \n&e6&f| &e%line6%
+                  \n&e7&f| &b%line7%
+                  \n&e8&f| &e%line8%
+                "
+
+    invalid-property-operation: "&cCannot perform &f\"&b%operation%&f\" &con property &b%property%&c: unknown operation."
+    invalid-operation: "&cCannot perform &f\"&b%operation%&f\"&c: unknown operation."
+

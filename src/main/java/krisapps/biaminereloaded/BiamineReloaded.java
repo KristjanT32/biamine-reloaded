@@ -1,7 +1,9 @@
 package krisapps.biaminereloaded;
 
 import krisapps.biaminereloaded.commands.*;
+import krisapps.biaminereloaded.utilities.BiaMineDataUtility;
 import krisapps.biaminereloaded.utilities.LocalizationUtility;
+import krisapps.biaminereloaded.utilities.MessageUtility;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -36,6 +38,13 @@ public final class BiamineReloaded extends JavaPlugin {
 
     public FileConfiguration pluginLocalization;
     public File localizationFile = new File(getDataFolder(), "/localization/localization.yml");
+
+
+    // Public Utilities
+    public BiaMineDataUtility dataUtility = new BiaMineDataUtility(this);
+    public MessageUtility messageUtility = new MessageUtility(this);
+    public LocalizationUtility localizationUtility = new LocalizationUtility(this);
+
 
     // LOGGING
 
@@ -108,60 +117,42 @@ public final class BiamineReloaded extends JavaPlugin {
         try {
             pluginConfig.load(configFile);
             getLogger().info("Successfully loaded plugin configuration [1/6]");
-        } catch (IOException e) {
-            getLogger().warning("Failed to load the config file: " + e.getMessage());
-            e.printStackTrace();
-        } catch (InvalidConfigurationException e) {
+        } catch (IOException | InvalidConfigurationException e) {
             getLogger().warning("Failed to load the config file: " + e.getMessage());
             e.printStackTrace();
         }
         try {
             pluginGames.load(gameFile);
             getLogger().info("Successfully loaded games [2/6]");
-        } catch (IOException e) {
-            getLogger().severe("Failed to load the game file: " + e.getMessage());
-            e.printStackTrace();
-        } catch (InvalidConfigurationException e) {
+        } catch (IOException | InvalidConfigurationException e) {
             getLogger().severe("Failed to load the game file: " + e.getMessage());
             e.printStackTrace();
         }
         try {
             pluginData.load(dataFile);
             getLogger().info("Successfully loaded data [3/6]");
-        } catch (IOException e) {
-            getLogger().severe("Failed to load the data file: " + e.getMessage());
-            e.printStackTrace();
-        } catch (InvalidConfigurationException e) {
+        } catch (IOException | InvalidConfigurationException e) {
             getLogger().severe("Failed to load the data file: " + e.getMessage());
             e.printStackTrace();
         }
         try {
             pluginScoreboardConfig.load(scoreboardConfigFile);
             getLogger().info("Successfully loaded scoreboard configurations [4/6]");
-        } catch (IOException e) {
-            getLogger().warning("Failed to load the scoreboard configurations file: " + e.getMessage());
-            e.printStackTrace();
-        } catch (InvalidConfigurationException e) {
+        } catch (IOException | InvalidConfigurationException e) {
             getLogger().warning("Failed to load the scoreboard configurations file: " + e.getMessage());
             e.printStackTrace();
         }
         try {
             pluginExclusionLists.load(exclusionListFile);
             getLogger().info("Successfully loaded exclusion lists [5/6]");
-        } catch (IOException e) {
-            getLogger().warning("Failed to load the exclusion lists file: " + e.getMessage());
-            e.printStackTrace();
-        } catch (InvalidConfigurationException e) {
+        } catch (IOException | InvalidConfigurationException e) {
             getLogger().warning("Failed to load the exclusion lists file: " + e.getMessage());
             e.printStackTrace();
         }
         try {
             pluginLocalization.load(localizationFile);
             getLogger().info("Successfully loaded localization information [6/6]");
-        } catch (IOException e) {
-            getLogger().warning("Failed to load the localization information file: " + e.getMessage());
-            e.printStackTrace();
-        } catch (InvalidConfigurationException e) {
+        } catch (IOException | InvalidConfigurationException e) {
             getLogger().warning("Failed to load the localization information file: " + e.getMessage());
             e.printStackTrace();
         }
@@ -209,6 +200,10 @@ public final class BiamineReloaded extends JavaPlugin {
         getCommand("deletebiathlon").setExecutor(new DeleteBiathlon(this));
         getCommand("setstart").setExecutor(new SetStart(this));
         getCommand("listgames").setExecutor(new ListGames(this));
+        getCommand("startgame").setExecutor(new StartGame(this));
+        getCommand("sconfig").setExecutor(new ScoreboardConfig(this));
+
+
         getCommand("testflight").setExecutor(new TestGame(this));
 
         getLogger().info("Registering commands complete!");

@@ -1,11 +1,8 @@
 package krisapps.biaminereloaded.game_setup;
 
 import krisapps.biaminereloaded.BiamineReloaded;
-import krisapps.biaminereloaded.data.BiaMineDataUtility;
 import krisapps.biaminereloaded.logging.BiaMineLogger;
 import krisapps.biaminereloaded.scoreboard.ScoreboardManager;
-import krisapps.biaminereloaded.utilities.LocalizationUtility;
-import krisapps.biaminereloaded.utilities.MessageUtility;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -26,9 +23,6 @@ public class Game {
 
     String currentGameID;
     BiamineBiathlon currentGameInfo;
-    MessageUtility messages;
-    LocalizationUtility localizationUtility;
-    BiaMineDataUtility dataUtility;
 
     public Game(String id, BiamineBiathlon gameInfo, BiamineReloaded main) {
         this.currentGameID = id;
@@ -38,9 +32,6 @@ public class Game {
 
         activeGameLogger = new BiaMineLogger("BiaMine", "Active Game", main);
         gameSetupLogger = new BiaMineLogger("BiaMine", "Game Setup", main);
-        messages = new MessageUtility(main);
-        localizationUtility = new LocalizationUtility(main);
-        dataUtility = new BiaMineDataUtility(main);
     }
 
     Random random = new Random();
@@ -64,7 +55,7 @@ public class Game {
     private void gatherPlayers() {
         gameSetupLogger.logInfo("Gathering players...");
         if (currentGameInfo != null) {
-            ArrayList<String> excluded = dataUtility.getExclusionListByID(currentGameInfo.exclusionList);
+            ArrayList<String> excluded = main.dataUtility.getExclusionListByID(currentGameInfo.exclusionList);
             for (Player p : Bukkit.getOnlinePlayers()) {
                 if (!excluded.contains(p.getName())) {
                     players.add(p);
@@ -83,6 +74,10 @@ public class Game {
 
     public void startGame() {
         gameSetupLogger.logInfo("Starting BiaMine Biathlon instance '" + currentGameID + "' [...]");
+
+        startLocation_bound1 = main.dataUtility.getStartLocationFirstBound(currentGameID);
+        startLocation_bound2 = main.dataUtility.getStartLocationSecondBound(currentGameID);
+
         gatherPlayers();
         teleportToStart();
         startPreparationPeriod();

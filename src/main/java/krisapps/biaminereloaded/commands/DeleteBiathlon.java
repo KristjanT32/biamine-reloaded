@@ -1,8 +1,8 @@
 package krisapps.biaminereloaded.commands;
 
 import krisapps.biaminereloaded.BiamineReloaded;
-import krisapps.biaminereloaded.data.BiaMineDataUtility;
 import krisapps.biaminereloaded.types.GenericErrorType;
+import krisapps.biaminereloaded.utilities.BiaMineDataUtility;
 import krisapps.biaminereloaded.utilities.LocalizationUtility;
 import krisapps.biaminereloaded.utilities.MessageUtility;
 import org.bukkit.command.Command;

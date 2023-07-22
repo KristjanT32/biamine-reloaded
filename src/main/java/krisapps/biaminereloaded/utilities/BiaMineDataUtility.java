@@ -1,11 +1,14 @@
-package krisapps.biaminereloaded.data;
+package krisapps.biaminereloaded.utilities;
 
 import krisapps.biaminereloaded.BiamineReloaded;
+import krisapps.biaminereloaded.types.GameProperty;
 import krisapps.biaminereloaded.types.SaveablePropertyType;
+import krisapps.biaminereloaded.types.ScoreboardLine;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -54,12 +57,71 @@ public class BiaMineDataUtility {
         main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".preparationTime", prepTime);
         main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".countdownTime", countdown);
         main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".displayName", displayName);
-        main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".exclude", new ArrayList<>());
+        main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".exclusionList", "none");
         main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".scoreboardConfiguration", "default");
         main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".timerFormat", "default");
+        main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".runState", "STANDBY");
 
         return main.saveGames();
     }
+
+    public boolean createScoreboardConfig(String id) {
+        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line1", "empty");
+        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line2", "empty");
+        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line3", "empty");
+        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line4", "empty");
+        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line5", "empty");
+        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line6", "empty");
+        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line7", "empty");
+        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line8", "empty");
+
+        return main.saveScoreboards();
+    }
+
+    public boolean scoreboardConfigExists(String id) {
+        return main.pluginScoreboardConfig.contains(SCOREBOARD_FILE_PATH_PREFIX + id);
+    }
+
+    public Set<String> getScoreboardConfigs() {
+        if (main.pluginScoreboardConfig.getConfigurationSection("scoreboardconfigs") == null) return new HashSet<>(0);
+        return main.pluginScoreboardConfig.getConfigurationSection("scoreboardconfigs").getKeys(false);
+    }
+
+    public String getScoreboardConfigProperty(String id, ScoreboardLine line) {
+        return main.pluginScoreboardConfig.getString(SCOREBOARD_FILE_PATH_PREFIX + id + ".line" + line.asNumber());
+    }
+
+    public boolean switchScoreboardProperties(String id, int firstProperty, int secondProperty) {
+
+        String first = getScoreboardConfigProperty(id, ScoreboardLine.asEnum(firstProperty));
+        String second = getScoreboardConfigProperty(id, ScoreboardLine.asEnum(secondProperty));
+
+        overwriteScoreboardProperty(id, firstProperty, second);
+        overwriteScoreboardProperty(id, secondProperty, first);
+
+        return main.saveScoreboards();
+
+    }
+
+    public int getPropertyLineNumber(String id, String property) {
+        for (String line : main.pluginScoreboardConfig.getConfigurationSection(SCOREBOARD_FILE_PATH_PREFIX + id).getKeys(false)) {
+            if (main.pluginScoreboardConfig.getString(SCOREBOARD_FILE_PATH_PREFIX + id + "." + line).equalsIgnoreCase(property)) {
+                return Integer.parseInt(line.replace("line", ""));
+            }
+        }
+        return 404;
+    }
+
+    public boolean overwriteScoreboardProperty(String id, int lineToOverwrite, String overwriteWithProperty) {
+        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line" + lineToOverwrite, overwriteWithProperty);
+        return main.saveScoreboards();
+    }
+
+    public boolean deleteScoreboardConfig(String id) {
+        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id, null);
+        return main.saveScoreboards();
+    }
+
 
     public boolean deleteGame(String gameID) {
         main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID, null);
@@ -67,8 +129,12 @@ public class BiaMineDataUtility {
         return main.saveGames();
     }
 
-    public ArrayList getExclusionListByID(String id) {
-        return main.pluginExclusionLists.getList(EXCLUSIONS_FILE_PATH_PREFIX + id) == null ? new ArrayList<>() : (ArrayList) main.pluginExclusionLists.getList(EXCLUSIONS_FILE_PATH_PREFIX + id);
+    public String getBasicProperty(String gameID, GameProperty property) {
+        return main.pluginGames.getString(GAME_FILE_PATH_PREFIX + gameID + "." + property.getFieldName());
+    }
+
+    public ArrayList<String> getExclusionListByID(String listID) {
+        return main.pluginExclusionLists.getList(EXCLUSIONS_FILE_PATH_PREFIX + listID) == null ? new ArrayList<String>() : (ArrayList<String>) main.pluginExclusionLists.getList(EXCLUSIONS_FILE_PATH_PREFIX + listID);
     }
 
     public org.bukkit.Location getStartLocationFirstBound(String game) {

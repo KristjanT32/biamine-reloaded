@@ -5,6 +5,7 @@ import krisapps.biaminereloaded.game_setup.BiamineBiathlon;
 import krisapps.biaminereloaded.types.ScoreboardPlaceholder;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
@@ -15,7 +16,7 @@ public class ScoreboardManager {
 
     private final String timer = "00:00:00";
     Scoreboard mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-    Objective gameObjective = mainScoreboard.registerNewObjective("biathlonGame", "dummy", "name");
+    Objective gameObjective;
     BiamineReloaded main;
     private String currentScoreboardConfiguration;
     private boolean scoreboardShown;
@@ -23,6 +24,11 @@ public class ScoreboardManager {
 
     public ScoreboardManager(BiamineReloaded main) {
         this.main = main;
+        if (mainScoreboard.getObjective("biathlonGame") == null) {
+            mainScoreboard.registerNewObjective("biathlonGame", "dummy", "name");
+        } else {
+            mainScoreboard.getObjective("biathlonGame").setDisplaySlot(DisplaySlot.SIDEBAR);
+        }
     }
 
     private void setScoreboardLine(String text, String accessKey, int lineNumber) {
@@ -77,6 +83,7 @@ public class ScoreboardManager {
                 ? main.pluginScoreboardConfig.getString(scoreboardConfigurationID + ".playersText")
                 : null;
         players = players.replaceAll(ScoreboardPlaceholder.PLAYERS_TOTAL.getPlaceholder(), String.valueOf(gameInfo.totalPlayers));
+
         players = players.replaceAll(ScoreboardPlaceholder.PLAYERS_FINISHED.getPlaceholder(), String.valueOf(gameInfo.finishedPlayers));
 
         customMessage = !Objects.equals(main.pluginScoreboardConfig.getString(scoreboardConfigurationID + ".customMessage"), "_disable")
@@ -145,6 +152,8 @@ public class ScoreboardManager {
         gameObjective.setDisplayName(ChatColor.translateAlternateColorCodes('&', result));
 
     }
+    //TODO: Implement a way for the scoreboard configurations to be used
+
 
     public void showScoreboard() {
 

@@ -35,14 +35,6 @@ commands:
     description: "Resets an in-progress BiaMine Biathlon game."
     usage: "/resetgame <gameID>"
 
-  # Scoreboard Customization
-  scoreboardconfig:
-    description: "Manages custom scoreboard configurations."
-    usage: "/scoreboardconfig <createConfig | deleteConfig | (confID)>\n
-            /scoreboardconfig <createConfig> <configID>\n
-            /scoreboardconfig <confID> <header |footer |timerPosition |timerFormat |[playersParticipating, playersNotFinished, shootings] | label>
-		      			      <headerContent | footerContent | timerPositionInteger | timerFormat | lineNumber | labelContent> 
-           "
   # Game Setup
   setscoreboardconf:
     description: "Sets a custom scoreboard configuration for a game to use."
@@ -71,6 +63,15 @@ commands:
   listgames:
     description: "List the existing games."
     usage: "/listgames"
+
+  # Scoreboard Customization
+  sconfig:
+    description: "Manages scoreboard configurations."
+    usage: "/sconfig <create|edit|delete|list>
+            \ncreate: <id>
+            \nedit: <id> <property> <operation [moveToLine, raiseBy, lowerBy, changeTo]> <numberOfLines|newProperty>
+            \ndelete: <id>
+            \nlist: <none>"
 
 
 
