@@ -31,8 +31,8 @@ public class StartGame implements CommandExecutor {
             players.addAll(Arrays.asList(args).subList(2, args.length));
 
             BiamineBiathlon instance = new BiamineBiathlon(shootings, players.size(), 0, "00:00",
-                    main.dataUtility.getBasicProperty(gameID, GameProperty.SCOREBOARD_CONFIGURATION_ID),
-                    main.dataUtility.getBasicProperty(gameID, GameProperty.EXCLUSION_LIST_ID));
+                    main.dataUtility.getGameProperty(gameID, GameProperty.SCOREBOARD_CONFIGURATION_ID),
+                    main.dataUtility.getGameProperty(gameID, GameProperty.EXCLUSION_LIST_ID));
 
             Game game = new Game(gameID, instance, main);
 

@@ -4,9 +4,12 @@ import krisapps.biaminereloaded.commands.*;
 import krisapps.biaminereloaded.utilities.BiaMineDataUtility;
 import krisapps.biaminereloaded.utilities.LocalizationUtility;
 import krisapps.biaminereloaded.utilities.MessageUtility;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.BufferedWriter;
@@ -15,6 +18,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -95,13 +99,14 @@ public final class BiamineReloaded extends JavaPlugin {
                 throw new RuntimeException(e);
             }
         }
+
         if (!localizationFile.getParentFile().exists() || !localizationFile.exists()) {
             localizationFile.getParentFile().mkdirs();
             saveResource("localization.yml", true);
             saveResource("en-US.yml", true);
             try {
                 Files.move(Path.of(getDataFolder() + "/localization.yml"), localizationFile.toPath());
-                Files.move(Path.of(getDataFolder() + "/en-US.yml"), Path.of(getDataFolder().toPath() + "/localization/en-US.yml"));
+                Files.move(Path.of(getDataFolder() + "/en-US.yml"), Path.of(getDataFolder().toPath() + "/localization/en-US.yml"), StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
@@ -173,16 +178,15 @@ public final class BiamineReloaded extends JavaPlugin {
         for (String langCode : langList) {
             File langFile = new File(getDataFolder(), "/localization/" + langCode + ".yml");
             if (!langFile.exists()) {
-                getLogger().warning("Could not find the localization file for [ " + langCode + " ]");
+                getLogger().warning("Could not find the localization file for " + langCode);
                 missingLocalizations.add(langCode);
             } else {
-                getLogger().info("Successfully recognized localization file for [ " + langCode + " ]");
+                getLogger().info("Successfully recognized localization file for " + langCode);
                 foundLocalizations++;
             }
         }
         getLogger().info("Localization discovery complete. Found " + foundLocalizations + " localization files out of " + langList.size() + " specified localizations.");
-        getLogger().info("Missing localization files: " + Arrays.toString(missingLocalizations.toArray()));
-        getLogger().info("Loading language file...");
+        getLogger().info("Missing localization files: " + (Arrays.toString(missingLocalizations.toArray()).length() > 0 ? Arrays.toString(missingLocalizations.toArray()) : "none"));
         localizationUtility.setupCurrentLanguageFile();
     }
 
@@ -202,6 +206,7 @@ public final class BiamineReloaded extends JavaPlugin {
         getCommand("listgames").setExecutor(new ListGames(this));
         getCommand("startgame").setExecutor(new StartGame(this));
         getCommand("sconfig").setExecutor(new ScoreboardConfig(this));
+        getCommand("setlanguage").setExecutor(new SetLanguage(this));
 
 
         getCommand("testflight").setExecutor(new TestGame(this));
@@ -306,10 +311,23 @@ public final class BiamineReloaded extends JavaPlugin {
     public void appendToLog(String msg) {
         try {
             BufferedWriter bw = new BufferedWriter(new FileWriter(logFile, true));
-            bw.append(msg);
+            bw.append("\n").append(msg);
             bw.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void scheduleRemind(String msg, int delayInSeconds) {
+        Bukkit.getScheduler().scheduleAsyncDelayedTask(this, new Runnable() {
+            @Override
+            public void run() {
+                for (Player p : Bukkit.getOnlinePlayers()) {
+                    if (p.isOp()) {
+                        p.sendMessage(ChatColor.translateAlternateColorCodes('&', "&e[&bBiaMine &aReloaded&e]&f: " + msg));
+                    }
+                }
+            }
+        }, delayInSeconds * 20L);
     }
 }

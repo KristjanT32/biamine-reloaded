@@ -1,12 +1,11 @@
 package krisapps.biaminereloaded.utilities;
 
 import krisapps.biaminereloaded.BiamineReloaded;
-import krisapps.biaminereloaded.types.GameProperty;
-import krisapps.biaminereloaded.types.SaveablePropertyType;
-import krisapps.biaminereloaded.types.ScoreboardLine;
+import krisapps.biaminereloaded.types.*;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -40,9 +39,13 @@ public class BiaMineDataUtility {
     }
 
     // Save core data values
-    public void saveCoreData(String field, String value) {
-        main.pluginData.set(COREDATA_FILE_PATH_PREFIX + field, value);
+    public void saveCoreData(CoreDataField field, String value) {
+        main.pluginData.set(COREDATA_FILE_PATH_PREFIX + field.getField(), value);
         main.saveAllFiles();
+    }
+
+    public String getCoreData(CoreDataField field) {
+        return main.pluginData.getString(COREDATA_FILE_PATH_PREFIX + field.getField());
     }
 
     public boolean gameExists(String gameID) {
@@ -129,8 +132,16 @@ public class BiaMineDataUtility {
         return main.saveGames();
     }
 
-    public String getBasicProperty(String gameID, GameProperty property) {
+    public String getGameProperty(String gameID, GameProperty property) {
         return main.pluginGames.getString(GAME_FILE_PATH_PREFIX + gameID + "." + property.getFieldName());
+    }
+
+    public boolean globalPlaceholderExists(String text) {
+        return main.pluginConfig.contains("placeholders." + text);
+    }
+
+    public String getGlobalPlaceholderReplacement(String placeholder) {
+        return main.pluginConfig.getString("placeholders." + placeholder);
     }
 
     public ArrayList<String> getExclusionListByID(String listID) {
@@ -169,9 +180,60 @@ public class BiaMineDataUtility {
         }
     }
 
+
+    /**
+     * Unassigns the provided scoreboard configuration from all games.
+     *
+     * @param sconfigID the scoreboard config to unassign
+     * @return true if operation succeeds, false if an error prevents the data from being saved
+     */
+    public boolean unassignScoreboardConfigFromAll(String sconfigID) {
+        for (String game : main.pluginGames.getConfigurationSection("games").getKeys(false)) {
+            if (main.pluginGames.getString(GAME_FILE_PATH_PREFIX + game + ".scoreboardConfiguration").equals(sconfigID)) {
+                main.pluginGames.set(GAME_FILE_PATH_PREFIX + game + ".scoreboardConfiguration", null);
+            }
+        }
+        return main.saveGames();
+    }
+
+    public boolean assignScoreboardConfiguration(String sconfigID, String targetGame) {
+        if (gameExists(targetGame)) {
+            main.pluginGames.set(GAME_FILE_PATH_PREFIX + targetGame + ".scoreboardConfiguration", sconfigID);
+        }
+        return main.saveGames();
+    }
+
+    public boolean unassignScoreboardConfiguration(String sconfigID, String targetGame) {
+        if (gameExists(targetGame)) {
+            if (main.pluginGames.getString(GAME_FILE_PATH_PREFIX + targetGame + ".scoreboardConfiguration").equals(sconfigID)) {
+                main.pluginGames.set(GAME_FILE_PATH_PREFIX + targetGame + ".scoreboardConfiguration", sconfigID);
+            }
+        }
+        return main.saveGames();
+    }
+
+
     public String getCurrentLanguage() {
-        return main.pluginData.getString("options.currentLanguage") == null
-                ? "en-US"
-                : main.pluginData.getString("options.currentLanguage");
+        if (main.pluginData.getString("options.currentLanguage") == null) {
+            main.pluginData.set("options.currentLanguage", "en-US");
+            main.saveCoredata();
+        }
+        return main.pluginData.getString("options.currentLanguage");
+    }
+
+    public void setCurrentLanguage(String langCode) {
+        main.pluginData.set("options.currentLanguage", langCode);
+        main.saveCoredata();
+    }
+
+    public String getConfigProperty(ConfigProperty property) {
+        switch (property) {
+            case FOOTER_CONTENT:
+                return main.pluginConfig.getString("placeholders.footer");
+            case HEADER_CONTENT:
+                return main.pluginConfig.getString("placeholders.header");
+            default:
+                throw new InvalidParameterException("Unknown config property provided.");
+        }
     }
 }

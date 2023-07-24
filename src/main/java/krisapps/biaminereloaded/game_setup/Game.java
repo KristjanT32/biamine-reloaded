@@ -3,9 +3,12 @@ package krisapps.biaminereloaded.game_setup;
 import krisapps.biaminereloaded.BiamineReloaded;
 import krisapps.biaminereloaded.logging.BiaMineLogger;
 import krisapps.biaminereloaded.scoreboard.ScoreboardManager;
+import krisapps.biaminereloaded.types.GameProperty;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitScheduler;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -23,6 +26,10 @@ public class Game {
 
     String currentGameID;
     BiamineBiathlon currentGameInfo;
+    public int PREP_TASK = -1;
+    public int COUNTDOWN_TASK = -1;
+    BukkitScheduler scheduler = Bukkit.getScheduler();
+
 
     public Game(String id, BiamineBiathlon gameInfo, BiamineReloaded main) {
         this.currentGameID = id;
@@ -84,25 +91,103 @@ public class Game {
     }
 
     private void startPreparationPeriod() {
-        Runnable prep = new Runnable() {
+
+        int prepTime = Integer.parseInt(main.dataUtility.getGameProperty(currentGameID, GameProperty.PREPARATION_TIME));
+
+        int mins = prepTime / 60;
+        int secs = prepTime - mins * prepTime;
+
+        for (Player p : players) {
+            main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.phase.prep.start")
+                    .replaceAll("%MM%", String.valueOf(mins > 9 ? mins : "0" + mins))
+                    .replaceAll("%SS%", String.valueOf(secs > 9 ? secs : "0" + secs))
+            );
+        }
+
+        PREP_TASK = scheduler.scheduleAsyncRepeatingTask(main, new Runnable() {
+            int prepTime = Integer.parseInt(main.dataUtility.getGameProperty(currentGameID, GameProperty.PREPARATION_TIME));
+
             @Override
             public void run() {
+                if (prepTime >= 0) {
+                    for (Player p : players) {
 
+                        int mins = prepTime / 60;
+                        int secs = prepTime - mins * prepTime;
+                        main.messageUtility.sendActionbarMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.timertick.prep")
+                                .replaceAll("%MM%", String.valueOf(mins > 9 ? mins : "0" + mins))
+                                .replaceAll("%SS%", String.valueOf(secs > 9 ? secs : "0" + secs))
+                        );
+                    }
+                    prepTime--;
+                } else {
+                    scheduler.cancelTask(PREP_TASK);
+                    initScoreboard();
+                    startFinalCountdown();
+                }
             }
-        };
-        prep.run();
-        initScoreboard();
-        startFinalCountdown();
+        }, 0, 20);
     }
 
     private void startFinalCountdown() {
         haltPlayers();
-        Runnable final_countdown = new Runnable() {
+        COUNTDOWN_TASK = scheduler.scheduleAsyncRepeatingTask(main, new Runnable() {
+            int countdown = Integer.parseInt(main.dataUtility.getGameProperty(currentGameID, GameProperty.COUNTDOWN_TIME));
+
             @Override
             public void run() {
+                if (countdown >= 0) {
+                    for (Player p : players) {
+                        switch (countdown) {
+                            case 3:
+                                p.sendTitle(ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("gameloop.timertick.ready.title")),
+                                        ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("gameloop.timertick.ready.subtitle")),
+                                        0, 20, 0
+                                );
 
+                                main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.timertick.countdown")
+                                        .replaceAll("%time%", String.valueOf(countdown))
+                                );
+                                break;
+                            case 2:
+                                p.sendTitle(ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("gameloop.timertick.set.title")),
+                                        ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("gameloop.timertick.set.subtitle")),
+                                        0, 20, 0
+                                );
+
+                                main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.timertick.countdown")
+                                        .replaceAll("%time%", String.valueOf(countdown))
+                                );
+                                break;
+                            case 1:
+                                p.sendTitle(ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("gameloop.timertick.go.title")),
+                                        ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("gameloop.timertick.go.subtitle")),
+                                        0, 20, 0
+                                );
+                                break;
+                            case 0:
+                                p.sendTitle(ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("gameloop.timertick.release.title")),
+                                        ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("gameloop.timertick.release.subtitle")),
+                                        0, 20, 0
+                                );
+                                main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.timertick.countdown")
+                                        .replaceAll("%time%", String.valueOf(countdown))
+                                );
+
+                                scheduler.cancelTask(COUNTDOWN_TASK);
+                                releasePlayers();
+                                break;
+                            default:
+                                main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.timertick.countdown")
+                                        .replaceAll("%time%", String.valueOf(countdown))
+                                );
+                                break;
+                        }
+                    }
+                    countdown--;
+                }
             }
-        };
+        }, 0, 20);
 
     }
 
@@ -111,7 +196,7 @@ public class Game {
     }
 
     private void releasePlayers() {
-
+        Bukkit.broadcastMessage(ChatColor.GREEN + "TODO.");
     }
 
     private void initScoreboard() {

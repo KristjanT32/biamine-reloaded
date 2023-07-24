@@ -1,12 +1,20 @@
 package krisapps.biaminereloaded.utilities;
 
 import krisapps.biaminereloaded.BiamineReloaded;
+import org.apache.commons.io.FileUtils;
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.List;
 
 public class LocalizationUtility {
 
@@ -27,8 +35,51 @@ public class LocalizationUtility {
         return currentLanguage;
     }
 
+    public FileConfiguration getCurrentLanguageFile() {
+        return lang;
+    }
+
+    public FileConfiguration getDefaultLanguageFile() {
+        File out = new File(Path.of(main.getDataFolder() + "/core-data/temp.yml").toString());
+        try {
+            FileUtils.copyInputStreamToFile(main.getResource("en-US.yml"), out);
+        } catch (IOException e) {
+            e.printStackTrace();
+            Bukkit.broadcastMessage(ChatColor.RED + "Failed to load internal language file. Error: " + e.getMessage());
+        }
+        return YamlConfiguration.loadConfiguration(out);
+    }
+
+    public void resetDefaultLanguageFile(CommandSender reportTo) {
+        try {
+            Files.delete(Path.of(main.getDataFolder().toPath() + "/localization/en-US.yml"));
+        } catch (IOException e) {
+        }
+
+        try {
+            Files.copy(main.getResource("en-US.yml"), Path.of(main.getDataFolder().toPath() + "/localization/en-US.yml"), StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            main.appendToLog("Failed to replace en-US.yml with an internal copy: " + e.getMessage());
+            main.messageUtility.sendMessage(reportTo, main.localizationUtility.getLocalizedPhrase("internals.rplanfile-error"));
+        }
+    }
+
+    public void changeLanguage(String languageCode) {
+        this.currentLanguage = languageCode;
+        dataUtility.setCurrentLanguage(languageCode);
+        setupCurrentLanguageFile();
+    }
+
+    public boolean languageFileExists(String languageCode) {
+        return new File(main.getDataFolder() + "/localization/" + languageCode + ".yml").exists();
+    }
+
+    public List<String> getLanguages() {
+        return main.pluginLocalization.getStringList("languages");
+    }
+
     public void setupCurrentLanguageFile() {
-        main.getLogger().info("Loading: " + currentLanguage);
+        main.getLogger().info("Setting up language file for " + currentLanguage);
         currentLanguage = dataUtility.getCurrentLanguage();
         languageFile = new File(main.getDataFolder(), "/localization/" + currentLanguage + ".yml");
 
@@ -36,7 +87,6 @@ public class LocalizationUtility {
 
         try {
             lang.load(languageFile);
-            main.getLogger().info("Language file loaded successfully!");
         } catch (IOException | InvalidConfigurationException e) {
             e.printStackTrace();
             main.getLogger().warning("Failed to load " + languageFile.getName() + " due to: " + e.getMessage());

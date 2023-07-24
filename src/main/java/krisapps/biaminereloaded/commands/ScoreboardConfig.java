@@ -60,9 +60,6 @@ public class ScoreboardConfig implements CommandExecutor {
                     break;
                 case "edit":
                     // Editing configs.
-                    // operations: moveTo, raiseBy, lowerBy, changeTo
-                    // properties: timer, playersParticipating, playersNotFinished, shootings, header, footer
-
                     if (args.length >= 5 || (args.length == 4 && args[3].equalsIgnoreCase("clear"))) {
                         String id = args[1];
                         String property = args[2];
@@ -291,6 +288,36 @@ public class ScoreboardConfig implements CommandExecutor {
                     }
                     break;
 
+                case "assign":
+                    if (args.length >= 3) {
+
+                        // If the -ra switch is provided, first remove the scoreboard config from all other games, then assign.
+                        if (args.length == 4) {
+                            String sconfig = args[1];
+                            String target = args[2];
+                            if (args[3].equalsIgnoreCase("-ra")) {
+                                main.dataUtility.unassignScoreboardConfigFromAll(sconfig);
+                                main.dataUtility.assignScoreboardConfiguration(sconfig, target);
+                                main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.assign-success-reassign")
+                                        .replaceAll("%config%", sconfig)
+                                        .replaceAll("%target%", target)
+                                );
+                            } else {
+                                main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.assign-error-invalidswitch").replaceAll("%switch%", args[3]));
+                            }
+                        } else {
+                            String sconfig = args[1];
+                            String target = args[2];
+                            main.dataUtility.assignScoreboardConfiguration(sconfig, target);
+                            main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.assign-success")
+                                    .replaceAll("%config%", sconfig)
+                                    .replaceAll("%target%", target)
+                            );
+                        }
+                    } else {
+                        main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.assign-error-insuff"));
+                    }
+                    break;
                 default:
                     main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.invalid-operation").replaceAll("%operation%", args[0]));
                     break;

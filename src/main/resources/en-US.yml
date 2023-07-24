@@ -1,9 +1,37 @@
+languageName: "English (US)"
+
+
 errors:
   insufficient-parameters: "&cInsufficient parameters provided!"
   invalid-syntax: "&cInvalid syntax."
   too-many-parameters: "&cToo many parameters have been provided for the command."
   player-not-found: "&cCould not find the specified player."
   player-offline: "&cThe specified target is currently offline."
+
+
+internals:
+  setupsb-err-invconf: "&cFailed to setup a scoreboard for the current game: &eThere is no scoreboard configuration that corresponds to the active game.&r"
+  rplanfile-error: "&cFailed to replace the en-US file with the internal copy: &b%error%&r"
+
+gameloop:
+  phase:
+    prep:
+      start: "&eYou've been given prep time. The game will start in &b%MM%&f:&b%SS%"
+  timertick:
+    prep: "&ePreparation: &b%MM%&f:&b%SS%"
+    countdown: "&eStarting in &b%time%s"
+    ready:
+      subtitle: "&cOn your marks!"
+      title: "&b03"
+    set:
+      subtitle: "&eReady!"
+      title: "&b02"
+    go:
+      subtitle: "&6Set!"
+      title: "&b01"
+    release:
+      subtitle: "&eGood luck!"
+      title: "&b&aGO!"
 
 commands:
   createbiathlon:
@@ -26,6 +54,12 @@ commands:
     starting-notice: "&eThe BiaMine game instance is now starting. &aHave a good game!"
     start-error: "&aSomething went wrong, while trying to start instance &b&l%instance%&r&a: &e%error%"
     runtime-error: "&aThe game has been terminated due to the following error on instance &b&l%instance%&r&a: &e%error%"
+  setlanguage:
+    insuff: "&cInsufficient parameters.\n&eTo change the language of the plugin, provide &ban existing language code from the autocomplete list.&r"
+    success: "&aSuccessfully set the plugin language to &b%langName%&a."
+    unknown: "&cNo localizations found with language code &b%langCode%&a.\n&eIf you're sure the localization exists, make sure you added it\nto the language list in &fplugins/BiaMine-Reloaded/localization/localization.yml &eand then \nreload the server using &f/reload &e.&r"
+    no-file: "&cIt appears, that though the language code is in the language list, there is no files associated with it.\n&eMake sure you've not removed the language file from &fplugins/BiaMine-Reloaded/localization/&c."
+
   sconfig:
     create-error-insuff: "&cInsufficient parameters. &eTo create a new scoreboard configuration, please provide the &l&bid&r&e."
     create-error-exist: "&cA scoreboard configuration with this id already exists. If you'd like to overwrite existing scoreboard configurations, add &e-f &cat the end of the command."
@@ -38,7 +72,7 @@ commands:
     delete-error-delete: "&cSomething went wrong while applying the latest changes. Check the logs for more info."
     delete-success-deleted: "&aSuccessfully deleted &b%id%&a."
 
-    edit-error-insuff: "&cInsufficient parameters. &eTo edit an existing scoreboard configuration, please provide the &l&bid&r&e, &l&bthe property to edit&r&e, &l&bthe operation to perform&r&e and &l&bthe new lineNumber&r&e."
+    edit-error-insuff: "&cInsufficient parameters. &eTo edit an existing scoreboard configuration, please provide the &l&bid&r&e, &l&bthe property to edit&r&e, &l&bthe operation to perform&r&e and &l&bthe appropriate parameters&r&e."
     edit-error-notfound: "&cUnknown configuration &b&l%configuration%&r&c. Are you sure you typed the correct id?"
     edit-error-save: "&cSomething went wrong while applying the latest changes. Check the logs for more info."
     edit-error-findprop: "&cFailed to move the property - no such property was found on the configuration. Has it been already moved?"
@@ -69,6 +103,12 @@ commands:
                   \n&e7&f| &b%line7%
                   \n&e8&f| &e%line8%
                 "
+
+    assign-success: "&aSuccessfully assigned &b%config%&a to BiaMine instance &b%target%&a."
+    assign-success-reassign: "&aSuccessfully reassigned &b%config%&a to BiaMine instance &b%target%&a. &b%config%&e has been removed from all other games."
+
+    assign-error-insuff: "&cInsufficient parameters. &eTo assign a scoreboard configuration, please provide the &l&bid of the scoreboard configuration&r&e and &l&bthe id of the game to assign the configuration to&r&e."
+    assign-error-invalidswitch: "&cInvalid switch &f\"&b%switch%&f\". &eTo reassign the scoreboard config instead of assigning it additively, use the &f-re&r&c switch."
 
     invalid-property-operation: "&cCannot perform &f\"&b%operation%&f\" &con property &b%property%&c: unknown operation."
     invalid-operation: "&cCannot perform &f\"&b%operation%&f\"&c: unknown operation."

@@ -14,6 +14,9 @@ commands:
   deletebiathlon:
     description: "Deletes a created instance of BiaMine's biathlon game."
     usage: "/deletebiathlon <gameID>"
+  setlanguage:
+    description: "Changes the language of the plugin."
+    usage: "/setlanguage <langCode>"
 
   # Game Management
   startgame:
@@ -67,11 +70,14 @@ commands:
   # Scoreboard Customization
   sconfig:
     description: "Manages scoreboard configurations."
-    usage: "/sconfig <create|edit|delete|list>
+    usage: "/sconfig <create|edit|delete|list|clear|assign>
             \ncreate: <id>
-            \nedit: <id> <property> <operation [moveToLine, raiseBy, lowerBy, changeTo]> <numberOfLines|newProperty>
+            \nedit: <id> <property> <operation [moveToLine, raiseBy, lowerBy, changeTo, setPropertyTo]> <parameter>
             \ndelete: <id>
-            \nlist: <none>"
+            \nlist: <none>
+            \nclear: <none>
+            \nassign <targetConfig> <targetGame> [-ra]
+            "
 
 
 

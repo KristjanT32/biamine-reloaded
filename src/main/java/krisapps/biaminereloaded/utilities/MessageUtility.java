@@ -3,6 +3,8 @@ package krisapps.biaminereloaded.utilities;
 import krisapps.biaminereloaded.BiamineReloaded;
 import krisapps.biaminereloaded.types.GenericErrorType;
 import krisapps.biaminereloaded.types.Placeholder;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -65,6 +67,24 @@ public class MessageUtility {
      */
     public void sendMessage(CommandSender target, String message) {
         target.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
+    }
+
+    /**
+     * Sends a title with the color codes interpreted.
+     *
+     * @param target   the player to send the title to.
+     * @param title    the title content
+     * @param subtitle the subtitle content
+     * @param fadeIn   time for the title to fade in for (in ticks)
+     * @param stay     time for the title to stay on screen for (in ticks)
+     * @param fadeOut  time for the title to fade out for (in ticks)
+     */
+    public void sendTitle(Player target, String title, String subtitle, int fadeIn, int stay, int fadeOut) {
+        target.sendTitle(ChatColor.translateAlternateColorCodes('&', title), ChatColor.translateAlternateColorCodes('&', subtitle), fadeIn, stay, fadeOut);
+    }
+
+    public void sendActionbarMessage(Player target, String text) {
+        target.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(ChatColor.translateAlternateColorCodes('&', text)));
     }
 
 }
