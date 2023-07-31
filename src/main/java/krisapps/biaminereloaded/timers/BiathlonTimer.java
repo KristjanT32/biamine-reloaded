@@ -13,14 +13,14 @@ public class BiathlonTimer {
     int hours = 0;
     String formattedTime = "";
     String timerFormat = "";
-    private int globalTimerProcessID = -20;
+    private int globalTimerTaskID = -20;
     public BiathlonTimer(BiamineReloaded main) {
         this.main = main;
     }
 
     public void startGlobalTimer(String timerFormat) {
         this.timerFormat = timerFormat;
-        globalTimerProcessID = scheduler.scheduleAsyncRepeatingTask(main, new Runnable() {
+        globalTimerTaskID = scheduler.scheduleAsyncRepeatingTask(main, new Runnable() {
             @Override
             public void run() {
                 if (seconds < 59) {
@@ -40,6 +40,12 @@ public class BiathlonTimer {
         }, 0, 20);
     }
 
+    public void stopGlobalTimer() {
+        if (globalTimerTaskID != -20) {
+            Bukkit.getScheduler().cancelTask(globalTimerTaskID);
+        }
+    }
+
     public String getFormattedTime() {
         return formattedTime;
     }
@@ -56,7 +62,7 @@ public class BiathlonTimer {
         return hours;
     }
 
-    public int getGlobalTimerProcessID() {
-        return globalTimerProcessID;
+    public int getGlobalTimerTaskID() {
+        return globalTimerTaskID;
     }
 }

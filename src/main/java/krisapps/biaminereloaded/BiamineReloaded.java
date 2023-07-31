@@ -1,6 +1,10 @@
 package krisapps.biaminereloaded;
 
 import krisapps.biaminereloaded.commands.*;
+import krisapps.biaminereloaded.commands.tabcompleter.CreateGameAC;
+import krisapps.biaminereloaded.commands.tabcompleter.DeleteGameAC;
+import krisapps.biaminereloaded.commands.tabcompleter.ScoreboardConfigAC;
+import krisapps.biaminereloaded.commands.tabcompleter.StartGameAC;
 import krisapps.biaminereloaded.utilities.BiaMineDataUtility;
 import krisapps.biaminereloaded.utilities.LocalizationUtility;
 import krisapps.biaminereloaded.utilities.MessageUtility;
@@ -102,10 +106,21 @@ public final class BiamineReloaded extends JavaPlugin {
 
         if (!localizationFile.getParentFile().exists() || !localizationFile.exists()) {
             localizationFile.getParentFile().mkdirs();
-            saveResource("localization.yml", true);
             saveResource("en-US.yml", true);
             try {
-                Files.move(Path.of(getDataFolder() + "/localization.yml"), localizationFile.toPath());
+                if (!Files.exists(localizationFile.toPath())) {
+                    saveResource("localization.yml", true);
+                    Files.move(Path.of(getDataFolder() + "/localization.yml"), localizationFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                }
+                Files.move(Path.of(getDataFolder() + "/en-US.yml"), Path.of(getDataFolder().toPath() + "/localization/en-US.yml"), StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        if (!Files.exists(Path.of(getDataFolder() + "/localization/en-US.yml"))) {
+            saveResource("en-US.yml", true);
+            try {
                 Files.move(Path.of(getDataFolder() + "/en-US.yml"), Path.of(getDataFolder().toPath() + "/localization/en-US.yml"), StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -121,48 +136,42 @@ public final class BiamineReloaded extends JavaPlugin {
 
         try {
             pluginConfig.load(configFile);
-            getLogger().info("Successfully loaded plugin configuration [1/6]");
         } catch (IOException | InvalidConfigurationException e) {
             getLogger().warning("Failed to load the config file: " + e.getMessage());
             e.printStackTrace();
         }
         try {
             pluginGames.load(gameFile);
-            getLogger().info("Successfully loaded games [2/6]");
         } catch (IOException | InvalidConfigurationException e) {
             getLogger().severe("Failed to load the game file: " + e.getMessage());
             e.printStackTrace();
         }
         try {
             pluginData.load(dataFile);
-            getLogger().info("Successfully loaded data [3/6]");
         } catch (IOException | InvalidConfigurationException e) {
             getLogger().severe("Failed to load the data file: " + e.getMessage());
             e.printStackTrace();
         }
         try {
             pluginScoreboardConfig.load(scoreboardConfigFile);
-            getLogger().info("Successfully loaded scoreboard configurations [4/6]");
         } catch (IOException | InvalidConfigurationException e) {
             getLogger().warning("Failed to load the scoreboard configurations file: " + e.getMessage());
             e.printStackTrace();
         }
         try {
             pluginExclusionLists.load(exclusionListFile);
-            getLogger().info("Successfully loaded exclusion lists [5/6]");
         } catch (IOException | InvalidConfigurationException e) {
             getLogger().warning("Failed to load the exclusion lists file: " + e.getMessage());
             e.printStackTrace();
         }
         try {
             pluginLocalization.load(localizationFile);
-            getLogger().info("Successfully loaded localization information [6/6]");
         } catch (IOException | InvalidConfigurationException e) {
             getLogger().warning("Failed to load the localization information file: " + e.getMessage());
             e.printStackTrace();
         }
 
-        getLogger().info("Files have been loaded, proceeding to load localizations ...");
+        getLogger().info("Starting localization discovery...");
         loadLocalizations();
 
 
@@ -178,28 +187,27 @@ public final class BiamineReloaded extends JavaPlugin {
         for (String langCode : langList) {
             File langFile = new File(getDataFolder(), "/localization/" + langCode + ".yml");
             if (!langFile.exists()) {
-                getLogger().warning("Could not find the localization file for " + langCode);
+                getLogger().warning("[404] Could not find the localization file for " + langCode);
                 missingLocalizations.add(langCode);
             } else {
-                getLogger().info("Successfully recognized localization file for " + langCode);
+                getLogger().info("[OK] Successfully recognized localization file for " + langCode);
                 foundLocalizations++;
             }
         }
         getLogger().info("Localization discovery complete. Found " + foundLocalizations + " localization files out of " + langList.size() + " specified localizations.");
-        getLogger().info("Missing localization files: " + (Arrays.toString(missingLocalizations.toArray()).length() > 0 ? Arrays.toString(missingLocalizations.toArray()) : "none"));
+        if (!missingLocalizations.isEmpty()) {
+            getLogger().info("Missing localization files: " + Arrays.toString(missingLocalizations.toArray()));
+        }
         localizationUtility.setupCurrentLanguageFile();
     }
 
     private void registerEvents() {
-        getLogger().info("Registering events and event listeners...");
+        // Empty.
 
-
-        getLogger().info("Registering events and event listeners complete!");
+        getLogger().info("Events registered.");
     }
 
     private void registerCommands() {
-        getLogger().info("Registering commands...");
-
         getCommand("createbiathlon").setExecutor(new CreateBiathlon(this));
         getCommand("deletebiathlon").setExecutor(new DeleteBiathlon(this));
         getCommand("setstart").setExecutor(new SetStart(this));
@@ -207,11 +215,15 @@ public final class BiamineReloaded extends JavaPlugin {
         getCommand("startgame").setExecutor(new StartGame(this));
         getCommand("sconfig").setExecutor(new ScoreboardConfig(this));
         getCommand("setlanguage").setExecutor(new SetLanguage(this));
-
-
         getCommand("testflight").setExecutor(new TestGame(this));
 
-        getLogger().info("Registering commands complete!");
+
+        getCommand("sconfig").setTabCompleter(new ScoreboardConfigAC(this));
+        getCommand("startgame").setTabCompleter(new StartGameAC(this));
+        getCommand("deletebiathlon").setTabCompleter(new DeleteGameAC(this));
+        getCommand("createbiathlon").setTabCompleter(new CreateGameAC(this));
+
+        getLogger().info("Commands registered.");
     }
 
     @Override

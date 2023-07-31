@@ -7,13 +7,32 @@ errors:
   too-many-parameters: "&cToo many parameters have been provided for the command."
   player-not-found: "&cCould not find the specified player."
   player-offline: "&cThe specified target is currently offline."
+  invalid-game: "&cNo such game exists. &eAre you sure you typed the correct ID?"
 
+
+scoreboard:
+  prefixes:
+    timer: "&eRuntime: "
+    players-not-finished: "&cTo finish: "
+    players-total: "&dPlayers: "
+    shootings: "&eShootings: "
+    date: "&b"
 
 internals:
   setupsb-err-invconf: "&cFailed to setup a scoreboard for the current game: &eThere is no scoreboard configuration that corresponds to the active game.&r"
   rplanfile-error: "&cFailed to replace the en-US file with the internal copy: &b%error%&r"
 
 gameloop:
+  error-gamerunning: "&cCannot start this game, since an instance is already running. To start a game, please stop the running instance with &e/forcestopgame <gameID>&c.&r"
+  runtime:
+    prevterm-nopl: "&4[&cPREVTERM&4]&f: &cInstance &b%instance%&c has been preventatively terminated.\nReason: &eBiaMine was unable to find players to add to this game."
+    prevterm-nostart: "&4[&cPREVTERM&4]&f: &cInstance &b%instance%&c has been preventatively terminated.\nReason: &eBiaMine was unable to find the starting area for this game.\n&eDetails: &f%details%"
+    prevterm-nofinish: "&4[&cPREVTERM&4]&f: &cInstance &b%instance%&c has been preventatively terminated.\nReason: &eBiaMine was unable to find the finishing area for this game.\n&eDetails: &f%details%"
+    prevterm-unknown: "&4[&cPREVTERM&4]&f: &cInstance &b%instance%&c has been preventatively terminated.\nReason: &eAn internal error occurred and prevented the game from starting.\n&eDetails: &f%details%"
+    prevterm-sb-format: "&4[&cPREVTERM&4]&f: &cInstance &b%instance%&c has been preventatively terminated.\nReason: &eBiaMine was unable to validate the format of a scoreboard placeholder.\n&eDetails: &f%details%"
+    prevterm-sb-noconf: "&4[&cPREVTERM&4]&f: &cInstance &b%instance%&c has been preventatively terminated.\nReason: &eBiaMine was unable to find the specified scoreboard config.\n&eDetails: &f%details%"
+  actionbar:
+    finalcountdown-start: "&cPlease do not attempt to move. You'll be released once the game starts."
   phase:
     prep:
       start: "&eYou've been given prep time. The game will start in &b%MM%&f:&b%SS%"
@@ -39,10 +58,8 @@ commands:
     failure: "&cSomething went wrong while creating the instance!"
     already-exists: "&eThe specified ID is already used by an instance!"
     info: "&eYou can now setup and configure your instance using the following commands:\n
-            &e&l*&r&aUse &d/setscoreboardconf &ato set a custom scoreboard configuration to be used in the game.\n
-            &e&l*&r&aUse &d/setexclusionlist &ato specify a saved or new exclusion list for the game.\n
-            &e&l*&r&aUse &d/setplayers &ato only start the game with the specified players.\n
-            &e&l*&r&aUse &d/settimerformat &ato setup the format which the timer will use."
+            &e&l*&r&aUse &d/sconfig &ato create and set a custom scoreboard configuration to be used in the game.\n
+            &e&l*&r&aUse &d/exclusionlist assign &ato specify a saved or new exclusion list for the game.\n"
   deletebiathlon:
     success: "&aThe instance &b%instance% &r&ahas been deleted."
     failure: "&cSomething went wrong while deleting the instance. Check the logs for more info."
@@ -53,7 +70,7 @@ commands:
   startgame:
     starting-notice: "&eThe BiaMine game instance is now starting. &aHave a good game!"
     start-error: "&aSomething went wrong, while trying to start instance &b&l%instance%&r&a: &e%error%"
-    runtime-error: "&aThe game has been terminated due to the following error on instance &b&l%instance%&r&a: &e%error%"
+    insuff: "&cInsufficient parameters. &eTo start a game, provide a &bgameID&e, &bthe amount of shootings&e, and optionally &bthe players with whom to start the game&e.\n&aYou may omit the players, if you'd rather use an exclusion list."
   setlanguage:
     insuff: "&cInsufficient parameters.\n&eTo change the language of the plugin, provide &ban existing language code from the autocomplete list.&r"
     success: "&aSuccessfully set the plugin language to &b%langName%&a."
@@ -65,7 +82,7 @@ commands:
     create-error-exist: "&cA scoreboard configuration with this id already exists. If you'd like to overwrite existing scoreboard configurations, add &e-f &cat the end of the command."
     create-error-save: "&cSomething went wrong while creating this configuration. Check the logs for more info."
     create-error-unknownswitch: "&cUnknown switch &b&l%switch%&r&c. To overwrite existing scoreboard configurations, use &e-f&c."
-    create-success-creation: "&aScoreboard configuration successfully created. &eYou may now edit it by using &b/sconfig edit &d%id%&7 <property> <operation> <numberOfLines>"
+    create-success-creation: "&aScoreboard configuration successfully created. &eYou may now edit it by using &b/sconfig edit &d%id%&7 <property> <operation> <parameters>"
 
     delete-error-insuff: "&cInsufficient parameters. &eTo delete an existing scoreboard configuration, please provide the &l&bid&r&e."
     delete-error-notfound: "&cUnknown configuration &b&l%configuration%&r&c. Are you sure you typed the correct id?"
@@ -86,6 +103,7 @@ commands:
 
     edit-unknownline: "&cCould not recognize property or line. &bIf you'd like to edit a property, provide a valid property (exists on the scoreboard). If you'd like to edit a line directly, provide a line number."
     edit-customedit: "&dApplied the following change: content on &bline %lineNumber% &dchanged to &f\"&b%newValue%&f\" &d(&e%editType%&d)"
+    edit-titleedit: "&dScoreboard title updated: &enew content: &f\"&b%newValue%&f\""
     edit-linecleared: "&dApplied the following change: content on &bline %lineNumber% &ereset&d. (line cleared)"
 
     list-item: "- &bConfiguration &e%item%"
@@ -93,7 +111,9 @@ commands:
 
     show-error-insuff: "&cInsufficient parameters. &eTo preview a scoreboard configuration, please provide the &l&bid&r&e."
     show-error-notfound: "&cUnknown configuration &b&l%configuration%&r&c. Are you sure you typed the correct id?"
-    show-result: "&e#&f| &ePreview for &b%id% 
+    show-result: "&e#&f| &ePreview for &b%id%
+                  \n&eT&f| &b%title% 
+                  \n&e &f|--------------
                   \n&e1&f| &b%line1%
                   \n&e2&f| &e%line2%
                   \n&e3&f| &b%line3%

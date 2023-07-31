@@ -48,6 +48,10 @@ public class BiaMineDataUtility {
         return main.pluginData.getString(COREDATA_FILE_PATH_PREFIX + field.getField());
     }
 
+    public Set<String> getUserDefinedPlaceholders() {
+        return main.pluginConfig.getConfigurationSection("placeholders") != null ? main.pluginConfig.getConfigurationSection("placeholders").getKeys(false) : new HashSet<>();
+    }
+
     public boolean gameExists(String gameID) {
         return main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + gameID) != null;
     }
@@ -62,26 +66,29 @@ public class BiaMineDataUtility {
         main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".displayName", displayName);
         main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".exclusionList", "none");
         main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".scoreboardConfiguration", "default");
-        main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".timerFormat", "default");
         main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".runState", "STANDBY");
 
         return main.saveGames();
     }
 
     public boolean createScoreboardConfig(String id) {
-        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line1", "empty");
-        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line2", "empty");
-        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line3", "empty");
-        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line4", "empty");
-        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line5", "empty");
-        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line6", "empty");
-        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line7", "empty");
-        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line8", "empty");
+        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".title", "%title%");
+        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line1", "%empty%");
+        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line2", "%empty%");
+        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line3", "%empty%");
+        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line4", "%empty%");
+        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line5", "%empty%");
+        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line6", "%empty%");
+        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line7", "%empty%");
+        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line8", "%empty%");
 
         return main.saveScoreboards();
     }
 
     public boolean scoreboardConfigExists(String id) {
+        if (id.equalsIgnoreCase("default")) {
+            return true;
+        }
         return main.pluginScoreboardConfig.contains(SCOREBOARD_FILE_PATH_PREFIX + id);
     }
 
@@ -91,7 +98,19 @@ public class BiaMineDataUtility {
     }
 
     public String getScoreboardConfigProperty(String id, ScoreboardLine line) {
-        return main.pluginScoreboardConfig.getString(SCOREBOARD_FILE_PATH_PREFIX + id + ".line" + line.asNumber());
+        if (!id.equals("default")) {
+            if (line.equals(ScoreboardLine.LINE0)) {
+                return main.pluginScoreboardConfig.getString(SCOREBOARD_FILE_PATH_PREFIX + id + ".title");
+            } else {
+                return main.pluginScoreboardConfig.getString(SCOREBOARD_FILE_PATH_PREFIX + id + ".line" + line.asNumber());
+            }
+        } else {
+            if (line.equals(ScoreboardLine.LINE0)) {
+                return main.pluginConfig.getString("defaults.scoreboardconfig.title");
+            } else {
+                return main.pluginConfig.getString("defaults.scoreboardconfig.line" + line.asNumber());
+            }
+        }
     }
 
     public boolean switchScoreboardProperties(String id, int firstProperty, int secondProperty) {
@@ -107,20 +126,38 @@ public class BiaMineDataUtility {
     }
 
     public int getPropertyLineNumber(String id, String property) {
-        for (String line : main.pluginScoreboardConfig.getConfigurationSection(SCOREBOARD_FILE_PATH_PREFIX + id).getKeys(false)) {
-            if (main.pluginScoreboardConfig.getString(SCOREBOARD_FILE_PATH_PREFIX + id + "." + line).equalsIgnoreCase(property)) {
-                return Integer.parseInt(line.replace("line", ""));
+        if (!id.equalsIgnoreCase("default")) {
+            for (String line : main.pluginScoreboardConfig.getConfigurationSection(SCOREBOARD_FILE_PATH_PREFIX + id).getKeys(false)) {
+                if (main.pluginScoreboardConfig.getString(SCOREBOARD_FILE_PATH_PREFIX + id + "." + line).contains(property)) {
+                    if (!line.equalsIgnoreCase("title")) {
+                        return Integer.parseInt(line.replace("line", ""));
+                    }
+                }
             }
+            return 404;
+        } else {
+            for (String line : main.pluginConfig.getConfigurationSection("defaults.scoreboardconfig").getKeys(false)) {
+                if (main.pluginConfig.getString("defaults.scoreboardconfig." + line).contains(property)) {
+                    if (!line.equalsIgnoreCase("title")) {
+                        return Integer.parseInt(line.replace("line", ""));
+                    }
+                }
+            }
+            return 404;
         }
-        return 404;
     }
 
     public boolean overwriteScoreboardProperty(String id, int lineToOverwrite, String overwriteWithProperty) {
-        main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line" + lineToOverwrite, overwriteWithProperty);
+        if (lineToOverwrite == 0) {
+            main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".title", overwriteWithProperty);
+        } else {
+            main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id + ".line" + lineToOverwrite, overwriteWithProperty);
+        }
         return main.saveScoreboards();
     }
 
     public boolean deleteScoreboardConfig(String id) {
+        unassignScoreboardConfigFromAll(id);
         main.pluginScoreboardConfig.set(SCOREBOARD_FILE_PATH_PREFIX + id, null);
         return main.saveScoreboards();
     }
@@ -134,6 +171,12 @@ public class BiaMineDataUtility {
 
     public String getGameProperty(String gameID, GameProperty property) {
         return main.pluginGames.getString(GAME_FILE_PATH_PREFIX + gameID + "." + property.getFieldName());
+    }
+
+    public boolean updateGameRunstate(String gameID, InstanceStatus runstate) {
+        main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".runState", runstate.toString());
+
+        return main.saveGames();
     }
 
     public boolean globalPlaceholderExists(String text) {
@@ -164,6 +207,17 @@ public class BiaMineDataUtility {
         return null;
     }
 
+    public boolean hasSetupStartLocation(String gameID) {
+        if (main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + gameID + ".start") != null) {
+            return (
+                    main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + gameID + ".start.bound1") != null
+                            && main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + gameID + ".start.bound2") != null
+            );
+        } else {
+            return false;
+        }
+    }
+
     public void setStartLocation(String game, int bound, Player p) {
         if (gameExists(game)) {
             switch (bound) {
@@ -190,7 +244,7 @@ public class BiaMineDataUtility {
     public boolean unassignScoreboardConfigFromAll(String sconfigID) {
         for (String game : main.pluginGames.getConfigurationSection("games").getKeys(false)) {
             if (main.pluginGames.getString(GAME_FILE_PATH_PREFIX + game + ".scoreboardConfiguration").equals(sconfigID)) {
-                main.pluginGames.set(GAME_FILE_PATH_PREFIX + game + ".scoreboardConfiguration", null);
+                main.pluginGames.set(GAME_FILE_PATH_PREFIX + game + ".scoreboardConfiguration", "none");
             }
         }
         return main.saveGames();
@@ -206,7 +260,7 @@ public class BiaMineDataUtility {
     public boolean unassignScoreboardConfiguration(String sconfigID, String targetGame) {
         if (gameExists(targetGame)) {
             if (main.pluginGames.getString(GAME_FILE_PATH_PREFIX + targetGame + ".scoreboardConfiguration").equals(sconfigID)) {
-                main.pluginGames.set(GAME_FILE_PATH_PREFIX + targetGame + ".scoreboardConfiguration", sconfigID);
+                main.pluginGames.set(GAME_FILE_PATH_PREFIX + targetGame + ".scoreboardConfiguration", "none");
             }
         }
         return main.saveGames();
@@ -229,9 +283,17 @@ public class BiaMineDataUtility {
     public String getConfigProperty(ConfigProperty property) {
         switch (property) {
             case FOOTER_CONTENT:
-                return main.pluginConfig.getString("placeholders.footer");
+                return main.pluginConfig.getString("defaults.footer");
             case HEADER_CONTENT:
-                return main.pluginConfig.getString("placeholders.header");
+                return main.pluginConfig.getString("defaults.header");
+            case TIMER_FORMAT:
+                return main.pluginConfig.getString("options.timer-format");
+            case DATE_FORMAT:
+                return main.pluginConfig.getString("options.date-format");
+            case DATE_FORMAT_EXTENDED:
+                return main.pluginConfig.getString("options.date-format-full");
+            case TIME_FORMAT:
+                return main.pluginConfig.getString("options.time-format");
             default:
                 throw new InvalidParameterException("Unknown config property provided.");
         }

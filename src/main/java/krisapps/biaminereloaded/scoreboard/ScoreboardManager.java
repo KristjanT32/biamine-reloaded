@@ -1,10 +1,11 @@
 package krisapps.biaminereloaded.scoreboard;
 
 import krisapps.biaminereloaded.BiamineReloaded;
-import krisapps.biaminereloaded.game_setup.BiamineBiathlon;
+import krisapps.biaminereloaded.gameloop.BiamineBiathlon;
 import krisapps.biaminereloaded.types.ConfigProperty;
+import krisapps.biaminereloaded.types.GameProperty;
+import krisapps.biaminereloaded.types.InstanceStatus;
 import krisapps.biaminereloaded.types.ScoreboardLine;
-import krisapps.biaminereloaded.types.ScoreboardPlaceholder;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.scoreboard.DisplaySlot;
@@ -12,15 +13,30 @@ import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+
 public class ScoreboardManager {
 
-    private final String timer = "Hh:Mm:Ss";
     Scoreboard mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
     Objective gameObjective;
     BiamineReloaded main;
-    private String currentScoreboardConfiguration;
-    private boolean scoreboardShown;
-    private String timerFormat;
+
+    private static final int SCOREBOARD_FIRST_LINE = 9;
+    private final String[] lineFillerSymbols = {
+            ChatColor.BLACK + String.valueOf(ChatColor.WHITE),
+            ChatColor.BLACK + String.valueOf(ChatColor.RED),
+            ChatColor.BLACK + String.valueOf(ChatColor.YELLOW),
+            ChatColor.BLACK + String.valueOf(ChatColor.GREEN),
+            ChatColor.BLACK + String.valueOf(ChatColor.BLACK),
+            ChatColor.BLACK + String.valueOf(ChatColor.DARK_PURPLE),
+            ChatColor.BLACK + String.valueOf(ChatColor.LIGHT_PURPLE),
+            ChatColor.BLACK + String.valueOf(ChatColor.DARK_GREEN)
+    };
+
+
 
     public ScoreboardManager(BiamineReloaded main) {
         this.main = main;
@@ -40,10 +56,10 @@ public class ScoreboardManager {
         }
 
         Team propertyToSet = gameObjective.getScoreboard().registerNewTeam(accessKey);
-        propertyToSet.addEntry("|");
+        propertyToSet.addEntry(lineFillerSymbols[lineNumber - 1]);
         propertyToSet.setPrefix(ChatColor.translateAlternateColorCodes('&', text));
 
-        gameObjective.getScore(ChatColor.BLACK + String.valueOf(ChatColor.WHITE)).setScore(lineNumber);
+        gameObjective.getScore(lineFillerSymbols[lineNumber - 1]).setScore(SCOREBOARD_FIRST_LINE - lineNumber);
     }
 
     private void updateScoreboardEntry(String entry, String newContent) {
@@ -51,16 +67,12 @@ public class ScoreboardManager {
         propertyToUpdate.setPrefix(ChatColor.translateAlternateColorCodes('&', newContent));
     }
 
-    public void setupScoreboard(BiamineBiathlon gameInfoObject) {
+    public void setupScoreboard(BiamineBiathlon gameInfoObject, String gameID) {
 
         if (!main.dataUtility.scoreboardConfigExists(gameInfoObject.scoreboardConfig)) {
             Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("internals.setupsb-err-invconf")));
             return;
         }
-
-
-        this.currentScoreboardConfiguration = gameInfoObject.scoreboardConfig;
-        this.timerFormat = main.pluginScoreboardConfig.getString(gameInfoObject.scoreboardConfig + ".timerFormat");
 
         refreshScoreboardData(gameInfoObject.scoreboardConfig, gameInfoObject);
     }
@@ -85,52 +97,83 @@ public class ScoreboardManager {
         setScoreboardLine(findReplacePlaceholders(l8, gameInfo), "line8", 8);
     }
 
-    public void refreshScoreboardTitle(String currentScoreboardConfiguration, String gameLabel, String timer) {
-        String result = main.pluginScoreboardConfig.getString(currentScoreboardConfiguration + ".gameName");
-        result = result.replaceAll(ScoreboardPlaceholder.TIMER.getPlaceholder(), timer);
-        result = result.replaceAll(ScoreboardPlaceholder.GAME_LABEL.getPlaceholder(), gameLabel);
+    public void refreshScoreboardLine(BiamineBiathlon gameInfo, ScoreboardLine line) {
+        if (!line.equals(ScoreboardLine.NO_SUCH_LINE)) {
+            setScoreboardLine(findReplacePlaceholders(
+                            main.dataUtility.getScoreboardConfigProperty(gameInfo.scoreboardConfig, line), gameInfo),
+                    "line" + line.asNumber(),
+                    line.asNumber()
+            );
+        }
+    }
+
+    public void refreshScoreboardTitle(BiamineBiathlon info) {
+        String result = main.dataUtility.getScoreboardConfigProperty(info.scoreboardConfig, ScoreboardLine.LINE0);
+        result = result.replaceAll("%timer%", info.latestTime);
+        result = result.replaceAll("%state%", ChatColor.translateAlternateColorCodes('&', main.dataUtility.getGameProperty(info.gameID, GameProperty.RUN_STATE)));
+        result = result.replaceAll("%title%", ChatColor.translateAlternateColorCodes('&', main.dataUtility.getGameProperty(info.gameID, GameProperty.DISPLAY_NAME)));
 
         gameObjective.setDisplayName(ChatColor.translateAlternateColorCodes('&', result));
     }
 
-    // timer, playersParticipating, playersNotFinished, shootings, header, footer
-
     private String findReplacePlaceholders(String input, BiamineBiathlon info) {
-        Bukkit.getLogger().info("Preparing to transform value: " + input);
-        if (!main.dataUtility.globalPlaceholderExists(input)) {
-            switch (input) {
-                case "%timer%":
-                    input = input.replaceAll("%timer%", timer);
-                    break;
-                case "%playersParticipating%":
-                    input = input.replaceAll("%playersParticipating%", String.valueOf(info.totalPlayers));
-                    break;
-                case "%playersNotFinished%":
-                    input = input.replaceAll("%playersNotFinished%", String.valueOf(info.totalPlayers - info.finishedPlayers));
-                    break;
-                case "%shootings%":
-                    input = input.replaceAll("%shootings%", String.valueOf(info.shootingsCount));
-                    break;
-                case "%header%":
-                    input = input.replaceAll("%header%", main.dataUtility.getConfigProperty(ConfigProperty.HEADER_CONTENT));
-                    break;
-                case "%footer%":
-                    input = input.replaceAll("%footer%", main.dataUtility.getConfigProperty(ConfigProperty.FOOTER_CONTENT));
-                    break;
-                case "empty":
-                    input = "";
-                    break;
-                default:
-                    break;
+        main.appendToLog("Preparing to transform value: " + input);
+
+        // Replace built-in placeholders
+        input = input.replaceAll("%dateTime%", DateTimeFormatter.ofPattern(main.dataUtility.getConfigProperty(ConfigProperty.DATE_FORMAT_EXTENDED)).format(LocalDateTime.now()));
+        input = input.replaceAll("%localTime%", DateTimeFormatter.ofPattern(main.dataUtility.getConfigProperty(ConfigProperty.TIME_FORMAT)).format(LocalTime.now()));
+        input = input.replaceAll("%date%", DateTimeFormatter.ofPattern(main.dataUtility.getConfigProperty(ConfigProperty.DATE_FORMAT)).format(LocalDate.now()));
+        input = input.replaceAll("%footer%", main.dataUtility.getConfigProperty(ConfigProperty.FOOTER_CONTENT));
+        input = input.replaceAll("%header%", main.dataUtility.getConfigProperty(ConfigProperty.HEADER_CONTENT));
+        input = input.replaceAll("%shootings%", main.localizationUtility.getLocalizedPhrase("scoreboard.prefixes.shootings") + info.shootingsCount);
+        input = input.replaceAll("%playersNotFinished%", main.localizationUtility.getLocalizedPhrase("scoreboard.prefixes.players-not-finished") + (info.totalPlayers - info.finishedPlayers));
+        input = input.replaceAll("%playersParticipating%", main.localizationUtility.getLocalizedPhrase("scoreboard.prefixes.players-total") + info.totalPlayers);
+        input = input.replaceAll("%timer%", main.localizationUtility.getLocalizedPhrase("scoreboard.prefixes.timer") + info.latestTime);
+        input = input.replaceAll("%empty%", "");
+
+        // Find and replace all user-defined placeholders.
+        for (String word : input.split(" ")) {
+            if (word.startsWith("_")) {
+                if (main.dataUtility.globalPlaceholderExists(word)) {
+                    input = input.replaceAll(word, main.dataUtility.getGlobalPlaceholderReplacement(word));
+                }
             }
-        } else {
-            input = main.dataUtility.getGlobalPlaceholderReplacement(input);
         }
+
+        // Handle state styling
+        switch (InstanceStatus.valueOf(main.dataUtility.getGameProperty(info.gameID, GameProperty.RUN_STATE).toUpperCase())) {
+            case STANDBY:
+                input = input.replaceAll("%state%", ChatColor.translateAlternateColorCodes('&', "&fStandby"));
+                break;
+            case PREP:
+                input = input.replaceAll("%state%", ChatColor.translateAlternateColorCodes('&', "&ePreparing"));
+                break;
+            case COUNTDOWN:
+                input = input.replaceAll("%state%", ChatColor.translateAlternateColorCodes('&', "&eCountdown"));
+                break;
+            case RUNNING:
+                input = input.replaceAll("%state%", ChatColor.translateAlternateColorCodes('&', "&aRunning"));
+                break;
+            case FINALIZING:
+                input = input.replaceAll("%state%", ChatColor.translateAlternateColorCodes('&', "&dFinalizing"));
+                break;
+            case CLEANUP:
+                input = input.replaceAll("%state%", ChatColor.translateAlternateColorCodes('&', "&bCleanup"));
+                break;
+            case PAUSED:
+                input = input.replaceAll("%state%", ChatColor.translateAlternateColorCodes('&', "&9Paused"));
+                break;
+            case TERMINATED:
+                input = input.replaceAll("%state%", ChatColor.translateAlternateColorCodes('&', "&cTerminated"));
+                break;
+            case PREVTERM:
+                input = input.replaceAll("%state%", ChatColor.translateAlternateColorCodes('&', "&4Preventatively Terminated"));
+                break;
+        }
+
+
         return input;
     }
-
-
-    //TODO: Implement a way for the scoreboard configurations to be used
 
 
     public void showScoreboard() {
@@ -142,7 +185,7 @@ public class ScoreboardManager {
     }
 
     public void resetScoreboard() {
-
+        gameObjective.unregister();
     }
 
 

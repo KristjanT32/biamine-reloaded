@@ -12,8 +12,9 @@ commands:
     description: "Creates a new instance of BiaMine's biathlon game."
     usage: "/createbiathlon <gameID>"
   deletebiathlon:
-    description: "Deletes a created instance of BiaMine's biathlon game."
+    description: "Deletes an existing BiaMine biathlon instance."
     usage: "/deletebiathlon <gameID>"
+
   setlanguage:
     description: "Changes the language of the plugin."
     usage: "/setlanguage <langCode>"
@@ -21,10 +22,7 @@ commands:
   # Game Management
   startgame:
     description: "Starts a BiaMine Biathlon game."
-    usage: "/startgame <gameID> <shootings> <players[]>"
-  finishgame:
-    description: "Finishes a BiaMine Biathlon game."
-    usage: "/finishgame <gameID> [reason]"
+    usage: "/startgame <gameID> <shootings> [players...]"
   forcestopgame:
     description: "Forcefully terminates an in-progress BiaMine Biathlon game."
     usage: "/forcestopgame <gameID>"
@@ -39,24 +37,12 @@ commands:
     usage: "/resetgame <gameID>"
 
   # Game Setup
-  setscoreboardconf:
-    description: "Sets a custom scoreboard configuration for a game to use."
-    usage: "/setscoreboardconf <gameID> <confID>"
-  setexclusionlist:
+  exclusionlist:
     description: "Sets a custom exclusion list for a game to use."
-    usage: "/setexclusionlist <gameID> <listID | list>"
-  setplayers:
-    description: "Specifies the players that participate in a BiaMine Biathlon game."
-    usage: "/setplayers <gameID> <players[]>"
-  settimerformat:
-    description: "Set a format for the timer used in-game."
-    usage: "/settimerformat <gameID> <format>"
-  setfinishmessage:
-    description: "Set a message to be used for when a player finishes."
-    usage: "/setfinishmessage <gameID> <message>"
-  setcheckpointmessage:
-    description: "Set a message to be used for when a player crosses a checkpoint."
-    usage: "/setcheckpointmessage <gameID> <message>"
+    usage: "/exclusionlist <create|edit|assign|delete> <...>"
+  setmessage:
+    description: "Set the messages players will receive on different actions."
+    usage: "/setmessage <gameID> <type> <content>"
   testflight:
     description: "Starts an internal test game. Intended for development use."
     usage: "/testflight"

@@ -33,17 +33,20 @@ public class DeleteBiathlon implements CommandExecutor {
                     messages.sendMessage(
                             sender,
                             localizationUtility.getLocalizedPhrase("commands.deletebiathlon.success")
+                                    .replaceAll("%instance%", args[0])
                     );
                 } else {
                     messages.sendMessage(
                             sender,
                             localizationUtility.getLocalizedPhrase("commands.deletebiathlon.failure")
+                                    .replaceAll("%instance%", args[0])
                     );
                 }
             } else {
                 messages.sendMessage(
                         sender,
                         localizationUtility.getLocalizedPhrase("commands.deletebiathlon.not-found")
+                                .replaceAll("%instance%", args[0])
                 );
             }
         } else {

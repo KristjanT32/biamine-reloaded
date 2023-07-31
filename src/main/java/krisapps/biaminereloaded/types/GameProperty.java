@@ -6,7 +6,6 @@ public enum GameProperty {
     COUNTDOWN_TIME("countdownTime"),
     PREPARATION_TIME("preparationTime"),
     RUN_STATE("runState"),
-    TIMER_FORMAT("timerFormat"),
     SCOREBOARD_CONFIGURATION_ID("scoreboardConfiguration"),
     EXCLUSION_LIST_ID("exclusionList");
 

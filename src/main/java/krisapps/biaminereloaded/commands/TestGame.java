@@ -1,8 +1,8 @@
 package krisapps.biaminereloaded.commands;
 
 import krisapps.biaminereloaded.BiamineReloaded;
-import krisapps.biaminereloaded.game_setup.BiamineBiathlon;
-import krisapps.biaminereloaded.game_setup.Game;
+import krisapps.biaminereloaded.gameloop.BiamineBiathlon;
+import krisapps.biaminereloaded.gameloop.Game;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -26,7 +26,7 @@ public class TestGame implements CommandExecutor {
                 sender.sendMessage(ChatColor.translateAlternateColorCodes('&', "&aStarting the internal test game. &eCommencing in &b5 &eseconds."));
                 Game testGame = new Game(
                         "test_game",
-                        new BiamineBiathlon(3, 10, 0, "00:00:00", "test_scoreboard", "test_exclusions"),
+                        new BiamineBiathlon(3, 10, 0, "00:00:00", "test_scoreboard", "test_exclusions", "test"),
                         main
                 );
                 try {
@@ -34,7 +34,7 @@ public class TestGame implements CommandExecutor {
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
-                testGame.startGame();
+                testGame.startGame(sender);
             }
         };
         startTask.run();

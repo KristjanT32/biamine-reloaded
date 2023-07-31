@@ -4,6 +4,9 @@ import krisapps.biaminereloaded.BiamineReloaded;
 import krisapps.biaminereloaded.types.GenericErrorType;
 import krisapps.biaminereloaded.utilities.BiaMineDataUtility;
 import krisapps.biaminereloaded.utilities.MessageUtility;
+import org.bukkit.Location;
+import org.bukkit.Particle;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -39,6 +42,11 @@ public class SetStart implements CommandExecutor {
                         messages.sendError(sender, GenericErrorType.INVALID_SYNTAX);
                         break;
                 }
+                if (data.hasSetupStartLocation(args[0])) {
+                    Location location1 = main.dataUtility.getStartLocationFirstBound(args[0]);
+                    Location location2 = main.dataUtility.getStartLocationSecondBound(args[0]);
+                    highlightAreaWithParticles(location1, location2);
+                }
             } else {
                 messages.sendError(sender, GenericErrorType.INVALID_GAME);
             }
@@ -46,5 +54,18 @@ public class SetStart implements CommandExecutor {
             messages.sendError(sender, GenericErrorType.INSUFFICIENT_PARAMETERS);
         }
         return true;
+    }
+
+    private void highlightAreaWithParticles(Location lowerBound, Location upperBound) {
+        World world = lowerBound.getWorld();
+
+        for (double x = lowerBound.getX(); x <= upperBound.getX(); x++) {
+            for (double y = lowerBound.getY(); y <= upperBound.getY(); y++) {
+                for (double z = lowerBound.getZ(); z <= upperBound.getZ(); z++) {
+                    Location particleLocation = new Location(world, x, y, z);
+                    world.spawnParticle(Particle.BLOCK_MARKER, particleLocation, 1);
+                }
+            }
+        }
     }
 }

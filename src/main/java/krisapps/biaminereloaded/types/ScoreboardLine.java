@@ -1,6 +1,8 @@
 package krisapps.biaminereloaded.types;
 
 public enum ScoreboardLine {
+
+    LINE0(0),
     LINE1(1),
     LINE2(2),
     LINE3(3),
@@ -8,7 +10,8 @@ public enum ScoreboardLine {
     LINE5(5),
     LINE6(6),
     LINE7(7),
-    LINE8(8);
+    LINE8(8),
+    NO_SUCH_LINE(404);
 
     private final int lineNumber;
 
@@ -17,7 +20,11 @@ public enum ScoreboardLine {
     }
 
     public static ScoreboardLine asEnum(int lineNumber) {
-        return ScoreboardLine.valueOf("LINE" + lineNumber);
+        try {
+            return ScoreboardLine.valueOf("LINE" + lineNumber);
+        } catch (IllegalArgumentException e) {
+            return ScoreboardLine.NO_SUCH_LINE;
+        }
     }
 
     public int asNumber() {

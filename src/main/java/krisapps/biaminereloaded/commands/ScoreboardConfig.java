@@ -180,27 +180,47 @@ public class ScoreboardConfig implements CommandExecutor {
 
                                 case "setPropertyTo":
                                     ScoreboardLine line;
-                                    String replacement = args[4];
+                                    StringBuilder replacement = new StringBuilder();
+                                    for (int i = 4; i < args.length; i++) {
+                                        replacement.append(args[i]).append(" ");
+                                    }
+
                                     try {
-                                        line = ScoreboardLine.valueOf(property.toUpperCase());
+                                        if (!property.equalsIgnoreCase("title")) {
+                                            line = ScoreboardLine.valueOf(property.toUpperCase());
+                                        } else {
+                                            line = ScoreboardLine.LINE0;
+                                        }
                                     } catch (IllegalArgumentException e) {
                                         main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.edit-unknownline"));
                                         return true;
                                     }
                                     String editType;
-                                    if (List.of("timer", "playersParticipating", "playersNotFinished", "shootings", "header", "footer").contains(replacement)) {
+                                    if (List.of("%timer%", "%playersParticipating%", "%playersNotFinished%", "%shootings%", "%header%", "%footer%", "%date%", "%dateTime%", "%localTime%", "%state%").contains(replacement)) {
                                         editType = "built-in placeholder";
                                     } else {
-                                        editType = "custom text or global placeholder";
+                                        editType = "text or global placeholder";
                                     }
-                                    if (main.dataUtility.overwriteScoreboardProperty(id, line.asNumber(), replacement)) {
-                                        main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.edit-customedit")
-                                                .replaceAll("%lineNumber%", String.valueOf(line.asNumber()))
-                                                .replaceAll("%editType%", editType)
-                                                .replaceAll("%newValue%", replacement)
-                                        );
+                                    // If the line edited was in fact the title
+                                    if (line.equals(ScoreboardLine.LINE0)) {
+                                        if (main.dataUtility.overwriteScoreboardProperty(id, line.asNumber(), replacement.toString().trim())) {
+                                            main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.edit-titleedit")
+                                                    .replaceAll("%newValue%", replacement.toString())
+                                            );
+                                        } else {
+                                            main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.edit-error-save"));
+                                        }
+                                        // If the line edited was not the title (usual)
                                     } else {
-                                        main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.edit-error-save"));
+                                        if (main.dataUtility.overwriteScoreboardProperty(id, line.asNumber(), replacement.toString().trim())) {
+                                            main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.edit-customedit")
+                                                    .replaceAll("%lineNumber%", String.valueOf(line.asNumber() != 0 ? line.asNumber() : "title"))
+                                                    .replaceAll("%editType%", editType)
+                                                    .replaceAll("%newValue%", replacement.toString())
+                                            );
+                                        } else {
+                                            main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.edit-error-save"));
+                                        }
                                     }
                                     break;
                                 case "clear":
@@ -211,7 +231,7 @@ public class ScoreboardConfig implements CommandExecutor {
                                         main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.edit-unknownline"));
                                         return true;
                                     }
-                                    if (main.dataUtility.overwriteScoreboardProperty(id, lineToClear.asNumber(), "empty")) {
+                                    if (main.dataUtility.overwriteScoreboardProperty(id, lineToClear.asNumber(), "%empty%")) {
                                         main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.edit-linecleared")
                                                 .replaceAll("%lineNumber%", String.valueOf(lineToClear.asNumber()))
                                         );
@@ -271,6 +291,7 @@ public class ScoreboardConfig implements CommandExecutor {
                         if (main.dataUtility.scoreboardConfigExists(id)) {
                             main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.show-result")
                                     .replaceAll("%id%", id)
+                                    .replaceAll("%title%", main.dataUtility.getScoreboardConfigProperty(id, ScoreboardLine.LINE0))
                                     .replaceAll("%line1%", main.dataUtility.getScoreboardConfigProperty(id, ScoreboardLine.LINE1))
                                     .replaceAll("%line2%", main.dataUtility.getScoreboardConfigProperty(id, ScoreboardLine.LINE2))
                                     .replaceAll("%line3%", main.dataUtility.getScoreboardConfigProperty(id, ScoreboardLine.LINE3))

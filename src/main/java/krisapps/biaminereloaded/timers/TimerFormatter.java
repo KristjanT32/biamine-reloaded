@@ -4,9 +4,9 @@ public class TimerFormatter {
 
     public static String formatTimer(String format, int seconds, int minutes, int hours) {
         String formattedTimer = format;
-        formattedTimer = formattedTimer.replaceAll("HH", formatTimeUnit(hours));
-        formattedTimer = formattedTimer.replaceAll("MM", formatTimeUnit(minutes));
-        formattedTimer = formattedTimer.replaceAll("SS", formatTimeUnit(seconds));
+        formattedTimer = formattedTimer.replaceAll("hh", formatTimeUnit(hours));
+        formattedTimer = formattedTimer.replaceAll("mm", formatTimeUnit(minutes));
+        formattedTimer = formattedTimer.replaceAll("ss", formatTimeUnit(seconds));
         return formattedTimer;
     }
 
