@@ -13,7 +13,8 @@ placeholders:
 #    | Placeholder             | Description                                                                      |  #
 #    ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾  #
 #    - %timer%                  Replaced by the Biathlon instance's timer.                                           #
-#    - %playersNotFinished%     Replaced by the number of players that have not yet finished the game.               #
+#    - %playersFinished%        Replaced by the number of players that have reached the finish.                      #
+#    - %playersNotFinished%     Replaced by the number of players that have not yet finished the game. Ex: 3/20      #
 #    - %playersParticipating%   Replaced by the total number of players participating in the game.                   #
 #    - %shootings%              Replaced by the number of shootings in the game.                                     #
 #    - %header%                 Replaced by a user-defined header under 'defaults'.                                  #
@@ -25,8 +26,8 @@ placeholders:
 #    - global placeholders      Replaced by the values configured under 'placeholders'                               #
 #                                                                                                                    #
 #     * these values have configurable formats under 'options'                                                       #
-#
-#
+#                                                                                                                    #
+#                                                                                                                    #
 #    The following placeholders are available for use in the SCOREBOARD TITLE:                                       #
 #    ______________________________________________________________________________________________________________  #
 #    | Placeholder             | Description                                                                      |  #
@@ -37,7 +38,8 @@ placeholders:
 # ===================================================================================================================#
 
 # ===================================================================================================================#
-# Settings
+
+# General Settings
 options:
 
   # %date%
@@ -52,6 +54,17 @@ options:
   # Scoreboard clock format (%localTime%)
   time-format: "hh:mm:ss"
 
+  # Controls whether the target player of a game event should be also notified about their actions.
+  # Example: if this property is TRUE, then when a player passes a checkpoint, everyone **including** the player
+  #          receives a message, that they have passed a checkpoint.
+  #          if this property is FALSE, then when a player passes a checkpoint, everyone **but** the player will
+  #          be notified that they've passed a checkpoint.
+  exclude-target-player-from-event-notification: false
+
+  # Controls whether the instance status changes (e.g "PAUSED -> RUNNING") should be sent
+  # to the player that started the game.
+  notify-instance-status-change: true
+
 
 # Plugin defaults
 defaults:
@@ -59,11 +72,11 @@ defaults:
   scoreboardconfig:
     title: "%title%"
     line1: "%header%"
-    line2: "%playersNotFinished%"
-    line3: "%playersParticipating%"
-    line4: "%shootings%"
-    line5: "%date%"
-    line6: "%timer%"
+    line2: "&bPlayers to finish: &e%playersNotFinished%"
+    line3: "&bTotal players: &e%playersParticipating%"
+    line4: "&6Shootings: &e%shootings%"
+    line5: "&bDate: &e%date%"
+    line6: "&bGame Duration: &e%timer%"
     line7: "&fStatus: &l%state%"
     line8: "%footer%"
   footer: "&e========================"

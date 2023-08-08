@@ -66,7 +66,7 @@ public class ScoreboardConfigAC implements TabCompleter {
                         }
                     } else {
                         if (args[4].startsWith("%")) {
-                            completions.addAll(Arrays.asList("%timer%", "%playersParticipating%", "%playersNotFinished%", "%shootings%", "%header%", "%footer%", "%date%", "%dateTime%", "%localTime%", "%state%"));
+                            completions.addAll(Arrays.asList("%timer%", "%playersParticipating%", "%playersNotFinished%", "%shootings%", "%header%", "%footer%", "%date%", "%dateTime%", "%localTime%", "%state%", "%playersFinished%"));
                         } else if (args[4].startsWith("_")) {
                             completions.addAll(main.dataUtility.getUserDefinedPlaceholders());
                         } else {

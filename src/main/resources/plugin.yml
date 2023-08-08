@@ -23,18 +23,15 @@ commands:
   startgame:
     description: "Starts a BiaMine Biathlon game."
     usage: "/startgame <gameID> <shootings> [players...]"
-  forcestopgame:
-    description: "Forcefully terminates an in-progress BiaMine Biathlon game."
-    usage: "/forcestopgame <gameID>"
   pausegame:
     description: "Pauses an in-progress BiaMine Biathlon game."
     usage: "/pausegame <gameID>"
   resumegame:
     description: "Resumes a paused BiaMine Biathlon game."
     usage: "/resumegame <gameID>"
-  resetgame:
-    description: "Resets an in-progress BiaMine Biathlon game."
-    usage: "/resetgame <gameID>"
+  terminate:
+    description: "Terminates a BiaMine Biathlon instance."
+    usage: "/terminate <game> [reason]"
 
   # Game Setup
   exclusionlist:
@@ -46,6 +43,9 @@ commands:
   testflight:
     description: "Starts an internal test game. Intended for development use."
     usage: "/testflight"
+  checkpoint:
+    description: "Manages checkpoints for the provided game."
+    usage: "/checkpoint <gameID> <add|remove|find|list|setbound> <none|id|bound>"
   setstart:
     description: "Set the bounds for the starting area."
     usage: "/setstart <bound1 | bound2>"

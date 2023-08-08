@@ -8,15 +8,7 @@ errors:
   player-not-found: "&cCould not find the specified player."
   player-offline: "&cThe specified target is currently offline."
   invalid-game: "&cNo such game exists. &eAre you sure you typed the correct ID?"
-
-
-scoreboard:
-  prefixes:
-    timer: "&eRuntime: "
-    players-not-finished: "&cTo finish: "
-    players-total: "&dPlayers: "
-    shootings: "&eShootings: "
-    date: "&b"
+  player-only: "&cSorry, but this command is player-only."
 
 internals:
   setupsb-err-invconf: "&cFailed to setup a scoreboard for the current game: &eThere is no scoreboard configuration that corresponds to the active game.&r"
@@ -24,13 +16,33 @@ internals:
 
 gameloop:
   error-gamerunning: "&cCannot start this game, since an instance is already running. To start a game, please stop the running instance with &e/forcestopgame <gameID>&c.&r"
+
+  checkpoint-reached: "&b%player% &ehas just reached %checkpoint%&e at &a%time%&e!"
+  checkpoint-reached-target: "&b&lCheckpoint reached."
+
   runtime:
     prevterm-nopl: "&4[&cPREVTERM&4]&f: &cInstance &b%instance%&c has been preventatively terminated.\nReason: &eBiaMine was unable to find players to add to this game."
     prevterm-nostart: "&4[&cPREVTERM&4]&f: &cInstance &b%instance%&c has been preventatively terminated.\nReason: &eBiaMine was unable to find the starting area for this game.\n&eDetails: &f%details%"
-    prevterm-nofinish: "&4[&cPREVTERM&4]&f: &cInstance &b%instance%&c has been preventatively terminated.\nReason: &eBiaMine was unable to find the finishing area for this game.\n&eDetails: &f%details%"
+    prevterm-nofinish: "&4[&cPREVTERM&4]&f: &cInstance &b%instance%&c has been preventatively terminated.\nReason: &eBiaMine was unable to find the finishing checkpoint for this game.\n&eDetails: &f%details%"
     prevterm-unknown: "&4[&cPREVTERM&4]&f: &cInstance &b%instance%&c has been preventatively terminated.\nReason: &eAn internal error occurred and prevented the game from starting.\n&eDetails: &f%details%"
     prevterm-sb-format: "&4[&cPREVTERM&4]&f: &cInstance &b%instance%&c has been preventatively terminated.\nReason: &eBiaMine was unable to validate the format of a scoreboard placeholder.\n&eDetails: &f%details%"
     prevterm-sb-noconf: "&4[&cPREVTERM&4]&f: &cInstance &b%instance%&c has been preventatively terminated.\nReason: &eBiaMine was unable to find the specified scoreboard config.\n&eDetails: &f%details%"
+    prevterm-nostartarea: "&4[&cPREVTERM&4]&f: &cInstance &b%instance%&c has been preventatively terminated.\nReason: &eBiaMine was unable to find the starting area for this game."
+
+    terminated-generic: "&eInstance &b%instance%&e has been &cterminated&e."
+    terminated-generic-reason: "&eInstance &b%instance%&e has been &cterminated&e: &f%reason%"
+
+    statechange: "&e[&bState Update&e]: &aInstance &b%instance% &atransitioned from &6%old% &ato &6%new%&a."
+
+    game-paused: "&bFreeze! &eThe game was paused by an administrator."
+
+    game-resume:
+      start: "&bGet ready!"
+      countdown: "&bResuming in &e%num%!"
+      resumed: "&bGo! &eThe game was resumed by the administrator."
+      cancelled: "&bWow! &eThe game was paused again."
+
+
   actionbar:
     finalcountdown-start: "&cPlease do not attempt to move. You'll be released once the game starts."
   phase:
@@ -76,6 +88,19 @@ commands:
     success: "&aSuccessfully set the plugin language to &b%langName%&a."
     unknown: "&cNo localizations found with language code &b%langCode%&a.\n&eIf you're sure the localization exists, make sure you added it\nto the language list in &fplugins/BiaMine-Reloaded/localization/localization.yml &eand then \nreload the server using &f/reload &e.&r"
     no-file: "&cIt appears, that though the language code is in the language list, there is no files associated with it.\n&eMake sure you've not removed the language file from &fplugins/BiaMine-Reloaded/localization/&c."
+  pause:
+    done: "&aDone."
+    insuff: "&cInsufficient parameters. &eTo pause a running instance, provide the &bid of the instance&e to pause."
+  resume:
+    done: "&aDone."
+    insuff: "&cInsufficient parameters. &eTo resume a paused instance, provide the &bid of the instance&e to pause."
+
+  terminate:
+    insuff: "&cInsufficient parameters. &eIf you wish to terminate an existing game, provide a &bvalid game ID&e and optionally a &breason&e."
+    noch: "&eNothing changed. This game is not currently active."
+    noactive: "&cThere are no active games."
+    success: "&6Terminated &b%game%&6."
+    success-reason: "&6Terminated &b%game%&6: &b%reason%"
 
   sconfig:
     create-error-insuff: "&cInsufficient parameters. &eTo create a new scoreboard configuration, please provide the &l&bid&r&e."
@@ -105,6 +130,7 @@ commands:
     edit-customedit: "&dApplied the following change: content on &bline %lineNumber% &dchanged to &f\"&b%newValue%&f\" &d(&e%editType%&d)"
     edit-titleedit: "&dScoreboard title updated: &enew content: &f\"&b%newValue%&f\""
     edit-linecleared: "&dApplied the following change: content on &bline %lineNumber% &ereset&d. (line cleared)"
+    edit-error-defaultconf: "&cSorry, but the default configuration cannot be edited using /sconfig. &eIf you wish to directly alter the default config, do so using &bconfig.yml"
 
     list-item: "- &bConfiguration &e%item%"
     list-empty: "&cThere are no scoreboard configurations yet."
@@ -132,4 +158,30 @@ commands:
 
     invalid-property-operation: "&cCannot perform &f\"&b%operation%&f\" &con property &b%property%&c: unknown operation."
     invalid-operation: "&cCannot perform &f\"&b%operation%&f\"&c: unknown operation."
+
+  checkpoint:
+    error-nogame: "&cCannot find game &b%game%&c. &eAre you sure you typed in the correct ID?"
+    error-insuff: "&cInsufficient parameters.\n&eTo perform &b<remove>&e, &b<find>&e or &b<setbound>&e, provide the &bcheckpoint ID&e as the third parameter."
+
+    error-find-noid: "&cPlease provide a valid &bcheckpoint id&c to find the location of a checkpoint."
+    error-find-tp: "&eThere aren't any boundary coordinates set for this checkpoint."
+
+    list-item: "&r- &e%item% %completeStatus%"
+    list-item-finish: "&r- &e%item% &b[&emarked as finish&b]&r"
+    list-empty: "&cThis game does not appear to have any checkpoints yet."
+
+    setbound-insuff: "&cInsufficient parameters. &eIf you'd like to set the boundary coordinates for a checkpoint, provide a valid &bcheckpoint ID&eand &bboundary&e."
+    setbound-error-notfound: "&cCouldn't find a checkpoint or the provided game. &ePlease verify that the provided game and checkpoint exist in order to set the boundary coordinates."
+    setbound-success-set1: "&aSuccessfully set the coordinates for the first boundary of the checkpoint. &e(&bX: &d%x%&e, &bY: &d%y%&e, &bZ: &d%z%&e)"
+    setbound-success-set2: "&aSuccessfully set the coordinates for the second boundary of the checkpoint. &e(&bX: &d%x%&e, &bY: &d%y%&e, &bZ: &d%z%&e)"
+
+    setname-error-insuff: "&cInsufficient parameters. &eTo change the display name of a checkpoint, provide a valid &bcheckpoint&e and the &bnew display name&e."
+    setfinish-error-generic: "&cCouldn't set the provided checkpoint as the finish. &ePlease verify you've provided the correct &bgame ID&e and an existing &bcheckpoint ID&e."
+
+    success-setfinish: "&aThe finishing checkpoint is now set to &e%checkpoint%&a."
+    success-remove: "&aSuccessfully removed &b%target%&a."
+    success-add: "&aSuccessfully added a checkpoint. &bNow: &e%checkpoints%"
+    success-find: "&eCheckpoint information\n&cCheckpoint Bound #1: &b%bound1%\n&cCheckpoint Bound #2: &b%bound2%"
+    success-find-tp: "&6You've been teleported to the first available boundary location for the provided checkpoint."
+    success-setname: "&aSuccessfully changed the name for &b%checkpoint% &ato:&r %name%"
 

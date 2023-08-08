@@ -1,11 +1,10 @@
 package krisapps.biaminereloaded;
 
 import krisapps.biaminereloaded.commands.*;
-import krisapps.biaminereloaded.commands.tabcompleter.CreateGameAC;
-import krisapps.biaminereloaded.commands.tabcompleter.DeleteGameAC;
-import krisapps.biaminereloaded.commands.tabcompleter.ScoreboardConfigAC;
-import krisapps.biaminereloaded.commands.tabcompleter.StartGameAC;
+import krisapps.biaminereloaded.commands.tabcompleter.*;
+import krisapps.biaminereloaded.events.PlayerMoveEventHandler;
 import krisapps.biaminereloaded.utilities.BiaMineDataUtility;
+import krisapps.biaminereloaded.utilities.GameManagementUtility;
 import krisapps.biaminereloaded.utilities.LocalizationUtility;
 import krisapps.biaminereloaded.utilities.MessageUtility;
 import org.bukkit.Bukkit;
@@ -52,6 +51,7 @@ public final class BiamineReloaded extends JavaPlugin {
     public BiaMineDataUtility dataUtility = new BiaMineDataUtility(this);
     public MessageUtility messageUtility = new MessageUtility(this);
     public LocalizationUtility localizationUtility = new LocalizationUtility(this);
+    public GameManagementUtility gameUtility = new GameManagementUtility(this);
 
 
     // LOGGING
@@ -202,7 +202,7 @@ public final class BiamineReloaded extends JavaPlugin {
     }
 
     private void registerEvents() {
-        // Empty.
+        getServer().getPluginManager().registerEvents(new PlayerMoveEventHandler(this), this);
 
         getLogger().info("Events registered.");
     }
@@ -215,13 +215,22 @@ public final class BiamineReloaded extends JavaPlugin {
         getCommand("startgame").setExecutor(new StartGame(this));
         getCommand("sconfig").setExecutor(new ScoreboardConfig(this));
         getCommand("setlanguage").setExecutor(new SetLanguage(this));
-        getCommand("testflight").setExecutor(new TestGame(this));
+        getCommand("checkpoint").setExecutor(new CheckpointConfig(this));
+        getCommand("terminate").setExecutor(new Terminate(this));
+        getCommand("pausegame").setExecutor(new PauseGame(this));
+        getCommand("resumegame").setExecutor(new ResumeGame(this));
 
 
         getCommand("sconfig").setTabCompleter(new ScoreboardConfigAC(this));
         getCommand("startgame").setTabCompleter(new StartGameAC(this));
         getCommand("deletebiathlon").setTabCompleter(new DeleteGameAC(this));
         getCommand("createbiathlon").setTabCompleter(new CreateGameAC(this));
+        getCommand("checkpoint").setTabCompleter(new CheckpointAC(this));
+        getCommand("setstart").setTabCompleter(new SetRegionAC(this));
+        getCommand("setlanguage").setTabCompleter(new SetLanguageAC(this));
+        getCommand("terminate").setTabCompleter(new TerminateAC(this));
+        getCommand("pausegame").setTabCompleter(new PauseResumeAC(this));
+        getCommand("resumegame").setTabCompleter(new PauseResumeAC(this));
 
         getLogger().info("Commands registered.");
     }

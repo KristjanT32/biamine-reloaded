@@ -14,9 +14,6 @@ import java.util.Arrays;
 
 public class CreateBiathlon implements CommandExecutor {
 
-    //TODO: Write logic for basic commands
-    //TODO: Start writing logic for localization system to use it on the go
-
     MessageUtility messages;
     BiaMineDataUtility dataUtility;
     LocalizationUtility localizationUtility;

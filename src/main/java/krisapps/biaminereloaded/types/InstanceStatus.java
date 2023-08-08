@@ -10,5 +10,6 @@ public enum InstanceStatus {
     CLEANUP,
     PAUSED,
     TERMINATED,
-    PREVTERM
+    PREVTERM,
+    DOES_NOT_EXIST,
 }

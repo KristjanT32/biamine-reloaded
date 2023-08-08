@@ -1,6 +1,8 @@
 package krisapps.biaminereloaded.gameloop;
 
 import krisapps.biaminereloaded.BiamineReloaded;
+import krisapps.biaminereloaded.events.CheckpointPassEvent;
+import krisapps.biaminereloaded.events.InstanceStatusChangeEvent;
 import krisapps.biaminereloaded.logging.BiaMineLogger;
 import krisapps.biaminereloaded.scoreboard.ScoreboardManager;
 import krisapps.biaminereloaded.timers.BiathlonTimer;
@@ -10,6 +12,8 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitScheduler;
@@ -18,22 +22,27 @@ import java.time.DateTimeException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class Game {
+public class Game implements Listener {
 
     public ArrayList<Player> players;
+    public ArrayList<Player> finishedPlayers;
     public Location startLocation_bound1 = null;
     public Location startLocation_bound2 = null;
+    public boolean isPaused = false;
     public int PREP_TASK = -1;
     public int COUNTDOWN_TASK = -1;
     public int REFRESH_TASK = -1;
+    public int RESUME_COUNTDOWN_TASK = -1;
     BiaMineLogger activeGameLogger;
     BiaMineLogger gameSetupLogger;
     BiamineReloaded main;
     BiathlonTimer timer;
     ScoreboardManager scoreboardManager;
     String currentGameID;
+    String lastGame;
     BiamineBiathlon currentGameInfo;
     BukkitScheduler scheduler = Bukkit.getScheduler();
     CommandSender initiator;
@@ -41,9 +50,11 @@ public class Game {
 
     public Game(String id, BiamineBiathlon gameInfo, BiamineReloaded main) {
         this.currentGameID = id;
+        this.lastGame = id;
         this.currentGameInfo = gameInfo;
         this.main = main;
         this.players = new ArrayList<>();
+        this.finishedPlayers = new ArrayList<>();
         this.timer = new BiathlonTimer(main);
         this.scoreboardManager = new ScoreboardManager(main);
 
@@ -51,45 +62,44 @@ public class Game {
         gameSetupLogger = new BiaMineLogger("BiaMine", "Game Setup", main);
     }
 
-    public Location getRandomLocation(Location loc1, Location loc2) {
-
-        double minX = Math.min(loc1.getX(), loc2.getX());
-        double minY = Math.min(loc1.getY(), loc2.getY());
-        double minZ = Math.min(loc1.getZ(), loc2.getZ());
-
-        double maxX = Math.max(loc1.getX(), loc2.getX());
-        double maxY = Math.max(loc1.getY(), loc2.getY());
-        double maxZ = Math.max(loc1.getZ(), loc2.getZ());
-
-        return new Location(loc1.getWorld(), randomDouble(minX, maxX), randomDouble(minY, maxY), randomDouble(minZ, maxZ));
-    }
-
-    private double randomDouble(double min, double max) {
-        return min + ThreadLocalRandom.current().nextDouble(Math.abs(max - min + 1));
-    }
-
-    private void gatherPlayers() {
-        gameSetupLogger.logInfo("Gathering players...");
-        if (currentGameInfo != null) {
-            ArrayList<String> excluded = main.dataUtility.getExclusionListByID(currentGameInfo.exclusionList);
-            for (Player p : Bukkit.getOnlinePlayers()) {
-                if (!excluded.contains(p.getName())) {
-                    players.add(p);
-                }
+    // Event Handlers
+    @EventHandler
+    public void onRegionEnter(CheckpointPassEvent event) {
+        if (!event.getRegion().isFinish()) {
+            main.messageUtility.sendActionbarMessage(event.getPlayer(), main.localizationUtility.getLocalizedPhrase("gameloop.checkpoint-reached-target"));
+            for (Player p : players) {
+                if (p.getUniqueId().equals(event.getPlayer().getUniqueId()) && Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.EXCLUDE_TARGET_PLAYER_FROM_CHECKPOINT_MESSAGE)))
+                    continue;
+                main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.checkpoint-reached")
+                        .replaceAll("%checkpoint%", event.getRegion().getRegionName())
+                        .replaceAll("%player%", event.getPlayer().getName())
+                        .replaceAll("%time%", timer.getFormattedTime())
+                );
             }
+        } else {
+            finishedPlayers.add(event.getPlayer());
+            players.remove(event.getPlayer());
+
+            this.currentGameInfo.finishedPlayers = finishedPlayers.size();
+            scoreboardManager.refreshScoreboardLine(
+                    currentGameInfo,
+                    ScoreboardLine.asEnum(main.dataUtility.getPropertyLineNumber(this.currentGameInfo.scoreboardConfig, "%playersNotFinished%")));
+
         }
     }
 
-
-    public void teleportToStart() {
-        gameSetupLogger.logInfo("Teleporting players to the start...");
-
-        for (Player p : players) {
-            Location l = getRandomLocation(startLocation_bound1, startLocation_bound2);
-            p.teleport(l);
+    @EventHandler
+    public void onStateChange(InstanceStatusChangeEvent event) {
+        if (Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.NOTIFY_STATUS_CHANGE))) {
+            main.messageUtility.sendMessage(initiator, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.statechange")
+                    .replaceAll("%instance%", lastGame)
+                    .replaceAll("%old%", event.getOldStatus().name())
+                    .replaceAll("%new%", event.getNewStatus().name())
+            );
         }
-        startPreparationPeriod();
     }
+
+    // Control Methods
 
     public void startGame(CommandSender initiator) {
         this.initiator = initiator;
@@ -117,12 +127,7 @@ public class Game {
             terminate(true, TerminationContext.CANNOT_GATHER_PLAYERS, "Could not gather any players for the game.");
         } else {
             teleportToStart();
-            REFRESH_TASK = Bukkit.getScheduler().scheduleAsyncRepeatingTask(main, new Runnable() {
-                @Override
-                public void run() {
-                    gameLoop();
-                }
-            }, 0, 20L);
+            initRefreshTask();
         }
     }
 
@@ -162,10 +167,62 @@ public class Game {
             terminate(true, TerminationContext.CANNOT_GATHER_PLAYERS, "No players were eligible to be added to the game.");
         } else {
             teleportToStart();
-            REFRESH_TASK = Bukkit.getScheduler().scheduleAsyncRepeatingTask(main, new Runnable() {
+            initRefreshTask();
+        }
+    }
+
+    public void stopGame() {
+        terminate(false, TerminationContext.UNKNOWN, "The currently active game was stopped manually via '/terminate'.");
+    }
+
+    public void pauseGame() {
+
+        if (RESUME_COUNTDOWN_TASK != -1) {
+            scheduler.cancelTask(RESUME_COUNTDOWN_TASK);
+            RESUME_COUNTDOWN_TASK = -1;
+            for (Player p : players) {
+                if (!finishedPlayers.contains(p)) {
+                    main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.game-resume.cancelled"));
+                }
+            }
+        } else {
+            for (Player p : players) {
+                if (!finishedPlayers.contains(p)) {
+                    main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.game-paused"));
+                }
+            }
+        }
+        isPaused = true;
+        main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.PAUSED);
+    }
+
+    public void resumeGame() {
+        if (RESUME_COUNTDOWN_TASK == -1) {
+            RESUME_COUNTDOWN_TASK = scheduler.scheduleAsyncRepeatingTask(main, new Runnable() {
+                int countdown = 3;
+
                 @Override
                 public void run() {
-                    gameLoop();
+                    if (countdown != 0) {
+                        for (Player p : players) {
+                            if (!finishedPlayers.contains(p)) {
+                                main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.game-resume.countdown")
+                                        .replaceAll("%num%", String.valueOf(countdown))
+                                );
+                            }
+                        }
+                        countdown--;
+                    } else {
+                        for (Player p : players) {
+                            if (!finishedPlayers.contains(p)) {
+                                main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.game-resume.resumed"));
+                            }
+                        }
+                        scheduler.cancelTask(RESUME_COUNTDOWN_TASK);
+                        RESUME_COUNTDOWN_TASK = -1;
+                        isPaused = false;
+                        main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.RUNNING);
+                    }
                 }
             }, 0, 20L);
         }
@@ -206,6 +263,8 @@ public class Game {
         }
         scoreboardManager.refreshScoreboardLine(currentGameInfo, ScoreboardLine.asEnum(main.dataUtility.getPropertyLineNumber(currentGameInfo.scoreboardConfig, "%state%")));
     }
+
+    // Phase Methods
 
     private void startPreparationPeriod() {
 
@@ -283,6 +342,9 @@ public class Game {
                                         ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("gameloop.timertick.go.subtitle")),
                                         0, 20, 0
                                 );
+                                main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.timertick.countdown")
+                                        .replaceAll("%time%", String.valueOf(countdown))
+                                );
                                 break;
                             case 0:
                                 p.sendTitle(ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("gameloop.timertick.release.title")),
@@ -324,6 +386,8 @@ public class Game {
     }
 
     private void releasePlayers() {
+        main.dataUtility.setActiveGame(currentGameID);
+        main.getServer().getPluginManager().registerEvents(this, main);
         Bukkit.getScheduler().runTask(main, new Runnable() {
             @Override
             public void run() {
@@ -340,6 +404,45 @@ public class Game {
     private void initScoreboard() {
         scoreboardManager.setupScoreboard(currentGameInfo, currentGameID);
     }
+
+    private void initRefreshTask() {
+        REFRESH_TASK = Bukkit.getScheduler().scheduleAsyncRepeatingTask(main, new Runnable() {
+            @Override
+            public void run() {
+                if (!isPaused) {
+                    gameLoop();
+                }
+            }
+        }, 0, 20L);
+    }
+
+
+    private void gatherPlayers() {
+        gameSetupLogger.logInfo("Gathering players...");
+        if (currentGameInfo != null) {
+            ArrayList<UUID> excluded = main.dataUtility.getExclusionListByID(currentGameInfo.exclusionList);
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                if (!excluded.contains(p.getUniqueId())) {
+                    players.add(p);
+                }
+            }
+            this.currentGameInfo.totalPlayers = players.size();
+            this.currentGameInfo.finishedPlayers = finishedPlayers.size();
+        }
+    }
+
+    public void teleportToStart() {
+        gameSetupLogger.logInfo("Teleporting players to the start...");
+
+        for (Player p : players) {
+            Location l = getRandomLocation(startLocation_bound1, startLocation_bound2);
+            p.teleport(l);
+        }
+        startPreparationPeriod();
+    }
+
+
+    // Service Methods
 
     private void terminate(boolean preventative, TerminationContext context, String details) {
         announceTermination(context, details);
@@ -395,10 +498,37 @@ public class Game {
                 main.messageUtility.sendMessage(initiator, "&e================================================");
                 break;
             case NO_START:
+                main.messageUtility.sendMessage(initiator, "&e================================================");
+                main.messageUtility.sendMessage(initiator,
+                        main.localizationUtility.getLocalizedPhrase("gameloop.runtime.prevterm-nostartarea")
+                                .replaceAll("%instance%", currentGameID)
+                );
+                main.messageUtility.sendMessage(initiator, "&e================================================");
                 break;
             case NO_FINISH:
+                main.messageUtility.sendMessage(initiator, "&e================================================");
+                main.messageUtility.sendMessage(initiator,
+                        main.localizationUtility.getLocalizedPhrase("gameloop.runtime.prevterm-nofinish")
+                                .replaceAll("%instance%", currentGameID)
+                                .replaceAll("%details%", msg)
+                );
+                main.messageUtility.sendMessage(initiator, "&e================================================");
                 break;
             case UNKNOWN:
+                main.messageUtility.sendMessage(initiator, "&e================================================");
+                if (msg.isEmpty()) {
+                    main.messageUtility.sendMessage(initiator,
+                            main.localizationUtility.getLocalizedPhrase("gameloop.runtime.terminated-generic")
+                                    .replaceAll("%instance%", currentGameID)
+                    );
+                } else {
+                    main.messageUtility.sendMessage(initiator,
+                            main.localizationUtility.getLocalizedPhrase("gameloop.runtime.terminated-generic-reason")
+                                    .replaceAll("%instance%", currentGameID)
+                                    .replaceAll("%reason%", msg)
+                    );
+                }
+                main.messageUtility.sendMessage(initiator, "&e================================================");
                 break;
             case INVALID_FORMAT:
                 main.messageUtility.sendMessage(initiator, "&e================================================");
@@ -419,6 +549,23 @@ public class Game {
                 main.messageUtility.sendMessage(initiator, "&e================================================");
                 break;
         }
+    }
+
+    private double randomDouble(double min, double max) {
+        return min + ThreadLocalRandom.current().nextDouble(Math.abs(max - min + 1));
+    }
+
+    public Location getRandomLocation(Location loc1, Location loc2) {
+
+        double minX = Math.min(loc1.getX(), loc2.getX());
+        double minY = Math.min(loc1.getY(), loc2.getY());
+        double minZ = Math.min(loc1.getZ(), loc2.getZ());
+
+        double maxX = Math.max(loc1.getX(), loc2.getX());
+        double maxY = Math.max(loc1.getY(), loc2.getY());
+        double maxZ = Math.max(loc1.getZ(), loc2.getZ());
+
+        return new Location(loc1.getWorld(), randomDouble(minX, maxX), randomDouble(minY, maxY), randomDouble(minZ, maxZ));
     }
 
 

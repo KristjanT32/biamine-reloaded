@@ -1,15 +1,14 @@
 package krisapps.biaminereloaded.utilities;
 
 import krisapps.biaminereloaded.BiamineReloaded;
+import krisapps.biaminereloaded.events.InstanceStatusChangeEvent;
 import krisapps.biaminereloaded.types.*;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
 import java.security.InvalidParameterException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.*;
 
 public class BiaMineDataUtility {
 
@@ -39,13 +38,150 @@ public class BiaMineDataUtility {
     }
 
     // Save core data values
-    public void saveCoreData(CoreDataField field, String value) {
+    public void saveCoreData(CoreDataField field, Object value) {
         main.pluginData.set(COREDATA_FILE_PATH_PREFIX + field.getField(), value);
         main.saveAllFiles();
     }
 
-    public String getCoreData(CoreDataField field) {
-        return main.pluginData.getString(COREDATA_FILE_PATH_PREFIX + field.getField());
+    public Object getCoreData(CoreDataField field) {
+        return main.pluginData.get(COREDATA_FILE_PATH_PREFIX + field.getField());
+    }
+
+    public Location getTestRegionBounds(CoreDataField bound) {
+        return bound == CoreDataField.TEST_REGION_B1 ? main.pluginData.getObject(COREDATA_FILE_PATH_PREFIX + bound.getField(), Location.class)
+                : bound == CoreDataField.TEST_REGION_B2 ? main.pluginData.getObject(COREDATA_FILE_PATH_PREFIX + bound.getField(), Location.class)
+                : null;
+    }
+
+    public Set<String> getCheckpoints(String game) {
+        if (gameExists(game)) {
+            if (main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + game + ".checkpoints") != null) {
+                return main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + game + ".checkpoints").getKeys(false);
+            } else {
+                return new HashSet<>(0);
+            }
+        } else {
+            return new HashSet<>(0);
+        }
+    }
+
+    public boolean checkpointExists(String gameID, String checkpoint) {
+        return main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + gameID + ".checkpoints." + checkpoint) != null;
+    }
+
+    public void addCheckpoint(String gameID, String displayName, Location bound1, Location bound2) {
+        if (gameExists(gameID)) {
+            int checkpointNumber = getCheckpoints(gameID).size();
+
+            main.pluginGames.set(
+                    GAME_FILE_PATH_PREFIX + gameID + ".checkpoints.checkpoint" + (checkpointNumber + 1) + ".displayName",
+                    displayName
+            );
+            main.pluginGames.set(
+                    GAME_FILE_PATH_PREFIX + gameID + ".checkpoints.checkpoint" + (checkpointNumber + 1) + ".bound1",
+                    bound1
+            );
+            main.pluginGames.set(
+                    GAME_FILE_PATH_PREFIX + gameID + ".checkpoints.checkpoint" + (checkpointNumber + 1) + ".bound2",
+                    bound2
+            );
+            main.pluginGames.set(
+                    GAME_FILE_PATH_PREFIX + gameID + ".checkpoints.checkpoint" + (checkpointNumber + 1) + ".isFinish",
+                    false
+            );
+
+            main.saveGames();
+        }
+    }
+
+    public int setCheckpointBoundary(String gameID, String checkpointID, String boundary, Location location) {
+        if (gameExists(gameID) && checkpointExists(gameID, checkpointID)) {
+            switch (boundary) {
+                case "bound1":
+                    main.pluginGames.set(
+                            GAME_FILE_PATH_PREFIX + gameID + ".checkpoints." + checkpointID + ".bound1",
+                            location
+                    );
+                    break;
+                case "bound2":
+                    main.pluginGames.set(
+                            GAME_FILE_PATH_PREFIX + gameID + ".checkpoints." + checkpointID + ".bound2",
+                            location
+                    );
+                    break;
+            }
+            main.saveGames();
+            return 200;
+        } else {
+            return 404;
+        }
+    }
+
+    public void setCheckpointDisplayName(String gameID, String checkpointID, String name) {
+        if (gameExists(gameID) && checkpointExists(gameID, checkpointID)) {
+            main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".checkpoints." + checkpointID + ".displayName", name);
+            main.saveGames();
+        }
+    }
+
+    public boolean setFinish(String gameID, String checkpointID) {
+        if (gameExists(gameID) && checkpointExists(gameID, checkpointID)) {
+            for (String checkpoint : getCheckpoints(gameID)) {
+                main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".checkpoints." + checkpoint + ".isFinish", false);
+            }
+            main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".checkpoints." + checkpointID + ".isFinish", true);
+
+            return main.saveGames();
+        } else {
+            return false;
+        }
+    }
+
+    public boolean isFinishingCheckpoint(String gameID, String checkpointID) {
+        if (gameExists(gameID) && checkpointExists(gameID, checkpointID)) {
+            return main.pluginGames.getBoolean(GAME_FILE_PATH_PREFIX + gameID + ".checkpoints." + checkpointID + ".isFinish");
+        } else {
+            return false;
+        }
+    }
+
+    public CollidableRegion getCheckpoint(String gameID, String checkpointID) {
+        if (gameExists(gameID)) {
+            if (checkpointExists(gameID, checkpointID)) {
+                return new CollidableRegion(
+                        main.pluginGames.getObject(GAME_FILE_PATH_PREFIX + gameID + ".checkpoints." + checkpointID + ".bound1", Location.class),
+                        main.pluginGames.getObject(GAME_FILE_PATH_PREFIX + gameID + ".checkpoints." + checkpointID + ".bound2", Location.class),
+                        main.pluginGames.getString(GAME_FILE_PATH_PREFIX + gameID + ".checkpoints." + checkpointID + ".displayName")
+                );
+            } else {
+                return null;
+            }
+        } else {
+            return null;
+        }
+    }
+
+    public boolean checkpointSetup(String gameID, String checkpoint) {
+        if (gameExists(gameID)) {
+            if (checkpointExists(gameID, checkpoint)) {
+                CollidableRegion region = getCheckpoint(gameID, checkpoint);
+                return region.getUpperBoundLocation() != null && region.getLowerBoundLocation() != null;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
+
+    public void deleteCheckpoint(String gameID, String checkpointID) {
+        if (gameExists(gameID)) {
+            if (checkpointExists(gameID, checkpointID)) {
+                main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".checkpoints." + checkpointID, null);
+                main.saveGames();
+            }
+        }
     }
 
     public Set<String> getUserDefinedPlaceholders() {
@@ -58,6 +194,15 @@ public class BiaMineDataUtility {
 
     public Set<String> getGames() {
         return main.pluginGames.getConfigurationSection("games") == null ? new LinkedHashSet<>() : main.pluginGames.getConfigurationSection("games").getKeys(false);
+    }
+
+    public String getActiveGame() {
+        return main.pluginData.getString("current.activeGameID");
+    }
+
+    public void setActiveGame(String gameID) {
+        main.pluginData.set("current.activeGameID", gameID);
+        main.saveCoredata();
     }
 
     public boolean createGame(String gameID, int prepTime, int countdown, String displayName) {
@@ -97,12 +242,12 @@ public class BiaMineDataUtility {
         return main.pluginScoreboardConfig.getConfigurationSection("scoreboardconfigs").getKeys(false);
     }
 
-    public String getScoreboardConfigProperty(String id, ScoreboardLine line) {
-        if (!id.equals("default")) {
+    public String getScoreboardConfigProperty(String scoreboardConfigurationID, ScoreboardLine line) {
+        if (!scoreboardConfigurationID.equals("default")) {
             if (line.equals(ScoreboardLine.LINE0)) {
-                return main.pluginScoreboardConfig.getString(SCOREBOARD_FILE_PATH_PREFIX + id + ".title");
+                return main.pluginScoreboardConfig.getString(SCOREBOARD_FILE_PATH_PREFIX + scoreboardConfigurationID + ".title");
             } else {
-                return main.pluginScoreboardConfig.getString(SCOREBOARD_FILE_PATH_PREFIX + id + ".line" + line.asNumber());
+                return main.pluginScoreboardConfig.getString(SCOREBOARD_FILE_PATH_PREFIX + scoreboardConfigurationID + ".line" + line.asNumber());
             }
         } else {
             if (line.equals(ScoreboardLine.LINE0)) {
@@ -125,10 +270,10 @@ public class BiaMineDataUtility {
 
     }
 
-    public int getPropertyLineNumber(String id, String property) {
-        if (!id.equalsIgnoreCase("default")) {
-            for (String line : main.pluginScoreboardConfig.getConfigurationSection(SCOREBOARD_FILE_PATH_PREFIX + id).getKeys(false)) {
-                if (main.pluginScoreboardConfig.getString(SCOREBOARD_FILE_PATH_PREFIX + id + "." + line).contains(property)) {
+    public int getPropertyLineNumber(String scoreboardConfigurationID, String property) {
+        if (!scoreboardConfigurationID.equalsIgnoreCase("default")) {
+            for (String line : main.pluginScoreboardConfig.getConfigurationSection(SCOREBOARD_FILE_PATH_PREFIX + scoreboardConfigurationID).getKeys(false)) {
+                if (main.pluginScoreboardConfig.getString(SCOREBOARD_FILE_PATH_PREFIX + scoreboardConfigurationID + "." + line).contains(property)) {
                     if (!line.equalsIgnoreCase("title")) {
                         return Integer.parseInt(line.replace("line", ""));
                     }
@@ -174,8 +319,15 @@ public class BiaMineDataUtility {
     }
 
     public boolean updateGameRunstate(String gameID, InstanceStatus runstate) {
+        InstanceStatus oldStatus = InstanceStatus.valueOf(main.pluginGames.getString(GAME_FILE_PATH_PREFIX + gameID + ".runState"));
         main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".runState", runstate.toString());
-
+        main.getServer().getScheduler().runTask(main, () -> {
+            main.getServer().getPluginManager().callEvent(new InstanceStatusChangeEvent(
+                    gameID,
+                    oldStatus,
+                    runstate
+            ));
+        });
         return main.saveGames();
     }
 
@@ -187,8 +339,10 @@ public class BiaMineDataUtility {
         return main.pluginConfig.getString("placeholders." + placeholder);
     }
 
-    public ArrayList<String> getExclusionListByID(String listID) {
-        return main.pluginExclusionLists.getList(EXCLUSIONS_FILE_PATH_PREFIX + listID) == null ? new ArrayList<String>() : (ArrayList<String>) main.pluginExclusionLists.getList(EXCLUSIONS_FILE_PATH_PREFIX + listID);
+    public ArrayList<UUID> getExclusionListByID(String listID) {
+        return main.pluginExclusionLists.getList(EXCLUSIONS_FILE_PATH_PREFIX + listID) == null
+                ? new ArrayList<>()
+                : (ArrayList<UUID>) main.pluginExclusionLists.getList(EXCLUSIONS_FILE_PATH_PREFIX + listID);
     }
 
     public org.bukkit.Location getStartLocationFirstBound(String game) {
@@ -294,6 +448,10 @@ public class BiaMineDataUtility {
                 return main.pluginConfig.getString("options.date-format-full");
             case TIME_FORMAT:
                 return main.pluginConfig.getString("options.time-format");
+            case EXCLUDE_TARGET_PLAYER_FROM_CHECKPOINT_MESSAGE:
+                return main.pluginConfig.getString("options.exclude-target-player-from-event-notification");
+            case NOTIFY_STATUS_CHANGE:
+                return main.pluginConfig.getString("options.notify-instance-status-change");
             default:
                 throw new InvalidParameterException("Unknown config property provided.");
         }

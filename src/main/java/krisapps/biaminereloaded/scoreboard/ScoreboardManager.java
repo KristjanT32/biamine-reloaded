@@ -125,10 +125,11 @@ public class ScoreboardManager {
         input = input.replaceAll("%date%", DateTimeFormatter.ofPattern(main.dataUtility.getConfigProperty(ConfigProperty.DATE_FORMAT)).format(LocalDate.now()));
         input = input.replaceAll("%footer%", main.dataUtility.getConfigProperty(ConfigProperty.FOOTER_CONTENT));
         input = input.replaceAll("%header%", main.dataUtility.getConfigProperty(ConfigProperty.HEADER_CONTENT));
-        input = input.replaceAll("%shootings%", main.localizationUtility.getLocalizedPhrase("scoreboard.prefixes.shootings") + info.shootingsCount);
-        input = input.replaceAll("%playersNotFinished%", main.localizationUtility.getLocalizedPhrase("scoreboard.prefixes.players-not-finished") + (info.totalPlayers - info.finishedPlayers));
-        input = input.replaceAll("%playersParticipating%", main.localizationUtility.getLocalizedPhrase("scoreboard.prefixes.players-total") + info.totalPlayers);
-        input = input.replaceAll("%timer%", main.localizationUtility.getLocalizedPhrase("scoreboard.prefixes.timer") + info.latestTime);
+        input = input.replaceAll("%shootings%", String.valueOf(info.shootingsCount));
+        input = input.replaceAll("%playersNotFinished%", (info.totalPlayers - info.finishedPlayers) + "/" + info.totalPlayers);
+        input = input.replaceAll("%playersFinished%", String.valueOf(info.finishedPlayers));
+        input = input.replaceAll("%playersParticipating%", String.valueOf(info.totalPlayers));
+        input = input.replaceAll("%timer%", info.latestTime);
         input = input.replaceAll("%empty%", "");
 
         // Find and replace all user-defined placeholders.

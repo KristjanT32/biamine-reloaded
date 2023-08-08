@@ -73,6 +73,11 @@ public class ScoreboardConfig implements CommandExecutor {
                         if (main.dataUtility.scoreboardConfigExists(id)) {
                             switch (operation) {
                                 case "moveTo":
+                                    if (id.equalsIgnoreCase("default")) {
+                                        main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.error-editdefault"));
+                                        return true;
+                                    }
+
                                     // Move a property to a different line.
                                     int propertyLine = main.dataUtility.getPropertyLineNumber(id, property);
                                     int newLine = Integer.parseInt(newValue);
@@ -97,6 +102,11 @@ public class ScoreboardConfig implements CommandExecutor {
                                     break;
 
                                 case "raiseBy":
+                                    if (id.equalsIgnoreCase("default")) {
+                                        main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.error-editdefault"));
+                                        return true;
+                                    }
+
                                     // Raise a property by a number of lines.
                                     int currentLine = main.dataUtility.getPropertyLineNumber(id, property);
                                     int finalLine = currentLine - Integer.parseInt(newValue);
@@ -128,6 +138,11 @@ public class ScoreboardConfig implements CommandExecutor {
                                     break;
 
                                 case "lowerBy":
+                                    if (id.equalsIgnoreCase("default")) {
+                                        main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.error-editdefault"));
+                                        return true;
+                                    }
+
                                     // Lower a property by a number of lines.
                                     int currentLine_2 = main.dataUtility.getPropertyLineNumber(id, property);
                                     int finalLine_2 = currentLine_2 + Integer.parseInt(newValue);
@@ -159,6 +174,10 @@ public class ScoreboardConfig implements CommandExecutor {
                                     break;
 
                                 case "changeTo":
+                                    if (id.equalsIgnoreCase("default")) {
+                                        main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.error-editdefault"));
+                                        return true;
+                                    }
                                     // Change a property on a provided line.
                                     int propertyLineNumber = main.dataUtility.getPropertyLineNumber(id, property);
 
@@ -179,6 +198,11 @@ public class ScoreboardConfig implements CommandExecutor {
                                     break;
 
                                 case "setPropertyTo":
+                                    if (id.equalsIgnoreCase("default")) {
+                                        main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.error-editdefault"));
+                                        return true;
+                                    }
+
                                     ScoreboardLine line;
                                     StringBuilder replacement = new StringBuilder();
                                     for (int i = 4; i < args.length; i++) {
@@ -196,7 +220,7 @@ public class ScoreboardConfig implements CommandExecutor {
                                         return true;
                                     }
                                     String editType;
-                                    if (List.of("%timer%", "%playersParticipating%", "%playersNotFinished%", "%shootings%", "%header%", "%footer%", "%date%", "%dateTime%", "%localTime%", "%state%").contains(replacement)) {
+                                    if (List.of("%timer%", "%playersParticipating%", "%playersNotFinished%", "%shootings%", "%header%", "%footer%", "%date%", "%dateTime%", "%localTime%", "%state%", "%playersFinished%").contains(replacement)) {
                                         editType = "built-in placeholder";
                                     } else {
                                         editType = "text or global placeholder";
@@ -224,6 +248,11 @@ public class ScoreboardConfig implements CommandExecutor {
                                     }
                                     break;
                                 case "clear":
+                                    if (id.equalsIgnoreCase("default")) {
+                                        main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.error-editdefault"));
+                                        return true;
+                                    }
+
                                     ScoreboardLine lineToClear;
                                     try {
                                         lineToClear = ScoreboardLine.valueOf(property.toUpperCase());
@@ -254,6 +283,11 @@ public class ScoreboardConfig implements CommandExecutor {
                     }
                     break;
                 case "delete":
+                    if (args[1].equalsIgnoreCase("default")) {
+                        main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.error-editdefault"));
+                        return true;
+                    }
+
                     // Deleting configs.
                     if (args.length >= 2) {
                         String id = args[1];
