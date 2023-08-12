@@ -14,14 +14,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class PlayerMoveEventHandler implements Listener {
+public class PlayerMoveListener implements Listener {
 
     BiamineReloaded main;
     RegionCollisionUtility collisionUtility;
     Map<UUID, Long> waitMap = new HashMap<>();
 
 
-    public PlayerMoveEventHandler(BiamineReloaded main) {
+    public PlayerMoveListener(BiamineReloaded main) {
         this.main = main;
         this.collisionUtility = new RegionCollisionUtility(main);
     }
@@ -37,7 +37,6 @@ public class PlayerMoveEventHandler implements Listener {
 
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent moveEvent) {
-
         Player p = moveEvent.getPlayer();
         String activeGame = main.dataUtility.getActiveGame();
 
@@ -50,7 +49,12 @@ public class PlayerMoveEventHandler implements Listener {
         }
 
         for (String checkpoint : main.dataUtility.getCheckpoints(activeGame)) {
-            CollidableRegion checkpointRegion = main.dataUtility.getCheckpoint(activeGame, checkpoint);
+            CollidableRegion checkpointRegion;
+            try {
+                checkpointRegion = main.dataUtility.getCheckpoint(activeGame, checkpoint);
+            } catch (NullPointerException e) {
+                continue;
+            }
             if (collisionUtility.checkIntersect(moveEvent.getTo(), checkpointRegion)) {
                 if (waitMap.containsKey(p.getUniqueId())) {
                     if ((System.currentTimeMillis() - waitMap.get(p.getUniqueId())) >= 3000L) {

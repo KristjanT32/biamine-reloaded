@@ -17,8 +17,14 @@ public class ResumeGame implements CommandExecutor {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         // Syntax: /resumegame <gameID>
         if (args.length >= 1) {
-            main.gameUtility.resumeGame(args[0]);
-            main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.resume.done"));
+            int result = main.gameUtility.resumeGame();
+            if (result == 200) {
+                main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.resume.done"));
+            } else if (result == 404) {
+                main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.resume.not-paused"));
+            } else if (result == 500) {
+                main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.resume.no-resumables"));
+            }
         } else {
             main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.resume.insuff"));
         }

@@ -14,6 +14,8 @@ public class BiathlonTimer {
     String formattedTime = "";
     String timerFormat = "";
     private int globalTimerTaskID = -20;
+    private boolean isPaused = false;
+
     public BiathlonTimer(BiamineReloaded main) {
         this.main = main;
     }
@@ -23,6 +25,10 @@ public class BiathlonTimer {
         globalTimerTaskID = scheduler.scheduleAsyncRepeatingTask(main, new Runnable() {
             @Override
             public void run() {
+                if (isPaused) {
+                    return;
+                }
+
                 if (seconds < 59) {
                     seconds++;
                 } else {
@@ -64,5 +70,13 @@ public class BiathlonTimer {
 
     public int getGlobalTimerTaskID() {
         return globalTimerTaskID;
+    }
+
+    public void pauseTimer() {
+        isPaused = true;
+    }
+
+    public void resumeTimer() {
+        isPaused = false;
     }
 }

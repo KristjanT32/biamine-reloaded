@@ -311,7 +311,20 @@ public class ScoreboardConfig implements CommandExecutor {
                     main.messageUtility.sendMessage(sender, "&b=======================================");
                     if (configs.size() > 0) {
                         for (String config : configs) {
-                            main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.list-item").replaceAll("%item%", config));
+                            List<String> gamesUsing = main.dataUtility.getGamesWithScoreboardConfig(config);
+                            if (gamesUsing.isEmpty()) {
+                                main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.list-item")
+                                        .replaceAll("%item%", config)
+                                );
+                            } else {
+                                main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.list-item-uses")
+                                        .replaceAll("%item%", config)
+                                        .replaceAll("%uses%",
+                                                gamesUsing.size() >= 2
+                                                        ? gamesUsing.get(0) + ", " + gamesUsing.get(1) + "...and " + ((gamesUsing.size() - 2) > 0 ? (gamesUsing.size() - 2) + " more" : "")
+                                                        : gamesUsing.get(0)
+                                        ));
+                            }
                         }
                     } else {
                         main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.list-empty"));

@@ -37,7 +37,7 @@ public class CollidableRegion {
 
         this.regionName = regionName;
         this.world = upperBound.getWorld();
-        this.isFinish = true;
+        this.isFinish = isFinish;
     }
 
     public static CollidableRegion of(Location loc, Location loc2) {
@@ -88,7 +88,7 @@ public class CollidableRegion {
     }
 
     public boolean isFinish() {
-        return isFinish;
+        return this.isFinish;
     }
 
     public World getWorld() {

@@ -30,6 +30,7 @@ public class CheckpointAC implements TabCompleter {
                 case "setfinish":
                 case "setname":
                 case "setbound":
+                case "remove":
                     completions.addAll(main.dataUtility.getCheckpoints(args[0]));
                     break;
             }

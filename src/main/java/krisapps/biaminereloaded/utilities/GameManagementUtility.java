@@ -11,12 +11,6 @@ import org.bukkit.entity.Player;
 import java.util.List;
 
 public class GameManagementUtility {
-
-    // Current Game Information
-    BiamineBiathlon curGameInfo;
-    Game curGameObject;
-
-
     BiamineReloaded main;
 
     public GameManagementUtility(BiamineReloaded main) {
@@ -32,52 +26,94 @@ public class GameManagementUtility {
     }
 
     public void initGame(BiamineBiathlon info, CommandSender initiator) {
-        curGameObject = new Game(info.gameID, info, main);
-        curGameInfo = info;
-        curGameObject.startGame(initiator);
+        Game g = new Game(info.gameID, info, main);
+        g.startGame(initiator);
     }
 
     public void initGameWithPlayers(BiamineBiathlon info, CommandSender initiator, List<String> players) {
-        curGameObject = new Game(info.gameID, info, main);
-        curGameInfo = info;
-        curGameObject.startGame(players, initiator);
+        Game g = new Game(info.gameID, info, main);
+        g.startGame(players, initiator);
     }
 
-    public void terminateGame(String gameID) {
-        if (curGameObject == null || curGameInfo == null) {
+    public int terminateGame() {
+        if (Game.instance == null) {
+            return 500;
+        }
+        Game.instance.stopGame();
+        main.dataUtility.setActiveGame(null);
+        return 200;
+    }
+
+    public void reloadTerminate() {
+        if (Game.instance == null) {
             return;
         }
-        if (curGameInfo.gameID.equalsIgnoreCase(gameID)) {
-            curGameObject.stopGame();
-            main.dataUtility.setActiveGame(null);
-            curGameObject = null;
-            curGameInfo = null;
+        Game.instance.reloadTerminate();
+    }
+
+    public int pauseGame() {
+        if (Game.instance == null) {
+            return 500;
+        }
+        if (!Game.instance.isPaused) {
+            Game.instance.pauseGame();
+            return 200;
+        } else {
+            return 404;
         }
     }
 
-    public void pauseGame(String gameID) {
-        if (curGameObject != null && curGameInfo != null) {
-            if (!curGameObject.isPaused && curGameInfo.gameID.equalsIgnoreCase(gameID)) {
-                curGameObject.pauseGame();
-            }
+    public int resumeGame() {
+        if (Game.instance == null) {
+            return 500;
         }
-    }
-
-    public void resumeGame(String gameID) {
-        if (curGameObject != null && curGameInfo != null) {
-            if (curGameObject.isPaused && curGameInfo.gameID.equalsIgnoreCase(gameID)) {
-                curGameObject.resumeGame();
-            }
+        if (Game.instance.isPaused) {
+            Game.instance.resumeGame();
+            return 200;
+        } else {
+            return 404;
         }
     }
 
     public boolean hasPlayerInGame(Player p) {
-        if (curGameObject != null && curGameInfo != null) {
-            return curGameObject.players.contains(p) && !curGameObject.finishedPlayers.contains(p);
-        } else {
+        if (Game.instance == null) {
             return false;
         }
-
+        return Game.instance.players.contains(p) && !Game.instance.finishedPlayers.containsKey(p);
     }
 
+    public int kickPlayer(Player p, String reason) {
+        if (Game.instance == null) {
+            return 500;
+        }
+        return Game.instance.kickPlayer(p, reason);
+    }
+
+    public boolean rejoinPlayer(Player p) {
+        if (Game.instance == null) {
+            return false;
+        }
+        return Game.instance.rejoinPlayer(p);
+    }
+
+    public String getActiveGameID() {
+        if (Game.instance == null) {
+            return "unknown";
+        }
+        return Game.instance.getCurrentGameInfo().gameID;
+    }
+
+    public void resetScoreboard() {
+        if (Game.instance == null) {
+            return;
+        }
+        Game.instance.getScoreboardManager().resetScoreboard();
+    }
+
+    public void refreshScoreboard() {
+        if (Game.instance == null) {
+            return;
+        }
+        Game.instance.getScoreboardManager().refreshScoreboardData(Game.instance.getCurrentGameInfo().scoreboardConfig, Game.instance.getCurrentGameInfo());
+    }
 }

@@ -20,10 +20,6 @@ import java.time.format.DateTimeFormatter;
 
 public class ScoreboardManager {
 
-    Scoreboard mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-    Objective gameObjective;
-    BiamineReloaded main;
-
     private static final int SCOREBOARD_FIRST_LINE = 9;
     private final String[] lineFillerSymbols = {
             ChatColor.BLACK + String.valueOf(ChatColor.WHITE),
@@ -35,7 +31,9 @@ public class ScoreboardManager {
             ChatColor.BLACK + String.valueOf(ChatColor.LIGHT_PURPLE),
             ChatColor.BLACK + String.valueOf(ChatColor.DARK_GREEN)
     };
-
+    Scoreboard mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+    Objective gameObjective;
+    BiamineReloaded main;
 
 
     public ScoreboardManager(BiamineReloaded main) {
@@ -117,7 +115,6 @@ public class ScoreboardManager {
     }
 
     private String findReplacePlaceholders(String input, BiamineBiathlon info) {
-        main.appendToLog("Preparing to transform value: " + input);
 
         // Replace built-in placeholders
         input = input.replaceAll("%dateTime%", DateTimeFormatter.ofPattern(main.dataUtility.getConfigProperty(ConfigProperty.DATE_FORMAT_EXTENDED)).format(LocalDateTime.now()));
@@ -186,6 +183,7 @@ public class ScoreboardManager {
     }
 
     public void resetScoreboard() {
+        hideScoreboard();
         gameObjective.unregister();
     }
 

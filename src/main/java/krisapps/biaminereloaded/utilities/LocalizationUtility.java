@@ -79,7 +79,8 @@ public class LocalizationUtility {
     }
 
     public void setupCurrentLanguageFile() {
-        main.getLogger().info("Setting up language file for " + currentLanguage);
+        this.lang = null;
+
         currentLanguage = dataUtility.getCurrentLanguage();
         languageFile = new File(main.getDataFolder(), "/localization/" + currentLanguage + ".yml");
 

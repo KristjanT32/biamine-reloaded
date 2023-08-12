@@ -14,7 +14,6 @@ commands:
   deletebiathlon:
     description: "Deletes an existing BiaMine biathlon instance."
     usage: "/deletebiathlon <gameID>"
-
   setlanguage:
     description: "Changes the language of the plugin."
     usage: "/setlanguage <langCode>"
@@ -32,17 +31,17 @@ commands:
   terminate:
     description: "Terminates a BiaMine Biathlon instance."
     usage: "/terminate <game> [reason]"
+  kickplayer:
+    description: "Removes a player from the current game."
+    usage: "/kickplayer <player> [reason]"
+  rejoinbiathlon:
+    description: "Attempts to add you back to the most recent game."
+    usage: "/rejoinbiathlon"
 
   # Game Setup
   exclusionlist:
-    description: "Sets a custom exclusion list for a game to use."
+    description: "Manages exclusion lists."
     usage: "/exclusionlist <create|edit|assign|delete> <...>"
-  setmessage:
-    description: "Set the messages players will receive on different actions."
-    usage: "/setmessage <gameID> <type> <content>"
-  testflight:
-    description: "Starts an internal test game. Intended for development use."
-    usage: "/testflight"
   checkpoint:
     description: "Manages checkpoints for the provided game."
     usage: "/checkpoint <gameID> <add|remove|find|list|setbound> <none|id|bound>"
@@ -52,6 +51,10 @@ commands:
   listgames:
     description: "List the existing games."
     usage: "/listgames"
+
+  biamineutil:
+    description: "Utility command for BiaMine."
+    usage: "/biamineutil <operation>"
 
   # Scoreboard Customization
   sconfig:

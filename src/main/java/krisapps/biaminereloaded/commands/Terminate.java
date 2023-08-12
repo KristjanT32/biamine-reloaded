@@ -31,7 +31,7 @@ public class Terminate implements CommandExecutor {
                         reason.append(args[i]).append(" ");
                     }
 
-                    main.gameUtility.terminateGame(gameID);
+                    main.gameUtility.terminateGame();
                     main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.terminate.success-reason")
                             .replaceAll("%game%", gameID)
                             .replaceAll("%reason%", reason.toString().trim())
@@ -41,7 +41,7 @@ public class Terminate implements CommandExecutor {
                 }
             } else {
                 if (main.dataUtility.getActiveGame().equalsIgnoreCase(gameID)) {
-                    main.gameUtility.terminateGame(gameID);
+                    main.gameUtility.terminateGame();
                     main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.terminate.success")
                             .replaceAll("%game%", gameID)
                     );

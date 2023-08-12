@@ -1,7 +1,9 @@
 # Configuration file for ${project.name} ${project.version}
 
-# Global placeholders can be added here.
-# Global placeholders DO NOT support built-in placeholders.
+# ===================================================================================================================#
+#                                               GLOBAL PLACEHOLDERS                                                  #
+#                             * global placeholders do not support built-in placeholders                             #
+# ===================================================================================================================#
 placeholders:
   _placeholder: "replacement"
 
@@ -39,34 +41,49 @@ placeholders:
 
 # ===================================================================================================================#
 
-# General Settings
+
+# ===================================================================================================================#
+#                                               GENERAL OPTIONS                                                      #
+# ===================================================================================================================#
 options:
 
-  # %date%
-  date-format: "dd/MM/yyyy"
+  # ________________________________________________________________________________________________________________ #
+  # | Setting                             | Placeholder          | Description                                     | #
+  # ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ #
+  date-format: "dd/MM/yyyy"               # %date%                Generic date
+  date-format-full: "dd/MM/yyyy hh:mm:ss" # %dateTime%            Date and time
+  timer-format: "hh:mm:ss"                # %timer%               In-game timer format
+  time-format: "hh:mm:ss"                 # %localTime%           Clock format
 
-  # %dateTime%
-  date-format-full: "dd/MM/yyyy hh:mm:ss"
 
-  # In-game timer format (%timer%)
-  timer-format: "hh:mm:ss"
+  # Game Process Settings
 
-  # Scoreboard clock format (%localTime%)
-  time-format: "hh:mm:ss"
-
-  # Controls whether the target player of a game event should be also notified about their actions.
-  # Example: if this property is TRUE, then when a player passes a checkpoint, everyone **including** the player
-  #          receives a message, that they have passed a checkpoint.
-  #          if this property is FALSE, then when a player passes a checkpoint, everyone **but** the player will
-  #          be notified that they've passed a checkpoint.
+  # Should the target of an event also receive the notification?
+  # EX: should the player who passes through a checkpoint also be notified with the same message as the others.
   exclude-target-player-from-event-notification: false
 
-  # Controls whether the instance status changes (e.g "PAUSED -> RUNNING") should be sent
-  # to the player that started the game.
+  # Controls whether the instance status changes (e.g "PAUSED -> RUNNING") should be sent to the player that started the game.
   notify-instance-status-change: true
 
+  # Should the game be paused if a player that is participating disconnects?
+  # If set to true, a countdown will start counting down from [delay].
+  pause-if-player-disconnect:
+    state: true
+    delay: 5
 
-# Plugin defaults
+  # Automatically return disconnected players to the game upon reconnecting
+  # If set to false, players can still rejoin using /rejoin
+  autorejoin: true
+
+  # Should players be given a maximum level slowness effect as to halt them when the final countdown starts?
+  halt-players-with-effect: true
+
+
+
+# ===================================================================================================================#
+#                                               PLUGIN DEFAULTS                                                      #
+# ===================================================================================================================#
+
 defaults:
   # Default scoreboard config (ID: "default")
   scoreboardconfig:
@@ -74,10 +91,10 @@ defaults:
     line1: "%header%"
     line2: "&bPlayers to finish: &e%playersNotFinished%"
     line3: "&bTotal players: &e%playersParticipating%"
-    line4: "&6Shootings: &e%shootings%"
+    line4: "&bShootings: &e%shootings%"
     line5: "&bDate: &e%date%"
     line6: "&bGame Duration: &e%timer%"
-    line7: "&fStatus: &l%state%"
+    line7: "&fStatus: %state%"
     line8: "%footer%"
   footer: "&e========================"
   header: "&e========================"

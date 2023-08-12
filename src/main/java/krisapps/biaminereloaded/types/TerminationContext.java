@@ -9,7 +9,8 @@ public enum TerminationContext {
     NO_FINISH,
     UNKNOWN,
     INVALID_FORMAT,
-    SCOREBOARD_CONFIG_MISSING
+    SCOREBOARD_CONFIG_MISSING,
+    GAME_FINISHED
 
 
 }

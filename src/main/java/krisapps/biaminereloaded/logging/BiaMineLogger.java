@@ -35,19 +35,16 @@ public class BiaMineLogger {
     }
 
     public void logCritError(String msg) {
-        System.err.println(String.format("[%s | %s CRIT]: ", loggerPrefix, modulePrefix) + msg);
-        main.appendToLog(String.format("[%s | %s - %s CRIT]: ", loggerPrefix, modulePrefix, getDate()));
+        main.appendToLog(String.format("[%s::%s at %s CRIT]: " + msg, loggerPrefix, modulePrefix, getDate()));
 
     }
 
     public void logError(String msg) {
-        System.err.println(String.format("[%s | %s ERR]: ", loggerPrefix, modulePrefix) + msg);
-        main.appendToLog(String.format("[%s | %s - %s ERR]: ", loggerPrefix, modulePrefix, getDate()));
+        main.appendToLog(String.format("[%s::%s at %s ERR]: " + msg, loggerPrefix, modulePrefix, getDate()));
     }
 
     public void logInfo(String msg) {
-        System.out.println(String.format("[%s | %s INF]: ", loggerPrefix, modulePrefix) + msg);
-        main.appendToLog(String.format("[%s | %s - %s INF]: ", loggerPrefix, modulePrefix, getDate()));
+        main.appendToLog(String.format("[%s::%s at %s INF]: " + msg, loggerPrefix, modulePrefix, getDate()));
     }
 
 }

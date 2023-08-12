@@ -149,9 +149,10 @@ public class BiaMineDataUtility {
         if (gameExists(gameID)) {
             if (checkpointExists(gameID, checkpointID)) {
                 return new CollidableRegion(
-                        main.pluginGames.getObject(GAME_FILE_PATH_PREFIX + gameID + ".checkpoints." + checkpointID + ".bound1", Location.class),
-                        main.pluginGames.getObject(GAME_FILE_PATH_PREFIX + gameID + ".checkpoints." + checkpointID + ".bound2", Location.class),
-                        main.pluginGames.getString(GAME_FILE_PATH_PREFIX + gameID + ".checkpoints." + checkpointID + ".displayName")
+                        main.pluginGames.getObject(GAME_FILE_PATH_PREFIX + gameID + ".checkpoints." + checkpointID + ".bound1", Location.class, null),
+                        main.pluginGames.getObject(GAME_FILE_PATH_PREFIX + gameID + ".checkpoints." + checkpointID + ".bound2", Location.class, null),
+                        main.pluginGames.getString(GAME_FILE_PATH_PREFIX + gameID + ".checkpoints." + checkpointID + ".displayName", null),
+                        main.pluginGames.getBoolean(GAME_FILE_PATH_PREFIX + gameID + ".checkpoints." + checkpointID + ".isFinish", false)
                 );
             } else {
                 return null;
@@ -164,8 +165,13 @@ public class BiaMineDataUtility {
     public boolean checkpointSetup(String gameID, String checkpoint) {
         if (gameExists(gameID)) {
             if (checkpointExists(gameID, checkpoint)) {
-                CollidableRegion region = getCheckpoint(gameID, checkpoint);
-                return region.getUpperBoundLocation() != null && region.getLowerBoundLocation() != null;
+                CollidableRegion region;
+                try {
+                    region = getCheckpoint(gameID, checkpoint);
+                    return region.getUpperBoundLocation() != null && region.getLowerBoundLocation() != null;
+                } catch (NullPointerException e) {
+                    return false;
+                }
             } else {
                 return false;
             }
@@ -339,10 +345,112 @@ public class BiaMineDataUtility {
         return main.pluginConfig.getString("placeholders." + placeholder);
     }
 
-    public ArrayList<UUID> getExclusionListByID(String listID) {
-        return main.pluginExclusionLists.getList(EXCLUSIONS_FILE_PATH_PREFIX + listID) == null
-                ? new ArrayList<>()
-                : (ArrayList<UUID>) main.pluginExclusionLists.getList(EXCLUSIONS_FILE_PATH_PREFIX + listID);
+    public boolean createExclusionList(String listID) {
+        main.pluginExclusionLists.set(EXCLUSIONS_FILE_PATH_PREFIX + listID + ".excludedPlayers", new ArrayList<String>());
+        return main.saveExclusions();
+    }
+
+    public boolean exclusionListExists(String listID) {
+        return main.pluginExclusionLists.getConfigurationSection(EXCLUSIONS_FILE_PATH_PREFIX + listID) != null && main.pluginExclusionLists.getList(EXCLUSIONS_FILE_PATH_PREFIX + listID + ".excludedPlayers") != null;
+    }
+
+    public boolean deleteExclusionList(String listID) {
+        unassignExclusionListFromAll(listID);
+        main.pluginExclusionLists.set(EXCLUSIONS_FILE_PATH_PREFIX + listID, null);
+        return main.saveExclusions();
+    }
+
+    public boolean assignExclusionList(String listID, String gameID) {
+        main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".exclusionList", listID);
+        return main.saveGames();
+    }
+
+    public boolean unassignExclusionListFromAll(String listID) {
+        for (String game : main.pluginGames.getConfigurationSection("games").getKeys(false)) {
+            if (main.pluginGames.getString(GAME_FILE_PATH_PREFIX + game + ".exclusionList").equals(listID)) {
+                main.pluginGames.set(GAME_FILE_PATH_PREFIX + game + ".exclusionList", "none");
+            }
+        }
+        return main.saveGames();
+    }
+
+    public boolean unassignExclusionListFrom(String listID, String gameID) {
+        if (getGameProperty(gameID, GameProperty.EXCLUSION_LIST_ID).equalsIgnoreCase(listID)) {
+            main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".exclusionList", "none");
+        }
+        return main.saveGames();
+    }
+
+    public List<String> getGamesWithExclusionList(String listID) {
+        List<String> games = new ArrayList<>();
+        for (String gameID : getGames()) {
+            if (getGameProperty(gameID, GameProperty.EXCLUSION_LIST_ID).equalsIgnoreCase(listID)) {
+                games.add(gameID);
+            }
+        }
+        return games;
+    }
+
+    public List<String> getGamesWithScoreboardConfig(String configID) {
+        List<String> games = new ArrayList<>();
+        for (String gameID : getGames()) {
+            if (getGameProperty(gameID, GameProperty.SCOREBOARD_CONFIGURATION_ID).equalsIgnoreCase(configID)) {
+                games.add(gameID);
+            }
+        }
+        return games;
+    }
+
+    public Set<String> getExclusionLists() {
+        if (main.pluginExclusionLists.getConfigurationSection("exclusions") != null) {
+            return main.pluginExclusionLists.getConfigurationSection("exclusions").getKeys(false);
+        } else {
+            return new HashSet<>(0);
+        }
+    }
+
+    public boolean appendExcludedPlayer(Player p, String listID) {
+        if (exclusionListExists(listID)) {
+            List<String> exclusionList = getExcludedPlayers(listID);
+            exclusionList.add(p.getUniqueId().toString());
+            main.pluginExclusionLists.set(EXCLUSIONS_FILE_PATH_PREFIX + listID + ".excludedPlayers", exclusionList);
+            return main.saveExclusions();
+        } else {
+            return false;
+        }
+    }
+
+    public boolean removeExcludedPlayer(Player p, String listID) {
+        if (exclusionListExists(listID)) {
+            List<String> exclusionList = getExcludedPlayers(listID);
+            exclusionList.remove(p.getUniqueId().toString());
+            main.pluginExclusionLists.set(EXCLUSIONS_FILE_PATH_PREFIX + listID + ".excludedPlayers", exclusionList);
+            return main.saveExclusions();
+        } else {
+            return false;
+        }
+    }
+
+    public List<String> getExcludedPlayers(String listID) {
+        if (exclusionListExists(listID)) {
+            return main.pluginExclusionLists.getList(EXCLUSIONS_FILE_PATH_PREFIX + listID + ".excludedPlayers") != null
+                    ? (List<String>) main.pluginExclusionLists.getList(EXCLUSIONS_FILE_PATH_PREFIX + listID + ".excludedPlayers")
+                    : new ArrayList<>(0);
+        } else {
+            return null;
+        }
+    }
+
+    public List<UUID> getExcludedPlayersUUIDList(String listID) {
+        if (exclusionListExists(listID)) {
+            List<UUID> result = new ArrayList<>();
+            for (String uuidString : (List<String>) main.pluginExclusionLists.getList(EXCLUSIONS_FILE_PATH_PREFIX + listID + ".excludedPlayers")) {
+                result.add(UUID.fromString(uuidString));
+            }
+            return result;
+        } else {
+            return null;
+        }
     }
 
     public org.bukkit.Location getStartLocationFirstBound(String game) {
@@ -452,6 +560,14 @@ public class BiaMineDataUtility {
                 return main.pluginConfig.getString("options.exclude-target-player-from-event-notification");
             case NOTIFY_STATUS_CHANGE:
                 return main.pluginConfig.getString("options.notify-instance-status-change");
+            case PAUSE_IF_PLAYER_DISCONNECT:
+                return main.pluginConfig.getString("options.pause-if-player-disconnect.state");
+            case EMERGENCY_PAUSE_DELAY:
+                return main.pluginConfig.getString("options.pause-if-player-disconnect.delay");
+            case AUTOREJOIN:
+                return main.pluginConfig.getString("options.autorejoin");
+            case HALT_PLAYERS_WITH_POTIONEFFECT:
+                return main.pluginConfig.getString("options.halt-players-with-effect");
             default:
                 throw new InvalidParameterException("Unknown config property provided.");
         }

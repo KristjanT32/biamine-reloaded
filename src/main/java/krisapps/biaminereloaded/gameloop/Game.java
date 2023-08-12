@@ -1,6 +1,7 @@
 package krisapps.biaminereloaded.gameloop;
 
 import krisapps.biaminereloaded.BiamineReloaded;
+import krisapps.biaminereloaded.events.BiathlonPlayerKickEvent;
 import krisapps.biaminereloaded.events.CheckpointPassEvent;
 import krisapps.biaminereloaded.events.InstanceStatusChangeEvent;
 import krisapps.biaminereloaded.logging.BiaMineLogger;
@@ -13,22 +14,25 @@ import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitScheduler;
 
+import javax.annotation.Nullable;
 import java.time.DateTimeException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 public class Game implements Listener {
 
+    public static Game instance;
     public ArrayList<Player> players;
-    public ArrayList<Player> finishedPlayers;
+    public HashMap<Player, FinishInfo> finishedPlayers;
     public Location startLocation_bound1 = null;
     public Location startLocation_bound2 = null;
     public boolean isPaused = false;
@@ -48,54 +52,132 @@ public class Game implements Listener {
     CommandSender initiator;
     Random random = new Random();
 
+    private final Map<UUID, Location> disconnectedPlayers = new HashMap<>();
+
     public Game(String id, BiamineBiathlon gameInfo, BiamineReloaded main) {
         this.currentGameID = id;
         this.lastGame = id;
         this.currentGameInfo = gameInfo;
         this.main = main;
         this.players = new ArrayList<>();
-        this.finishedPlayers = new ArrayList<>();
+        this.finishedPlayers = new HashMap<>();
         this.timer = new BiathlonTimer(main);
         this.scoreboardManager = new ScoreboardManager(main);
 
         activeGameLogger = new BiaMineLogger("BiaMine", "Active Game", main);
-        gameSetupLogger = new BiaMineLogger("BiaMine", "Game Setup", main);
+        gameSetupLogger = new BiaMineLogger("BiaMine", "Setup", main);
+        instance = this;
     }
 
     // Event Handlers
+
+    @EventHandler
+    public void onPlayerDisconnect(PlayerQuitEvent event) {
+        if (players.contains(event.getPlayer()) && !finishedPlayers.containsKey(event.getPlayer())) {
+            activeGameLogger.logInfo("[" + currentGameID + "/Service]: Lost player " + event.getPlayer().getName());
+            main.getServer().getPluginManager().callEvent(new BiathlonPlayerKickEvent(KickType.UNINTENTIONAL, event.getPlayer(), currentGameInfo.gameID));
+        }
+    }
+
+    @EventHandler
+    public void onPlayerConnect(PlayerJoinEvent event) {
+        if (!Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.AUTOREJOIN))) {
+            return;
+        }
+
+        if (disconnectedPlayers.containsKey(event.getPlayer().getUniqueId())) {
+            activeGameLogger.logInfo("[" + currentGameID + "/Service]: Attempting to rejoin " + event.getPlayer().getName());
+
+            broadcastToEveryone(main.localizationUtility.getLocalizedPhrase("gameloop.player-rejoin")
+                    .replaceAll("%player%", event.getPlayer().getName())
+            );
+
+            scheduler.runTaskLater(main, () -> {
+                main.messageUtility.sendActionbarMessage(event.getPlayer(), main.localizationUtility.getLocalizedPhrase("gameloop.player-rejoin-target"));
+            }, 3 * 20L);
+
+            if (!players.stream().map((player -> player.getUniqueId())).collect(Collectors.toSet()).contains(event.getPlayer().getUniqueId())) {
+                players.add(event.getPlayer());
+            } else {
+                for (Player p : players) {
+                    if (p.getUniqueId().equals(event.getPlayer().getUniqueId())) {
+                        players.remove(p);
+                        break;
+                    }
+                }
+                players.add(event.getPlayer());
+            }
+            event.getPlayer().teleport(disconnectedPlayers.get(event.getPlayer().getUniqueId()));
+        }
+    }
+
     @EventHandler
     public void onRegionEnter(CheckpointPassEvent event) {
+        String time = timer.getFormattedTime();
         if (!event.getRegion().isFinish()) {
-            main.messageUtility.sendActionbarMessage(event.getPlayer(), main.localizationUtility.getLocalizedPhrase("gameloop.checkpoint-reached-target"));
+            main.messageUtility.sendActionbarMessage(event.getPlayer(), main.localizationUtility.getLocalizedPhrase("gameloop.checkpoint-reached-target")
+                    .replaceAll("%time%", time)
+            );
             for (Player p : players) {
-                if (p.getUniqueId().equals(event.getPlayer().getUniqueId()) && Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.EXCLUDE_TARGET_PLAYER_FROM_CHECKPOINT_MESSAGE)))
+                if (p == event.getPlayer() && Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.EXCLUDE_TARGET_PLAYER_FROM_CHECKPOINT_MESSAGE)))
                     continue;
+
                 main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.checkpoint-reached")
                         .replaceAll("%checkpoint%", event.getRegion().getRegionName())
                         .replaceAll("%player%", event.getPlayer().getName())
-                        .replaceAll("%time%", timer.getFormattedTime())
+                        .replaceAll("%time%", time)
                 );
             }
         } else {
-            finishedPlayers.add(event.getPlayer());
-            players.remove(event.getPlayer());
+            if (!finishedPlayers.containsKey(event.getPlayer()) && finishedPlayers.size() < players.size()) {
+                finishedPlayers.put(
+                        event.getPlayer(),
+                        new FinishInfo(timer.getFormattedTime(), !finishedPlayers.isEmpty() ? finishedPlayers.size() + 1 : 1)
+                );
 
-            this.currentGameInfo.finishedPlayers = finishedPlayers.size();
-            scoreboardManager.refreshScoreboardLine(
-                    currentGameInfo,
-                    ScoreboardLine.asEnum(main.dataUtility.getPropertyLineNumber(this.currentGameInfo.scoreboardConfig, "%playersNotFinished%")));
+                currentGameInfo.finishedPlayers = finishedPlayers.size();
+                scoreboardManager.refreshScoreboardLine(
+                        currentGameInfo,
+                        ScoreboardLine.asEnum(main.dataUtility.getPropertyLineNumber(currentGameInfo.scoreboardConfig, "%playersNotFinished%")));
+                main.messageUtility.sendMessage(event.getPlayer(), main.localizationUtility.getLocalizedPhrase("gameloop.player-finish")
+                        .replaceAll("%player%", event.getPlayer().getName())
+                        .replaceAll("%time%", finishedPlayers.get(event.getPlayer()).getFinishTime())
+                );
+                main.messageUtility.sendActionbarMessage(event.getPlayer(), main.localizationUtility.getLocalizedPhrase("gameloop.player-finish-target"));
 
+                if (finishedPlayers.size() == players.size()) {
+                    finishGame();
+                }
+            }
         }
     }
 
     @EventHandler
     public void onStateChange(InstanceStatusChangeEvent event) {
+        activeGameLogger.logInfo("[" + currentGameID + "/Status Update] Now: " + event.getNewStatus());
         if (Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.NOTIFY_STATUS_CHANGE))) {
             main.messageUtility.sendMessage(initiator, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.statechange")
                     .replaceAll("%instance%", lastGame)
                     .replaceAll("%old%", event.getOldStatus().name())
                     .replaceAll("%new%", event.getNewStatus().name())
             );
+        }
+    }
+
+    @EventHandler
+    public void onPlayerLeave(BiathlonPlayerKickEvent event) {
+        disconnectedPlayers.put(event.getPlayer().getUniqueId(), event.getPlayer().getLocation());
+        if (event.getKickType().equals(KickType.UNINTENTIONAL)) {
+            if (Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.PAUSE_IF_PLAYER_DISCONNECT))) {
+                for (Player p : players) {
+                    if (!finishedPlayers.containsKey(p)) {
+                        main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.player-disconnected.notice")
+                                .replaceAll("%delay%", main.dataUtility.getConfigProperty(ConfigProperty.EMERGENCY_PAUSE_DELAY))
+                        );
+                    }
+                }
+                delayPause(Integer.parseInt(main.dataUtility.getConfigProperty(ConfigProperty.EMERGENCY_PAUSE_DELAY)));
+            }
         }
     }
 
@@ -119,7 +201,6 @@ public class Game implements Listener {
             terminate(true, TerminationContext.BOUND2_MISSING, "Starting area incomplete, bound 2 missing.");
             return;
         }
-
 
 
         gatherPlayers();
@@ -172,32 +253,56 @@ public class Game implements Listener {
     }
 
     public void stopGame() {
-        terminate(false, TerminationContext.UNKNOWN, "The currently active game was stopped manually via '/terminate'.");
+        terminate(false, TerminationContext.UNKNOWN, "The currently active game was manually terminated.");
     }
 
     public void pauseGame() {
-
         if (RESUME_COUNTDOWN_TASK != -1) {
             scheduler.cancelTask(RESUME_COUNTDOWN_TASK);
             RESUME_COUNTDOWN_TASK = -1;
             for (Player p : players) {
-                if (!finishedPlayers.contains(p)) {
+                if (!finishedPlayers.containsKey(p)) {
                     main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.game-resume.cancelled"));
                 }
             }
         } else {
             for (Player p : players) {
-                if (!finishedPlayers.contains(p)) {
+                if (!finishedPlayers.containsKey(p)) {
                     main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.game-paused"));
                 }
             }
         }
+        activeGameLogger.logInfo("[" + currentGameID + "] PAUSED");
         isPaused = true;
+        timer.pauseTimer();
         main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.PAUSED);
+    }
+
+    private void delayPause(int delay) {
+        scheduler.scheduleAsyncRepeatingTask(main, new Runnable() {
+            int counter = delay;
+
+            @Override
+            public void run() {
+                if (counter > 0) {
+                    for (Player p : players) {
+                        if (!finishedPlayers.containsKey(p)) {
+                            main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.player-disconnected.countdown")
+                                    .replaceAll("%num%", String.valueOf(counter))
+                            );
+                        }
+                    }
+                    counter--;
+                } else {
+                    pauseGame();
+                }
+            }
+        }, 0, delay * 20L);
     }
 
     public void resumeGame() {
         if (RESUME_COUNTDOWN_TASK == -1) {
+            activeGameLogger.logInfo("[" + currentGameID + "] RESUMING");
             RESUME_COUNTDOWN_TASK = scheduler.scheduleAsyncRepeatingTask(main, new Runnable() {
                 int countdown = 3;
 
@@ -205,7 +310,7 @@ public class Game implements Listener {
                 public void run() {
                     if (countdown != 0) {
                         for (Player p : players) {
-                            if (!finishedPlayers.contains(p)) {
+                            if (!finishedPlayers.containsKey(p)) {
                                 main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.game-resume.countdown")
                                         .replaceAll("%num%", String.valueOf(countdown))
                                 );
@@ -214,13 +319,14 @@ public class Game implements Listener {
                         countdown--;
                     } else {
                         for (Player p : players) {
-                            if (!finishedPlayers.contains(p)) {
+                            if (!finishedPlayers.containsKey(p)) {
                                 main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.game-resume.resumed"));
                             }
                         }
                         scheduler.cancelTask(RESUME_COUNTDOWN_TASK);
                         RESUME_COUNTDOWN_TASK = -1;
                         isPaused = false;
+                        timer.resumeTimer();
                         main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.RUNNING);
                     }
                 }
@@ -228,7 +334,54 @@ public class Game implements Listener {
         }
     }
 
+
+    private void finishGame() {
+        for (Player p : players) {
+            main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.game-finished")
+                    .replaceAll("%totalTime%", timer.getFormattedTime())
+                    .replaceAll("%totalPlayers%", String.valueOf(players.size()))
+            );
+            main.messageUtility.sendMessage(p, "&e=================================");
+            main.messageUtility.sendMessage(p, "&e¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯");
+            main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.leaderboard.header"));
+            for (Map.Entry<Player, FinishInfo> finishEntry : finishedPlayers.entrySet()) {
+                switch (finishEntry.getValue().getLeaderboardOrder()) {
+                    case 1:
+                        main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.leaderboard.gold")
+                                .replaceAll("%player%", p.getName())
+                                .replaceAll("%time%", finishEntry.getValue().getFinishTime())
+                        );
+                        break;
+                    case 2:
+                        main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.leaderboard.silver")
+                                .replaceAll("%player%", p.getName())
+                                .replaceAll("%time%", finishEntry.getValue().getFinishTime())
+                        );
+                        break;
+                    case 3:
+                        main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.leaderboard.bronze")
+                                .replaceAll("%player%", p.getName())
+                                .replaceAll("%time%", finishEntry.getValue().getFinishTime())
+                        );
+                        break;
+                    default:
+                        main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.leaderboard.generic")
+                                .replaceAll("%player%", p.getName())
+                                .replaceAll("%time%", finishEntry.getValue().getFinishTime())
+                                .replaceAll("%orderNum%", String.valueOf(finishEntry.getValue().getLeaderboardOrder()))
+                        );
+                        break;
+                }
+            }
+            main.messageUtility.sendMessage(p, "&e_________________________________");
+            main.messageUtility.sendMessage(p, "&e=================================");
+        }
+        activeGameLogger.logInfo("[" + currentGameID + "/Service]: Finishing game ... ");
+        terminate(false, TerminationContext.GAME_FINISHED, "");
+    }
+
     private void gameLoop() {
+
         // Refresh timer
         currentGameInfo.latestTime = timer.getFormattedTime();
 
@@ -269,6 +422,7 @@ public class Game implements Listener {
     private void startPreparationPeriod() {
 
         main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.PREP);
+        activeGameLogger.logInfo("[" + currentGameID + "/Service]: Prep period started ");
 
         int prepTime = Integer.parseInt(main.dataUtility.getGameProperty(currentGameID, GameProperty.PREPARATION_TIME));
 
@@ -308,6 +462,7 @@ public class Game implements Listener {
 
     private void startFinalCountdown() {
         main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.COUNTDOWN);
+        activeGameLogger.logInfo("[" + currentGameID + "/Service]: Final countdown started ");
         haltPlayers();
         COUNTDOWN_TASK = scheduler.scheduleAsyncRepeatingTask(main, new Runnable() {
             int countdown = Integer.parseInt(main.dataUtility.getGameProperty(currentGameID, GameProperty.COUNTDOWN_TIME));
@@ -374,18 +529,24 @@ public class Game implements Listener {
     }
 
     private void haltPlayers() {
+        activeGameLogger.logInfo("[" + currentGameID + "/Service]: Halting players ");
         Bukkit.getScheduler().runTask(main, new Runnable() {
             @Override
             public void run() {
                 for (Player p : players) {
-                    p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 999999, 255));
-                    main.messageUtility.sendActionbarMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.actionbar.finalcountdown-start"));
+                    if (Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.HALT_PLAYERS_WITH_POTIONEFFECT))) {
+                        p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 999999, 255));
+                        main.messageUtility.sendActionbarMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.actionbar.finalcountdown-start"));
+                    } else {
+                        main.messageUtility.sendActionbarMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.actionbar.finalcountdown-start-nohalt"));
+                    }
                 }
             }
         });
     }
 
     private void releasePlayers() {
+        activeGameLogger.logInfo("[" + currentGameID + "/Service]: Starting run ");
         main.dataUtility.setActiveGame(currentGameID);
         main.getServer().getPluginManager().registerEvents(this, main);
         Bukkit.getScheduler().runTask(main, new Runnable() {
@@ -402,10 +563,12 @@ public class Game implements Listener {
     }
 
     private void initScoreboard() {
+        activeGameLogger.logInfo("[" + currentGameID + "/Service]: Scoreboard initialization started ");
         scoreboardManager.setupScoreboard(currentGameInfo, currentGameID);
     }
 
     private void initRefreshTask() {
+        activeGameLogger.logInfo("[" + currentGameID + "/Service]: Registering scoreboard refresh task ");
         REFRESH_TASK = Bukkit.getScheduler().scheduleAsyncRepeatingTask(main, new Runnable() {
             @Override
             public void run() {
@@ -418,9 +581,9 @@ public class Game implements Listener {
 
 
     private void gatherPlayers() {
-        gameSetupLogger.logInfo("Gathering players...");
+        gameSetupLogger.logInfo("[" + currentGameID + "]: Gathering players for game");
         if (currentGameInfo != null) {
-            ArrayList<UUID> excluded = main.dataUtility.getExclusionListByID(currentGameInfo.exclusionList);
+            ArrayList<UUID> excluded = (ArrayList<UUID>) main.dataUtility.getExcludedPlayersUUIDList(currentGameInfo.exclusionList);
             for (Player p : Bukkit.getOnlinePlayers()) {
                 if (!excluded.contains(p.getUniqueId())) {
                     players.add(p);
@@ -432,7 +595,7 @@ public class Game implements Listener {
     }
 
     public void teleportToStart() {
-        gameSetupLogger.logInfo("Teleporting players to the start...");
+        gameSetupLogger.logInfo("[" + currentGameID + "]: Teleporting players to starting area");
 
         for (Player p : players) {
             Location l = getRandomLocation(startLocation_bound1, startLocation_bound2);
@@ -444,22 +607,91 @@ public class Game implements Listener {
 
     // Service Methods
 
-    private void terminate(boolean preventative, TerminationContext context, String details) {
-        announceTermination(context, details);
-        timer.stopGlobalTimer();
-        scheduler.cancelTask(REFRESH_TASK);
-        scheduler.cancelTask(PREP_TASK);
-        scheduler.cancelTask(COUNTDOWN_TASK);
-        scheduler.cancelTasks(main);
-        if (preventative) {
-            main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.PREVTERM);
+    public int kickPlayer(Player p, @Nullable String reason) {
+        if (players.contains(p) && !finishedPlayers.containsKey(p)) {
+
+            activeGameLogger.logInfo("[" + currentGameID + "/Game]: Kicking player " + p.getName());
+            players.remove(p);
+            scoreboardManager.refreshScoreboardLine(currentGameInfo,
+                    ScoreboardLine.asEnum(main.dataUtility.getPropertyLineNumber(currentGameInfo.scoreboardConfig, "%playersParticipating%"))
+            );
+            main.getServer().getPluginManager().callEvent(new BiathlonPlayerKickEvent(KickType.ADMIN_ACTION, p, currentGameInfo.gameID));
+            for (Player player : players) {
+                if (finishedPlayers.containsKey(player)) {
+                    continue;
+                }
+                main.messageUtility.sendMessage(player, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.player-kicked")
+                        .replaceAll("%player%", p.getName())
+                        .replaceAll("%reason%", reason == null ? "-" : reason)
+                );
+            }
+            main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.player-kicked-target")
+                    .replaceAll("%reason%", reason == null ? "Administrative action" : reason)
+                    .replaceAll("%game%", currentGameID)
+            );
+            return 200;
+        } else if (!players.contains(p)) {
+            activeGameLogger.logInfo("[" + currentGameID + "/Service]: Kicking failed, player not found");
+            return 404;
+        } else if (players.contains(p) && finishedPlayers.containsKey(p)) {
+            activeGameLogger.logInfo("[" + currentGameID + "/Service]: Kicking failed, player already finished.");
+            return 302;
+        }
+        return 500;
+    }
+
+    public boolean rejoinPlayer(Player target) {
+        if (disconnectedPlayers.containsKey(target.getUniqueId())) {
+            activeGameLogger.logInfo("[" + currentGameID + "/Game]: Manual rejoin request for " + target.getName());
+            broadcastToEveryone(main.localizationUtility.getLocalizedPhrase("gameloop.player-rejoin")
+                    .replaceAll("%player%", target.getName())
+            );
+            if (!players.stream().map((player -> player.getUniqueId())).collect(Collectors.toSet()).contains(target.getUniqueId())) {
+                players.add(target);
+            } else {
+                for (Player p : players) {
+                    if (p.getUniqueId().equals(target.getUniqueId())) {
+                        players.remove(p);
+                        break;
+                    }
+                }
+                players.add(target);
+            }
+            target.teleport(disconnectedPlayers.get(target.getUniqueId()));
+            return true;
         } else {
-            main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.CLEANUP);
-            cleanup();
+            return false;
         }
     }
 
-    private void cleanup() {
+    private void terminate(boolean preventative, TerminationContext context, String details) {
+        if (!context.equals(TerminationContext.GAME_FINISHED)) {
+            announceTermination(context, details);
+        }
+        timer.stopGlobalTimer();
+        scheduler.cancelTask(PREP_TASK);
+        scheduler.cancelTask(COUNTDOWN_TASK);
+        if (preventative) {
+            main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.PREVTERM);
+        } else {
+            main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.FINALIZING);
+            scheduler.cancelTask(REFRESH_TASK);
+            scheduler.cancelTasks(main);
+            scheduler.runTaskLater(main, this::cleanup, 20L * 3);
+        }
+    }
+
+    public void reloadTerminate() {
+        main.pluginGames.set("games." + currentGameID + ".runState", InstanceStatus.TERMINATED);
+        Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("internals.reload-termination")));
+        activeGameLogger.logInfo("Terminating current game due to server reload...");
+        timer.stopGlobalTimer();
+        scheduler.cancelTask(PREP_TASK);
+        scheduler.cancelTask(COUNTDOWN_TASK);
+        scheduler.cancelTask(REFRESH_TASK);
+        scheduler.cancelTasks(main);
+        scoreboardManager.hideScoreboard();
+        scoreboardManager.resetScoreboard();
         this.currentGameInfo = null;
         this.currentGameID = null;
         this.players = new ArrayList<>();
@@ -468,6 +700,20 @@ public class Game implements Listener {
         this.COUNTDOWN_TASK = -1;
         this.startLocation_bound1 = null;
         this.startLocation_bound2 = null;
+        HandlerList.unregisterAll(this);
+    }
+
+    private void cleanup() {
+        activeGameLogger.logInfo("[" + currentGameID + "/Service]: Cleaning up");
+        this.currentGameInfo = null;
+        this.currentGameID = null;
+        this.players = new ArrayList<>();
+        this.REFRESH_TASK = -1;
+        this.PREP_TASK = -1;
+        this.COUNTDOWN_TASK = -1;
+        this.startLocation_bound1 = null;
+        this.startLocation_bound2 = null;
+        HandlerList.unregisterAll(this);
         scheduler.runTaskLater(main, new Runnable() {
             @Override
             public void run() {
@@ -568,5 +814,35 @@ public class Game implements Listener {
         return new Location(loc1.getWorld(), randomDouble(minX, maxX), randomDouble(minY, maxY), randomDouble(minZ, maxZ));
     }
 
+    public void broadcastToEveryone(String txt) {
+        for (Player p : players) {
+            if (!finishedPlayers.containsKey(p)) {
+                main.messageUtility.sendMessage(p, txt);
+            }
+        }
+    }
 
+    public ArrayList<Player> getPlayers() {
+        return players;
+    }
+
+    public HashMap<Player, FinishInfo> getFinishedPlayers() {
+        return finishedPlayers;
+    }
+
+    public String getLastGame() {
+        return lastGame;
+    }
+
+    public BiamineBiathlon getCurrentGameInfo() {
+        return currentGameInfo;
+    }
+
+    public CommandSender getInitiator() {
+        return initiator;
+    }
+
+    public ScoreboardManager getScoreboardManager() {
+        return scoreboardManager;
+    }
 }

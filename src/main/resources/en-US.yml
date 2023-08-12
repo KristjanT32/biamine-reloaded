@@ -13,12 +13,34 @@ errors:
 internals:
   setupsb-err-invconf: "&cFailed to setup a scoreboard for the current game: &eThere is no scoreboard configuration that corresponds to the active game.&r"
   rplanfile-error: "&cFailed to replace the en-US file with the internal copy: &b%error%&r"
+  reload-start: "&e[&bBia&fMine&e]: &7Restarting &bBia&fMine &7..."
+  reload-complete: "&e[&bBia&fMine&e]: &aPlugin reloaded."
+  reload-termination: "&e[&bBia&fMine&e]: &eThe currently active game was terminated due to a &bserver-wide reload."
+
+generic:
+  operation:
+    succeeded: "&e[&bBia&fMine&e]: &aOperation succeeded."
 
 gameloop:
   error-gamerunning: "&cCannot start this game, since an instance is already running. To start a game, please stop the running instance with &e/forcestopgame <gameID>&c.&r"
 
   checkpoint-reached: "&b%player% &ehas just reached %checkpoint%&e at &a%time%&e!"
-  checkpoint-reached-target: "&b&lCheckpoint reached."
+  checkpoint-reached-target: "&b&lCheckpoint reached &e(&a%time%&e)&r"
+
+  player-finish: "&b%player% &ehas just reached the finish line at &a%time%&e!"
+  player-finish-target: "&b&lYou've finished the run!"
+
+  player-rejoin: "&e[&b<-&e] &aPlayer &b%player%&a has been automatically returned to the active game.&r"
+  player-rejoin-target: "&bYou've been returned to your last game."
+
+  game-finished: "&aBiathlon concluded!\n&d&e=================================\n&eTotal game duration: &b%totalTime%\n&eTotal players participated: &b%totalPlayers%"
+
+  leaderboard:
+    header: "&f| &8# &f| &8Player           &f| &8Time&r"
+    gold: "&e[&6&l1.&r&e] &b%player% &f- &a%time%&r"
+    silver: "&7[&f&l2.&r&7] &b%player% &f- &a%time%&r"
+    bronze: "&8[&7&l3.&r&8] &b%player% &f- &a%time%&r"
+    generic: "&2[&a%orderNumber%.&2] &b%player% &f- &a%time%&r"
 
   runtime:
     prevterm-nopl: "&4[&cPREVTERM&4]&f: &cInstance &b%instance%&c has been preventatively terminated.\nReason: &eBiaMine was unable to find players to add to this game."
@@ -34,6 +56,13 @@ gameloop:
 
     statechange: "&e[&bState Update&e]: &aInstance &b%instance% &atransitioned from &6%old% &ato &6%new%&a."
 
+    player-kicked: "&b%player% &ehas been kicked from the game.&7(&f%reason%&7)&r"
+    player-kicked-target: "&e=================================\n&cYou've been kicked from &e%game%&c.\n&fReason: &7%reason%&r\n&e================================="
+
+    player-disconnected:
+      notice: "&cWarning! &eA player from this game has disconnected! Pausing the game in &b%delay% &eseconds!"
+      countdown: "&4[&c!&4] &ePausing in &b%num%&e!"
+
     game-paused: "&bFreeze! &eThe game was paused by an administrator."
 
     game-resume:
@@ -44,7 +73,8 @@ gameloop:
 
 
   actionbar:
-    finalcountdown-start: "&cPlease do not attempt to move. You'll be released once the game starts."
+    finalcountdown-start: "&c&lPlease do not attempt to move."
+    finalcountdown-start-nohalt: "&eIt's the final countdown! &bPlease remain on your spot."
   phase:
     prep:
       start: "&eYou've been given prep time. The game will start in &b%MM%&f:&b%SS%"
@@ -89,11 +119,15 @@ commands:
     unknown: "&cNo localizations found with language code &b%langCode%&a.\n&eIf you're sure the localization exists, make sure you added it\nto the language list in &fplugins/BiaMine-Reloaded/localization/localization.yml &eand then \nreload the server using &f/reload &e.&r"
     no-file: "&cIt appears, that though the language code is in the language list, there is no files associated with it.\n&eMake sure you've not removed the language file from &fplugins/BiaMine-Reloaded/localization/&c."
   pause:
-    done: "&aDone."
+    done: "&ePausing the game, just a sec."
+    already-paused: "&eNo need - game already paused."
+    no-pausables: "&cCould not find any pausable games. &eAre you sure there is an active game?"
     insuff: "&cInsufficient parameters. &eTo pause a running instance, provide the &bid of the instance&e to pause."
   resume:
-    done: "&aDone."
-    insuff: "&cInsufficient parameters. &eTo resume a paused instance, provide the &bid of the instance&e to pause."
+    done: "&eResuming the game, just a sec."
+    no-resumables: "&cCould not find any resumable games. &eAre you sure there is an active game?"
+    not-paused: "&eThe currently active game is not paused."
+    insuff: "&cInsufficient parameters. &eTo resume a paused instance, provide the &bid of the instance&e."
 
   terminate:
     insuff: "&cInsufficient parameters. &eIf you wish to terminate an existing game, provide a &bvalid game ID&e and optionally a &breason&e."
@@ -101,6 +135,14 @@ commands:
     noactive: "&cThere are no active games."
     success: "&6Terminated &b%game%&6."
     success-reason: "&6Terminated &b%game%&6: &b%reason%"
+
+  kickplayer:
+    insuff: "&Insufficient parameters. &eTo kick a player from the currently active game, provide the player name as the parameter."
+    notfound: "&cPlayer not found. &eMake sure the player is online."
+    notingame: "&cThis player is not currently in a game."
+    success: "&eKicked &b%player% &efrom the current game."
+    finished: "&cThis player has already finished their run."
+    nogames: "&cThere are no games currently active."
 
   sconfig:
     create-error-insuff: "&cInsufficient parameters. &eTo create a new scoreboard configuration, please provide the &l&bid&r&e."
@@ -132,7 +174,8 @@ commands:
     edit-linecleared: "&dApplied the following change: content on &bline %lineNumber% &ereset&d. (line cleared)"
     edit-error-defaultconf: "&cSorry, but the default configuration cannot be edited using /sconfig. &eIf you wish to directly alter the default config, do so using &bconfig.yml"
 
-    list-item: "- &bConfiguration &e%item%"
+    list-item: "&f- &bConfiguration &e%item%"
+    list-item-uses: "&f- &bConfiguration &e%item% &b(in use: &e%uses%&b)"
     list-empty: "&cThere are no scoreboard configurations yet."
 
     show-error-insuff: "&cInsufficient parameters. &eTo preview a scoreboard configuration, please provide the &l&bid&r&e."
@@ -159,6 +202,83 @@ commands:
     invalid-property-operation: "&cCannot perform &f\"&b%operation%&f\" &con property &b%property%&c: unknown operation."
     invalid-operation: "&cCannot perform &f\"&b%operation%&f\"&c: unknown operation."
 
+  rejoin:
+    playeronly: "&cSorry, but this command is player-only."
+    success: "&a&lSuccessfully rejoined to &r&b&l%game%!"
+    fail: "&cCouldn't find any games to join to."
+
+  biamineutil:
+    refresh-files:
+      start: "&e[&bBia&fMine&e]: &7Refreshing plugin files ..."
+      completed: "&e[&bBia&fMine&e]: &7Refreshed!"
+    reread-config:
+      start: "&e[&bBia&fMine&e]: &7Reading configuration file ..."
+      completed: "&e[&bBia&fMine&e]: &7Success!"
+    printactivegame:
+      response: "&e[&bBia&fMine&e]: &7Currently active game: &b%game%&r"
+      none: "&e[&bBia&fMine&e]: &cThere are no games active."
+    reloadlocalizations:
+      start: "&e[&bBia&fMine&e]: &7Starting localization discovery ..."
+      completed: "&e[&bBia&fMine&e]: &aLocalization discovery completed."
+    reset-default-lang:
+      completed: "&e[&bBia&fMine&e]: &e%response%"
+    invalid-operation: "&e[&bBia&fMine&e]: &cInvalid operation."
+    reload-current-lang:
+      start: "&e[&bBia&fMine&e]: &eReloading current language file ..."
+      completed: "&e[&bBia&fMine&e]: &aSuccessfully reloaded language file."
+
+  exclusionlist:
+
+    insuff: "&cInsufficient parameters. &ePlease provide an operation and the appropriate parameters."
+
+    error-occupied: "&cSorry, but &e%id%&c is already in use."
+    error-create: "&cSomething went wrong while trying to create the exclusion list. Check the logs for more info."
+    error-edit: "&cSomething went wrong while trying to edit the exclusion list. Check the logs for more info."
+    error-assign: "&cSomething went wrong while trying to assign the exclusion list. Check the logs for more info."
+    error-unassign: "&cSomething went wrong while trying to unassign the exclusion list. Check the logs for more info."
+
+    error-create-insuff: "&cInsufficient parameters. &eIf you wish to create a new exclusion list, provide an &bid&e to register the list."
+    error-edit-insuff: "&cInsufficient parameters. &eIf you wish to edit an exclusion list, provide the &bid&e, an&boperation&e you wish to run, and the appropriate parameters."
+    error-assign-insuff: "&cInsufficient parameters. &eIf you wish to assign an exclusion list, provide the &bid of the list&e and &bthe game&e to assign the list to."
+    error-unassign-insuff: "&cInsufficient parameters. &eIf you wish to unassign an exclusion list, provide the &bid of the list&e and &bthe game&e to unassign the list from."
+    error-view-insuff: "&cInsufficient parameters. &eIf you wish to view the players in an exclusion list, provide the &bid of the list&e."
+    error-delete-insuff: "&cInsufficient parameters. &eIf you wish to delete an exclusion list, provide the &bid of the list&e."
+
+    error-edit-playeroffline: "&cInvalid player. &eMake sure that the player you're trying to add exists and is currently online."
+    error-edit-listnotfound: "&cList not found: &e%id%&c. &eMake sure you've typed in the correct &bexclusion list ID&e."
+    error-edit-playerthere: "&cOperation failed. &b%player% &eis already in this exclusion list."
+    error-edit-playernotfound: "&cOperation failed. &b%player% &eis not currently in this exclusion list."
+
+    error-assign-nonexlist: "&cOperation failed. &eNo such list as &b%list%&e."
+    error-assign-nonextarget: "&cOperation failed. &eNo such game as &b%game%&e."
+
+    error-unassign-nogameswith: "&cOperation failed. &eThere are no games with this exclusion list."
+
+    list:
+      header: "&e============================="
+      item-used: "&f- &eList &b%list% &8(&f in use by &b%uses% &fgames&8)"
+      item: "&f- &eList &b%list% &8(&fnot in use&8)"
+      empty: "&cThere aren't any exclusion lists yet."
+
+
+    view:
+      header: "&e============================="
+      subtitle: "&7Excluded players in &f%list%&r\n"
+      item: "&f- &e%player% &7(&f%uuid%&7)"
+      footer: "\n&a%online% online &fof &c%excluded% excluded&r"
+      not-found: "&cCould not find &b%list%&c. &eAre you sure you've typed the id correctly?"
+      empty: "&cThis is an empty list."
+
+    error-delete-notfound: "&cCould not find &b%list% &c."
+    error-delete: "&cSomething went wrong while deleting the list. Check the logs for more info."
+
+    success-create: "&aSuccessfully created a new exclusion list. &eYou may now edit it using &d/exclusionlist &8edit &b%id%&e."
+    success-addplayer: "&aAdded &b%player% &ato the exclusion list. &eThey will be now excluded from games using this exclusion list."
+    success-removeplayer: "&aRemoved &b%player% &afrom the exclusion list. &eThey will be no longer excluded from games using this exclusion list."
+    success-assign: "&aSuccessfully assigned &b%list% &ato &d%game%&a. &eIt will now exclude all of the players in this list."
+    success-unassign: "&aSuccessfully unassigned &b%list% &afrom &d%game%&a."
+    success-delete: "&aSuccessfully deleted &b%list%&a. &eIt's been unassigned from all of the related games."
+
   checkpoint:
     error-nogame: "&cCannot find game &b%game%&c. &eAre you sure you typed in the correct ID?"
     error-insuff: "&cInsufficient parameters.\n&eTo perform &b<remove>&e, &b<find>&e or &b<setbound>&e, provide the &bcheckpoint ID&e as the third parameter."
@@ -181,7 +301,7 @@ commands:
     success-setfinish: "&aThe finishing checkpoint is now set to &e%checkpoint%&a."
     success-remove: "&aSuccessfully removed &b%target%&a."
     success-add: "&aSuccessfully added a checkpoint. &bNow: &e%checkpoints%"
-    success-find: "&eCheckpoint information\n&cCheckpoint Bound #1: &b%bound1%\n&cCheckpoint Bound #2: &b%bound2%"
+    success-find: "&eCheckpoint information\n&cCheckpoint Bound #1\n&b%bound1%\n&cCheckpoint Bound #2\n&b%bound2%"
     success-find-tp: "&6You've been teleported to the first available boundary location for the provided checkpoint."
     success-setname: "&aSuccessfully changed the name for &b%checkpoint% &ato:&r %name%"
 

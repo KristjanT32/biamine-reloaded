@@ -2,7 +2,7 @@ package krisapps.biaminereloaded;
 
 import krisapps.biaminereloaded.commands.*;
 import krisapps.biaminereloaded.commands.tabcompleter.*;
-import krisapps.biaminereloaded.events.PlayerMoveEventHandler;
+import krisapps.biaminereloaded.events.PlayerMoveListener;
 import krisapps.biaminereloaded.utilities.BiaMineDataUtility;
 import krisapps.biaminereloaded.utilities.GameManagementUtility;
 import krisapps.biaminereloaded.utilities.LocalizationUtility;
@@ -202,7 +202,7 @@ public final class BiamineReloaded extends JavaPlugin {
     }
 
     private void registerEvents() {
-        getServer().getPluginManager().registerEvents(new PlayerMoveEventHandler(this), this);
+        getServer().getPluginManager().registerEvents(new PlayerMoveListener(this), this);
 
         getLogger().info("Events registered.");
     }
@@ -219,6 +219,10 @@ public final class BiamineReloaded extends JavaPlugin {
         getCommand("terminate").setExecutor(new Terminate(this));
         getCommand("pausegame").setExecutor(new PauseGame(this));
         getCommand("resumegame").setExecutor(new ResumeGame(this));
+        getCommand("exclusionlist").setExecutor(new ExclusionListConfig(this));
+        getCommand("kickplayer").setExecutor(new KickPlayer(this));
+        getCommand("rejoinbiathlon").setExecutor(new Rejoin(this));
+        getCommand("biamineutil").setExecutor(new BiaMineUtility(this));
 
 
         getCommand("sconfig").setTabCompleter(new ScoreboardConfigAC(this));
@@ -231,13 +235,16 @@ public final class BiamineReloaded extends JavaPlugin {
         getCommand("terminate").setTabCompleter(new TerminateAC(this));
         getCommand("pausegame").setTabCompleter(new PauseResumeAC(this));
         getCommand("resumegame").setTabCompleter(new PauseResumeAC(this));
+        getCommand("exclusionlist").setTabCompleter(new ExclusionListAC(this));
+        getCommand("kickplayer").setTabCompleter(new KickAC());
+        getCommand("biamineutil").setTabCompleter(new BiaMineUtilAC());
 
         getLogger().info("Commands registered.");
     }
 
     @Override
     public void onDisable() {
-        // Plugin shutdown logic
+        gameUtility.reloadTerminate();
     }
 
     public void saveAllFiles() {
@@ -350,5 +357,97 @@ public final class BiamineReloaded extends JavaPlugin {
                 }
             }
         }, delayInSeconds * 20L);
+    }
+
+    public void reloadFiles() {
+
+        this.pluginConfig = null;
+        this.pluginGames = null;
+        this.pluginData = null;
+        this.pluginScoreboardConfig = null;
+        this.pluginExclusionLists = null;
+        this.pluginLocalization = null;
+
+
+        pluginConfig = new YamlConfiguration();
+        pluginGames = new YamlConfiguration();
+        pluginData = new YamlConfiguration();
+        pluginScoreboardConfig = new YamlConfiguration();
+        pluginExclusionLists = new YamlConfiguration();
+        pluginLocalization = new YamlConfiguration();
+
+        try {
+            pluginConfig.load(configFile);
+        } catch (IOException | InvalidConfigurationException e) {
+            getLogger().warning("Failed to load the config file: " + e.getMessage());
+        }
+        try {
+            pluginGames.load(gameFile);
+        } catch (IOException | InvalidConfigurationException e) {
+            getLogger().severe("Failed to load the game file: " + e.getMessage());
+        }
+        try {
+            pluginData.load(dataFile);
+        } catch (IOException | InvalidConfigurationException e) {
+            getLogger().severe("Failed to load the data file: " + e.getMessage());
+        }
+        try {
+            pluginScoreboardConfig.load(scoreboardConfigFile);
+        } catch (IOException | InvalidConfigurationException e) {
+            getLogger().warning("Failed to load the scoreboard configurations file: " + e.getMessage());
+        }
+        try {
+            pluginExclusionLists.load(exclusionListFile);
+        } catch (IOException | InvalidConfigurationException e) {
+            getLogger().warning("Failed to load the exclusion lists file: " + e.getMessage());
+        }
+        try {
+            pluginLocalization.load(localizationFile);
+        } catch (IOException | InvalidConfigurationException e) {
+            getLogger().warning("Failed to load the localization information file: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void reloadConfig() {
+        super.reloadConfig();
+    }
+
+    public void reloadLocalizations() {
+        LocalizationUtility localizationUtility = new LocalizationUtility(this);
+        int foundLocalizations = 0;
+
+        ArrayList<String> langList = (ArrayList<String>) pluginLocalization.getList("languages");
+        ArrayList<String> missingLocalizations = new ArrayList<>();
+
+        for (String langCode : langList) {
+            File langFile = new File(getDataFolder(), "/localization/" + langCode + ".yml");
+            if (!langFile.exists()) {
+                getLogger().warning("[404] Could not find the localization file for " + langCode);
+                missingLocalizations.add(langCode);
+            } else {
+                getLogger().info("[OK] Successfully recognized localization file for " + langCode);
+                foundLocalizations++;
+            }
+        }
+        getLogger().info("Localization discovery complete. Found " + foundLocalizations + " localization files out of " + langList.size() + " specified localizations.");
+        if (!missingLocalizations.isEmpty()) {
+            getLogger().info("Missing localization files: " + Arrays.toString(missingLocalizations.toArray()));
+        }
+    }
+
+    public int resetDefaultLanguageFile() {
+        saveResource("en-US.yml", true);
+        try {
+            Files.move(Path.of(getDataFolder() + "/en-US.yml"), Path.of(getDataFolder().toPath() + "/localization/en-US.yml"), StandardCopyOption.REPLACE_EXISTING);
+            return 200;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return 500;
+        }
+    }
+
+    public void reloadCurrentLanguageFile() {
+        localizationUtility.setupCurrentLanguageFile();
     }
 }
