@@ -10,6 +10,12 @@ errors:
   invalid-game: "&cNo such game exists. &eAre you sure you typed the correct ID?"
   player-only: "&cSorry, but this command is player-only."
 
+hovertext:
+  teleport-spot: "&bTeleport to this shooting spot's location!\n&eClick on this button to teleport straight to the shooting point."
+
+clicktext:
+  teleport: "&a[&bTeleport&a]"
+
 internals:
   setupsb-err-invconf: "&cFailed to setup a scoreboard for the current game: &eThere is no scoreboard configuration that corresponds to the active game.&r"
   rplanfile-error: "&cFailed to replace the en-US file with the internal copy: &b%error%&r"
@@ -58,6 +64,10 @@ gameloop:
 
     player-kicked: "&b%player% &ehas been kicked from the game.&7(&f%reason%&7)&r"
     player-kicked-target: "&e=================================\n&cYou've been kicked from &e%game%&c.\n&fReason: &7%reason%&r\n&e================================="
+
+    itemdispense:
+      gave: "&bYou received: &e%item% &fx&a%count%"
+      finished-skip: "&bYou had the required items, so you were given &c&lNOTHING."
 
     player-disconnected:
       notice: "&cWarning! &eA player from this game has disconnected! Pausing the game in &b%delay% &eseconds!"
@@ -143,6 +153,19 @@ commands:
     success: "&eKicked &b%player% &efrom the current game."
     finished: "&cThis player has already finished their run."
     nogames: "&cThere are no games currently active."
+
+  dispenser:
+    additem-error-insuff: "&cInsufficient parameters. &eTo add an item to the dispenser for this game, provide &bthe item to add&e."
+    additem-success: "&aSuccess! &b%item% &eis now in the dispenser list of &b%game%&e."
+
+    removeitem-error-insuff: "&cInsufficient parameters. &eTo remove an item from the dispenser for this game, provide &bthe item to remove&e."
+    removeitem-success: "&aSuccess! &b%item% &ewas removed from the dispenser list of &b%game%&e."
+    removeitem-notfound: "&cThere are no items of type &b%item% &cin the dispenser list for &b%game%&c."
+
+    show-notice: "&e================================================\n&bItem Dispenser List for &d%game%"
+    show-item: "&f- &e%item% &7(&fx&a%count%&7)"
+    show-empty: "&f- &cNothing to show here..."
+    show-footer: "&e================================================"
 
   sconfig:
     create-error-insuff: "&cInsufficient parameters. &eTo create a new scoreboard configuration, please provide the &l&bid&r&e."
@@ -304,4 +327,51 @@ commands:
     success-find: "&eCheckpoint information\n&cCheckpoint Bound #1\n&b%bound1%\n&cCheckpoint Bound #2\n&b%bound2%"
     success-find-tp: "&6You've been teleported to the first available boundary location for the provided checkpoint."
     success-setname: "&aSuccessfully changed the name for &b%checkpoint% &ato:&r %name%"
+
+  shootingrange:
+
+    generic:
+      insuff: "&cInsufficient parameters. &eTo manage the shooting range for an instance, provide &bthe game ID&e and &bthe operation to perform&e along with the parameters."
+      nogame: "&cNo such game exists. &eWe wouldn't want to create a non-existent shooting range, would we?"
+      nospot: "&cNo such spot exists. &ePlease make sure you've provided the correct spotID."
+      failed: "&cSomething went wrong when applying current changes. &eMake sure all of the provided arguments are correct."
+      timed-out: "&cOperation cancelled (timed-out)."
+
+    addspot:
+      added: "&aSuccessfully added a shooting spot to &b%game%'s shooting range. &eYou might want to adjust it's boundaries using &7/shootingrange &f%game%&7 editSpot setbound1/setbound2&r"
+      removed: "&aSuccessfully removed this shooting spot from &b%game%'s shooting range. &eThe existing shootings spots' ID's will be shifted, to account for this change."
+
+    removespot:
+      removed: "&aShooting Spot \"&e%spotID%\" &aremoved. &bThe targets for this spot will be deleted."
+      notfound: "&cCouldn't find &b%spot%&c. &eAre you sure it exists?&r"
+
+    editspot:
+      setbound1-set: "&aShooting Spot &b#%number%&a]: &eBoundary 1 set to: &fX:&d%x%&e, &fY:&d%y%&e, &fZ:&d%z%&e."
+      setbound2-set: "&aShooting Spot &b#%number%&a]: &eBoundary 2 set to: &fX:&d%x%&e, &fY:&d%y%&e, &fZ:&d%z%&e."
+
+      addtarget-notair: "&aShooting Spot &b#%number%&a]: &cSorry, but &bair&c cannot be used as a target."
+      addtarget-inuse: "&aShooting Spot &b#%number%&a]: &cTarget already in use by &e%spot% &con &e%game%&c!"
+      addtarget-added: "&aShooting Spot &b#%number%&a]: &eAdded a new target to &b%spot% &eon &b%game%&e."
+      addtarget-click: "&eClick on the target you wish to &a&lADD &r&f[&b%time% s&f]"
+
+      block-set: "&a&lChanges applied to: &f(&bx%x%&e, &by%y%&e, &bz%z%&f)"
+
+      removetarget-removed: "&aShooting Spot &b#%number%&a]: &eTarget removed."
+      removetarget-notatarget: "&aShooting Spot &b#%number%&a]: &cThe selected block is not a target."
+      removetarget-click: "&eClick on the target you wish to &c&lREMOVE &r&f[&b%time% s&f]"
+      removetarget-wrong: "&aShooting Spot &b#%number%&a]: &cThe selected target is not from this &b%param%&c."
+
+    visualize:
+      err-spot: "&b[&eVisualize&b]: &fFailed to visualize &7%spot% &f- &cincomplete"
+      start: "&b[&eVisualize&b]: &fVisualizing shooting spots: visualization will end in 10 seconds."
+      blocked: "&b[&eVisualize&b]: &fPlease wait for the active visualization to conclude."
+
+    showinfo:
+      header: "&e=============================\n&bShooting Range Information\n"
+      spots-title: "&f&lShooting spots\n"
+      spot-header: "&e=============================\n&b%spot% &etargets&r"
+      list-item: "&f- &e%spot%"
+      footer: "\n&aA total of &f%spots%&a shooting spots, with \n&f%targets%&a combined targets.\n&e============================="
+
+
 

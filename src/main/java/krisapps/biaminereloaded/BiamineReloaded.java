@@ -3,10 +3,7 @@ package krisapps.biaminereloaded;
 import krisapps.biaminereloaded.commands.*;
 import krisapps.biaminereloaded.commands.tabcompleter.*;
 import krisapps.biaminereloaded.events.PlayerMoveListener;
-import krisapps.biaminereloaded.utilities.BiaMineDataUtility;
-import krisapps.biaminereloaded.utilities.GameManagementUtility;
-import krisapps.biaminereloaded.utilities.LocalizationUtility;
-import krisapps.biaminereloaded.utilities.MessageUtility;
+import krisapps.biaminereloaded.utilities.*;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -51,6 +48,7 @@ public final class BiamineReloaded extends JavaPlugin {
     public BiaMineDataUtility dataUtility = new BiaMineDataUtility(this);
     public MessageUtility messageUtility = new MessageUtility(this);
     public LocalizationUtility localizationUtility = new LocalizationUtility(this);
+    public VisualisationUtility visualisationUtility = new VisualisationUtility(this);
     public GameManagementUtility gameUtility = new GameManagementUtility(this);
 
 
@@ -203,6 +201,7 @@ public final class BiamineReloaded extends JavaPlugin {
 
     private void registerEvents() {
         getServer().getPluginManager().registerEvents(new PlayerMoveListener(this), this);
+        getServer().getPluginManager().registerEvents(new ShootingRangeConfig(this), this);
 
         getLogger().info("Events registered.");
     }
@@ -223,6 +222,8 @@ public final class BiamineReloaded extends JavaPlugin {
         getCommand("kickplayer").setExecutor(new KickPlayer(this));
         getCommand("rejoinbiathlon").setExecutor(new Rejoin(this));
         getCommand("biamineutil").setExecutor(new BiaMineUtility(this));
+        getCommand("dispenser").setExecutor(new DispenserConfig(this));
+        getCommand("shootingrange").setExecutor(new ShootingRangeConfig(this));
 
 
         getCommand("sconfig").setTabCompleter(new ScoreboardConfigAC(this));
@@ -238,13 +239,17 @@ public final class BiamineReloaded extends JavaPlugin {
         getCommand("exclusionlist").setTabCompleter(new ExclusionListAC(this));
         getCommand("kickplayer").setTabCompleter(new KickAC());
         getCommand("biamineutil").setTabCompleter(new BiaMineUtilAC());
+        getCommand("dispenser").setTabCompleter(new DispenserAC(this));
+        getCommand("shootingrange").setTabCompleter(new ShootingRangeAC(this));
 
         getLogger().info("Commands registered.");
     }
 
     @Override
     public void onDisable() {
-        gameUtility.reloadTerminate();
+        if (gameUtility.getActiveGameID() != null) {
+            gameUtility.reloadTerminate();
+        }
     }
 
     public void saveAllFiles() {

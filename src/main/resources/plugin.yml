@@ -56,6 +56,14 @@ commands:
     description: "Utility command for BiaMine."
     usage: "/biamineutil <operation>"
 
+  dispenser:
+    description: "Manages the items that will be dispensed to players in a Biathlon game."
+    usage: "/dispenser <gameID> <addItem|removeItem|show> [param]"
+
+  shootingrange:
+    description: "Manages an instance's shooting range."
+    usage: "/shootingrange <gameID> <addSpot|editSpot|removeSpot|visualizeSpots|showInfo>"
+
   # Scoreboard Customization
   sconfig:
     description: "Manages scoreboard configurations."

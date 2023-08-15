@@ -1,9 +1,12 @@
 package krisapps.biaminereloaded.commands;
 
+import com.jeff_media.customblockdata.CustomBlockData;
 import krisapps.biaminereloaded.BiamineReloaded;
+import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 
 public class BiaMineUtility implements CommandExecutor {
 
@@ -81,6 +84,12 @@ public class BiaMineUtility implements CommandExecutor {
                     main.reloadFiles();
                     main.reloadCurrentLanguageFile();
                     main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("internals.reload-complete"));
+                    break;
+                case "clearCustomBlockData":
+                    for (Block b : CustomBlockData.getBlocksWithCustomData(main, ((Player) sender).getLocation().getChunk())) {
+                        CustomBlockData blockData = new CustomBlockData(b, main);
+                        blockData.clear();
+                    }
                     break;
                 default:
                     main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.biamineutil.invalid-operation"));

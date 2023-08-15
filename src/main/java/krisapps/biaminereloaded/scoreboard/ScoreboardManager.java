@@ -67,6 +67,10 @@ public class ScoreboardManager {
 
     public void setupScoreboard(BiamineBiathlon gameInfoObject, String gameID) {
 
+        if (mainScoreboard.getObjective("biathlonGame") == null) {
+            gameObjective = mainScoreboard.registerNewObjective("biathlonGame", "dummy", "name");
+        }
+
         if (!main.dataUtility.scoreboardConfigExists(gameInfoObject.scoreboardConfig)) {
             Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("internals.setupsb-err-invconf")));
             return;

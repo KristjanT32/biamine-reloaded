@@ -4,10 +4,17 @@ import krisapps.biaminereloaded.BiamineReloaded;
 import krisapps.biaminereloaded.types.GenericErrorType;
 import krisapps.biaminereloaded.types.Placeholder;
 import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+
+import javax.annotation.Nullable;
 
 public class MessageUtility {
 
@@ -85,6 +92,26 @@ public class MessageUtility {
 
     public void sendActionbarMessage(Player target, String text) {
         target.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(ChatColor.translateAlternateColorCodes('&', text)));
+    }
+
+    public BaseComponent createClickableTeleportButton(String textPath, Location target, @Nullable String hoverTextPath) {
+        BaseComponent[] component = TextComponent.fromLegacyText(ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase(textPath)));
+        TextComponent out = new TextComponent(component);
+        out.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/tp @p " + target.getBlockX() + " " + target.getBlockY() + " " + target.getBlockZ()));
+        if (hoverTextPath != null) {
+            out.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase(hoverTextPath)))));
+        }
+        return out;
+    }
+
+    public TextComponent createClickableButton(String textPath, String command, @Nullable String hoverTextPath) {
+        BaseComponent[] component = TextComponent.fromLegacyText(ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase(textPath)));
+        TextComponent out = new TextComponent(component);
+        out.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command));
+        if (hoverTextPath != null) {
+            out.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase(hoverTextPath)))));
+        }
+        return out;
     }
 
 }

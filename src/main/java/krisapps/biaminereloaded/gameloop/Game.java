@@ -8,6 +8,7 @@ import krisapps.biaminereloaded.logging.BiaMineLogger;
 import krisapps.biaminereloaded.scoreboard.ScoreboardManager;
 import krisapps.biaminereloaded.timers.BiathlonTimer;
 import krisapps.biaminereloaded.types.*;
+import krisapps.biaminereloaded.utilities.ItemDispenserUtility;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -21,6 +22,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitScheduler;
+import org.bukkit.scheduler.BukkitTask;
 
 import javax.annotation.Nullable;
 import java.time.DateTimeException;
@@ -37,6 +39,7 @@ public class Game implements Listener {
     public Location startLocation_bound2 = null;
     public boolean isPaused = false;
     public int PREP_TASK = -1;
+    BukkitTask cleanupTask;
     public int COUNTDOWN_TASK = -1;
     public int REFRESH_TASK = -1;
     public int RESUME_COUNTDOWN_TASK = -1;
@@ -50,6 +53,7 @@ public class Game implements Listener {
     BiamineBiathlon currentGameInfo;
     BukkitScheduler scheduler = Bukkit.getScheduler();
     CommandSender initiator;
+    ItemDispenserUtility dispenser;
     Random random = new Random();
 
     private final Map<UUID, Location> disconnectedPlayers = new HashMap<>();
@@ -63,11 +67,13 @@ public class Game implements Listener {
         this.finishedPlayers = new HashMap<>();
         this.timer = new BiathlonTimer(main);
         this.scoreboardManager = new ScoreboardManager(main);
+        this.dispenser = new ItemDispenserUtility(main);
 
         activeGameLogger = new BiaMineLogger("BiaMine", "Active Game", main);
         gameSetupLogger = new BiaMineLogger("BiaMine", "Setup", main);
         instance = this;
     }
+
 
     // Event Handlers
 
@@ -185,6 +191,9 @@ public class Game implements Listener {
 
     public void startGame(CommandSender initiator) {
         this.initiator = initiator;
+        if (cleanupTask != null) {
+            cleanupTask.cancel();
+        }
         if (REFRESH_TASK != -1) {
             main.messageUtility.sendMessage(initiator, main.localizationUtility.getLocalizedPhrase("gameloop.error-gamerunning"));
             return;
@@ -541,6 +550,7 @@ public class Game implements Listener {
                         main.messageUtility.sendActionbarMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.actionbar.finalcountdown-start-nohalt"));
                     }
                 }
+                dispenseItems();
             }
         });
     }
@@ -560,6 +570,12 @@ public class Game implements Listener {
                 scoreboardManager.showScoreboard();
             }
         });
+    }
+
+    private void dispenseItems() {
+        dispenser.dispenseToAll(
+                players.stream().filter((player -> !finishedPlayers.containsKey(player)
+                )).collect(Collectors.toList()), main.dataUtility.getItemsToDispense(currentGameID));
     }
 
     private void initScoreboard() {
@@ -677,7 +693,8 @@ public class Game implements Listener {
             main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.FINALIZING);
             scheduler.cancelTask(REFRESH_TASK);
             scheduler.cancelTasks(main);
-            scheduler.runTaskLater(main, this::cleanup, 20L * 3);
+            main.dataUtility.setActiveGame(null);
+            cleanupTask = scheduler.runTaskLater(main, this::cleanup, 20L * 3);
         }
     }
 

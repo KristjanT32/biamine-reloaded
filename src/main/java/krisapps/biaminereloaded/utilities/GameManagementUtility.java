@@ -3,6 +3,7 @@ package krisapps.biaminereloaded.utilities;
 import krisapps.biaminereloaded.BiamineReloaded;
 import krisapps.biaminereloaded.gameloop.BiamineBiathlon;
 import krisapps.biaminereloaded.gameloop.Game;
+import krisapps.biaminereloaded.types.CoreDataField;
 import krisapps.biaminereloaded.types.GameProperty;
 import krisapps.biaminereloaded.types.InstanceStatus;
 import org.bukkit.command.CommandSender;
@@ -45,7 +46,7 @@ public class GameManagementUtility {
     }
 
     public void reloadTerminate() {
-        if (Game.instance == null) {
+        if (Game.instance == null || Game.class == null) {
             return;
         }
         Game.instance.reloadTerminate();
@@ -97,10 +98,18 @@ public class GameManagementUtility {
     }
 
     public String getActiveGameID() {
-        if (Game.instance == null) {
-            return "unknown";
+        try {
+            if (Game.instance == null) {
+                return "unknown";
+            }
+            return Game.instance.getCurrentGameInfo().gameID;
+        } catch (NoClassDefFoundError e) {
+            try {
+                return (String) main.dataUtility.getCoreData(CoreDataField.LAST_ACTIVE_GAME);
+            } catch (NoClassDefFoundError err) {
+                return null;
+            }
         }
-        return Game.instance.getCurrentGameInfo().gameID;
     }
 
     public void resetScoreboard() {

@@ -45,7 +45,7 @@ public class SetStart implements CommandExecutor {
                 if (data.hasSetupStartLocation(args[0])) {
                     Location location1 = main.dataUtility.getStartLocationFirstBound(args[0]);
                     Location location2 = main.dataUtility.getStartLocationSecondBound(args[0]);
-                    highlightAreaWithParticles(location1, location2);
+                    highlightAreaWithParticles(location1, location2, (Player) sender);
                 }
             } else {
                 messages.sendError(sender, GenericErrorType.INVALID_GAME);
@@ -56,14 +56,13 @@ public class SetStart implements CommandExecutor {
         return true;
     }
 
-    private void highlightAreaWithParticles(Location lowerBound, Location upperBound) {
+    private void highlightAreaWithParticles(Location lowerBound, Location upperBound, Player p) {
         World world = lowerBound.getWorld();
-
         for (double x = lowerBound.getX(); x <= upperBound.getX(); x++) {
             for (double y = lowerBound.getY(); y <= upperBound.getY(); y++) {
                 for (double z = lowerBound.getZ(); z <= upperBound.getZ(); z++) {
                     Location particleLocation = new Location(world, x, y, z);
-                    world.spawnParticle(Particle.BLOCK_MARKER, particleLocation, 1);
+                    p.spawnParticle(Particle.BLOCK_MARKER, particleLocation, 1);
                 }
             }
         }

@@ -1,11 +1,16 @@
 package krisapps.biaminereloaded.utilities;
 
+import com.jeff_media.customblockdata.CustomBlockData;
 import krisapps.biaminereloaded.BiamineReloaded;
 import krisapps.biaminereloaded.events.InstanceStatusChangeEvent;
 import krisapps.biaminereloaded.types.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.security.InvalidParameterException;
 import java.util.*;
@@ -218,6 +223,7 @@ public class BiaMineDataUtility {
         main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".exclusionList", "none");
         main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".scoreboardConfiguration", "default");
         main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".runState", "STANDBY");
+        main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange", new ArrayList<String>());
 
         return main.saveGames();
     }
@@ -437,7 +443,7 @@ public class BiaMineDataUtility {
                     ? (List<String>) main.pluginExclusionLists.getList(EXCLUSIONS_FILE_PATH_PREFIX + listID + ".excludedPlayers")
                     : new ArrayList<>(0);
         } else {
-            return null;
+            return new ArrayList<>();
         }
     }
 
@@ -449,7 +455,7 @@ public class BiaMineDataUtility {
             }
             return result;
         } else {
-            return null;
+            return new ArrayList<>();
         }
     }
 
@@ -528,7 +534,56 @@ public class BiaMineDataUtility {
         return main.saveGames();
     }
 
+    public List<ItemStack> getItemsToDispense(String gameID) {
+        if (!gameExists(gameID)) {
+            return new ArrayList<ItemStack>();
+        }
+        if (main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems") != null) {
+            return (List<ItemStack>) main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems");
+        } else {
+            return new ArrayList<ItemStack>();
+        }
+    }
 
+    public void removeItemToDispense(String gameID, ItemStack item) {
+        if (!gameExists(gameID)) {
+            return;
+        }
+        if (main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems") != null) {
+            main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems").remove(item);
+            main.saveGames();
+        }
+    }
+
+    public void addItemToDispense(String gameID, ItemStack item) {
+        if (!gameExists(gameID)) {
+            return;
+        }
+        if (main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems") == null) {
+            main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems", new ArrayList<ItemStack>());
+        }
+        List<ItemStack> list = (List<ItemStack>) main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems");
+
+        if (!list.contains(item)) {
+            list.add(item);
+        }
+        main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems", list);
+        main.saveGames();
+    }
+
+    public boolean isInDispenserList(String gameID, ItemStack item) {
+        if (!gameExists(gameID)) {
+            return false;
+        }
+        if (main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems") == null) {
+            main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems", new ArrayList<ItemStack>());
+        } else {
+            return false;
+        }
+        List<ItemStack> list = (List<ItemStack>) main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems");
+
+        return list.contains(item);
+    }
     public String getCurrentLanguage() {
         if (main.pluginData.getString("options.currentLanguage") == null) {
             main.pluginData.set("options.currentLanguage", "en-US");
@@ -568,8 +623,217 @@ public class BiaMineDataUtility {
                 return main.pluginConfig.getString("options.autorejoin");
             case HALT_PLAYERS_WITH_POTIONEFFECT:
                 return main.pluginConfig.getString("options.halt-players-with-effect");
+            case SEND_ITEM_DISPENSER_MESSAGES:
+                return main.pluginConfig.getString("options.send-dispenser-messages");
             default:
                 throw new InvalidParameterException("Unknown config property provided.");
         }
+    }
+
+    @SuppressWarnings("Checked and unchecked casts")
+    public List<Location> getShootingTargetsForSpot(String gameID, int rangeSpotID) {
+        if (gameExists(gameID)) {
+            return (List<Location>) main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange.shootingSpot" + rangeSpotID + ".targets", new ArrayList<>());
+        } else {
+            return new ArrayList<>();
+        }
+    }
+
+    public Set<String> getShootingSpots(String gameID) {
+        if (gameExists(gameID)) {
+            return main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange").getKeys(false);
+        } else {
+            return new HashSet<>();
+        }
+    }
+
+    public boolean addTarget(String gameID, String spotID, Location location) {
+        if (gameExists(gameID)) {
+            if (shootingSpotExists(gameID, Integer.parseInt(spotID.replaceAll("shootingSpot", "")))) {
+
+                List<Location> targetList = (List<Location>) main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange." + spotID + ".targets", new ArrayList<>());
+                targetList.add(location);
+                main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange." + spotID + ".targets", targetList);
+
+                return main.saveGames();
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
+    public boolean removeTarget(String gameID, String spotID, Location location) {
+        if (gameExists(gameID)) {
+            if (shootingSpotExists(gameID, Integer.parseInt(spotID.replaceAll("shootingSpot", "")))) {
+                List<Location> targetList = (List<Location>) main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange." + spotID + ".targets");
+                targetList.remove(location);
+                main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange." + spotID + ".targets", targetList);
+
+                return main.saveGames();
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
+
+    /**
+     * Creates a new shooting spot and assigns the first boundary a location.
+     *
+     * @param gameID      The target game
+     * @param location    The location to set the boundary to
+     * @param boundNumber The bound ID (1 or 2)
+     * @return whether the operation was successful.
+     */
+    public boolean setShootingSpotBound(String gameID, Location location, int boundNumber) {
+        if (gameExists(gameID)) {
+            if (main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange") == null) {
+                main.pluginGames.createSection(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange");
+            }
+            int spotID = main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange").getKeys(false).size() > 0
+                    ? main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange").getKeys(false).size() + 1
+                    : 1;
+            main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange.shootingSpot" + spotID + ".bound" + boundNumber, location);
+            return main.saveGames();
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Sets an existing shooting spot's boundary location.
+     *
+     * @param gameID      The target game
+     * @param location    The location to set the boundary to
+     * @param boundNumber The bound ID (1 or 2)
+     * @return whether the operation was successful.
+     */
+    public boolean setShootingSpotBound(String gameID, int spotID, Location location, int boundNumber) {
+        if (gameExists(gameID)) {
+            if (!shootingSpotExists(gameID, spotID)) {
+                return false;
+            }
+            main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange.shootingSpot" + spotID + ".bound" + boundNumber, location);
+            if (main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange.shootingSpot" + spotID + ".targets") == null) {
+                main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange.shootingSpot" + spotID + ".targets", new ArrayList<Location>());
+            }
+            return main.saveGames();
+        } else {
+            return false;
+        }
+    }
+
+    public Location getShootingSpotBound(String gameID, int spotID, int boundNumber) {
+        if (gameExists(gameID)) {
+            Set<String> spots = getShootingSpots(gameID);
+            if (spots.contains("shootingSpot" + spotID)) {
+                Location bound = main.pluginGames.getLocation(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange.shootingSpot" + spotID + ".bound" + boundNumber);
+                return bound;
+            } else {
+                return null;
+            }
+        } else {
+            return null;
+        }
+    }
+
+    public int getShootingSpotIDByTarget(String gameID, Location target) {
+        for (String shootingSpot : getShootingSpots(gameID)) {
+            if (getShootingTargetsForSpot(gameID, Integer.parseInt(shootingSpot.replace("shootingSpot", ""))).contains(target)) {
+                return Integer.parseInt(shootingSpot.replaceAll("shootingSpot", ""));
+            }
+        }
+        return -1;
+    }
+
+    public String getGameByShootingSpot(int shootingSpotID) {
+        for (String gameID : getGames()) {
+            if (getShootingSpots(gameID).contains("shootingSpot" + shootingSpotID)) {
+                return gameID;
+            }
+        }
+        return null;
+    }
+
+    public List<Location> getTargetsForGame(String gameID) {
+        List<Location> result = new ArrayList<>();
+        if (gameExists(gameID)) {
+            for (String spot : getShootingSpots(gameID)) {
+                for (Location location : getShootingTargetsForSpot(gameID, Integer.parseInt(spot.replaceAll("shootingSpot", "")))) {
+                    result.add(location);
+                }
+            }
+            return result;
+        } else {
+            return new ArrayList<>();
+        }
+    }
+
+    public boolean removeShootingSpot(String gameID, int spotID) {
+        if (main.pluginGames.get(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange.shootingSpot" + spotID) != null) {
+
+            removeTargetsFor(gameID, spotID);
+
+            main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange.shootingSpot" + spotID, null);
+            main.saveGames();
+            migrateShootingSpotIDs(gameID);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private void removeTargetsFor(String gameID, int spotID) {
+        for (Location target : getShootingTargetsForSpot(gameID, spotID)) {
+            for (Block b : CustomBlockData.getBlocksWithCustomData(main, target.getChunk())) {
+                CustomBlockData blockData = new CustomBlockData(b, main);
+                if (blockData.get(new NamespacedKey(main, "ownerGameID"), PersistentDataType.STRING).equalsIgnoreCase(gameID)) {
+                    if (blockData.get(new NamespacedKey(main, "range_spot_number"), PersistentDataType.INTEGER) == spotID) {
+                        main.appendToLog("Deleting shooting target for spot #" + spotID + " of game {" + gameID + "}");
+                        blockData.clear();
+                        removeTarget(gameID, "shootingSpot" + spotID, target);
+                    }
+                }
+            }
+        }
+    }
+
+    private void migrateShootingSpotIDs(String gameID) {
+        int spotNumber = 1;
+        for (String spotID : getShootingSpots(gameID)) {
+            if (!spotID.equalsIgnoreCase("shootingSpot" + spotNumber)) {
+                main.appendToLog("Shooting spot ID mismatch found: expected " + spotNumber + " |actual " + spotID.replaceAll("shootingSpot", "") + "]: Fixing");
+                Location bound1 = getShootingSpotBound(gameID, Integer.parseInt(spotID.replaceAll("shootingSpot", "")), 1);
+                Location bound2 = getShootingSpotBound(gameID, Integer.parseInt(spotID.replaceAll("shootingSpot", "")), 2);
+                List<Location> targets = getShootingTargetsForSpot(gameID, Integer.parseInt(spotID.replaceAll("shootingSpot", "")));
+                main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange." + spotID, null);
+                main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange.shootingSpot" + spotNumber + ".bound1", bound1);
+                main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange.shootingSpot" + spotNumber + ".bound2", bound2);
+                main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange.shootingSpot" + spotNumber + ".targets", targets);
+                main.saveGames();
+            }
+            spotNumber++;
+        }
+    }
+
+    public boolean shootingSpotExists(String gameID, int spotID) {
+        return main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange.shootingSpot" + spotID) != null;
+    }
+
+    public void setTemporaryValue(String key, Object value) {
+        if (value == null) {
+            main.pluginData.set("temporary." + key, null);
+        } else {
+            main.pluginData.set("temporary." + key, value.toString());
+        }
+        main.saveCoredata();
+    }
+
+    public String getTemporaryValue(String key) {
+        return main.pluginData.getString("temporary." + key);
     }
 }

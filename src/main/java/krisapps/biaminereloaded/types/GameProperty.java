@@ -7,8 +7,8 @@ public enum GameProperty {
     PREPARATION_TIME("preparationTime"),
     RUN_STATE("runState"),
     SCOREBOARD_CONFIGURATION_ID("scoreboardConfiguration"),
-    EXCLUSION_LIST_ID("exclusionList");
-
+    EXCLUSION_LIST_ID("exclusionList"),
+    ITEMS_TO_DISPENSE("items");
     String fieldName;
 
     GameProperty(String fieldName) {
