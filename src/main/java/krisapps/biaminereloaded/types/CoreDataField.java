@@ -5,8 +5,8 @@ public enum CoreDataField {
     TEST_REGION_B1("testregion.b1"),
     TEST_REGION_B2("testregion.b2"),
 
-
-    LAST_ACTIVE_GAME("current.lastActiveGameObject");
+    LAST_ACTIVE_GAME("current.lastActiveGameObject"),
+    GAME_IN_PROGRESS("gameInProgress");
 
     private final String fieldName;
 

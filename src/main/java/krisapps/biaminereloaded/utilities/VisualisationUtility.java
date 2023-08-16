@@ -96,6 +96,8 @@ public class VisualisationUtility {
         }, delay * 20L);
     }
 
+    // TODO: Add visualisation methods for checkpoints, starting area
+
     public boolean isRunning() {
         return !visualisationTasks.isEmpty();
     }

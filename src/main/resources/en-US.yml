@@ -28,7 +28,7 @@ generic:
     succeeded: "&e[&bBia&fMine&e]: &aOperation succeeded."
 
 gameloop:
-  error-gamerunning: "&cCannot start this game, since an instance is already running. To start a game, please stop the running instance with &e/forcestopgame <gameID>&c.&r"
+  error-gamerunning: "&cCannot start this game, since an instance is already running, or has not yet finalized. To start a game, please stop the running instance with &e/terminate <gameID>&c.&r"
 
   checkpoint-reached: "&b%player% &ehas just reached %checkpoint%&e at &a%time%&e!"
   checkpoint-reached-target: "&b&lCheckpoint reached &e(&a%time%&e)&r"
@@ -64,6 +64,10 @@ gameloop:
 
     player-kicked: "&b%player% &ehas been kicked from the game.&7(&f%reason%&7)&r"
     player-kicked-target: "&e=================================\n&cYou've been kicked from &e%game%&c.\n&fReason: &7%reason%&r\n&e================================="
+
+    player-target-hit: "&f[&eSpot &b#%spot%&f] &b&lHit! &r&b%player% &ehit &aTarget #%order%&f"
+    player-target-miss: "&f[&eSpot &b#%spot%&f] &c&lMiss! &r&b%player% &amissed a target!"
+    player-target-misfire: "&6&lMisfire! &r&b%player% &efired outside of a shooting spot!"
 
     itemdispense:
       gave: "&bYou received: &e%item% &fx&a%count%"
@@ -335,7 +339,7 @@ commands:
       nogame: "&cNo such game exists. &eWe wouldn't want to create a non-existent shooting range, would we?"
       nospot: "&cNo such spot exists. &ePlease make sure you've provided the correct spotID."
       failed: "&cSomething went wrong when applying current changes. &eMake sure all of the provided arguments are correct."
-      timed-out: "&cOperation cancelled (timed-out)."
+      timed-out: "&c&lOperation cancelled: timed-out"
 
     addspot:
       added: "&aSuccessfully added a shooting spot to &b%game%'s shooting range. &eYou might want to adjust it's boundaries using &7/shootingrange &f%game%&7 editSpot setbound1/setbound2&r"
@@ -344,6 +348,7 @@ commands:
     removespot:
       removed: "&aShooting Spot \"&e%spotID%\" &aremoved. &bThe targets for this spot will be deleted."
       notfound: "&cCouldn't find &b%spot%&c. &eAre you sure it exists?&r"
+      insuff: "&cInsufficient parameters. &eIf you wish to remove a shooting spot, provide the &bshooting spot ID&e."
 
     editspot:
       setbound1-set: "&aShooting Spot &b#%number%&a]: &eBoundary 1 set to: &fX:&d%x%&e, &fY:&d%y%&e, &fZ:&d%z%&e."
@@ -372,6 +377,12 @@ commands:
       spot-header: "&e=============================\n&b%spot% &etargets&r"
       list-item: "&f- &e%spot%"
       footer: "\n&aA total of &f%spots%&a shooting spots, with \n&f%targets%&a combined targets.\n&e============================="
+      insuff: "&cInsufficient parameters. &eIf you wish to view general information about a game's shooting range, use the &fshootingRange &eoption.\n&eIf you wish to view information about the shooting spots, use the &fspots &eoption.\n&eYou can also view information about a single target by using &ftarget&e."
+
+      targetinfo-notarget: "&eThe block at &bX:&f%x% &bY:&f%y% &bZ:&f%z% &cdoes not appear to be a target."
+      targetinfo-click: "&e&lClick on the target to &bVIEW&e the info &r&f[&b%time% s&f]"
+      targetinfo-info: "&e=============================\n&fTarget Information\n&bTarget Number: &e#%order%\n&bParent Shooting Spot: &e%spot%\n&bGame: &e%game%\n&bLocation: &bX:&f%x% &bY:&f%y% &bZ:&f%z%\n&bWorld: &e%world%&r\n&e============================="
+      targetinfo-corrupted: "&e=============================\n&fTarget Information\n&bTarget Number: &e#%order%\n&bParent Shooting Spot: &e%spot%\n&bGame: &e%game%\n&bLocation: &bX:&f%x% &bY:&f%y% &bZ:&f%z%\n&bWorld: &e%world%&r\n&cThis entry appears to be incomplete.\nIt is recommended that you remove this target\nand re-add it to avoid unexpected behaviour!&e============================="
 
 
 

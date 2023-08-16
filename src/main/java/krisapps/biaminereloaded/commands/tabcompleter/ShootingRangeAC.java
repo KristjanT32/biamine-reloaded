@@ -33,7 +33,7 @@ public class ShootingRangeAC implements TabCompleter {
                     completions.addAll(main.dataUtility.getShootingSpots(args[0]));
                     break;
                 case "showInfo":
-                    completions.addAll(Arrays.asList("shootingRange", "spots"));
+                    completions.addAll(Arrays.asList("shootingRange", "spots", "target"));
                     break;
             }
         } else if (args.length == 4) {

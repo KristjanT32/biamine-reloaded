@@ -49,7 +49,7 @@ public class BiaMineDataUtility {
     }
 
     public Object getCoreData(CoreDataField field) {
-        return main.pluginData.get(COREDATA_FILE_PATH_PREFIX + field.getField());
+        return main.pluginData.get(COREDATA_FILE_PATH_PREFIX + field.getField()) == null ? "" : main.pluginData.get(COREDATA_FILE_PATH_PREFIX + field.getField());
     }
 
     public Location getTestRegionBounds(CoreDataField bound) {
@@ -625,6 +625,10 @@ public class BiaMineDataUtility {
                 return main.pluginConfig.getString("options.halt-players-with-effect");
             case SEND_ITEM_DISPENSER_MESSAGES:
                 return main.pluginConfig.getString("options.send-dispenser-messages");
+            case GAME_REPORT_PATH:
+                return main.pluginConfig.getString("options.game-report-path");
+            case GENERATE_GAME_REPORT:
+                return main.pluginConfig.getString("options.generate-report");
             default:
                 throw new InvalidParameterException("Unknown config property provided.");
         }
@@ -759,6 +763,22 @@ public class BiaMineDataUtility {
         return null;
     }
 
+    public CuboidRegion getShootingSpotRegion(String gameID, String shootingSpotID) {
+        if (shootingSpotExists(gameID, Integer.parseInt(shootingSpotID.replaceAll("shootingSpot", "")))) {
+            CuboidRegion out = new CuboidRegion(
+                    getShootingSpotBound(gameID, Integer.parseInt(shootingSpotID.replace("shootingSpot", "")), 1),
+                    getShootingSpotBound(gameID, Integer.parseInt(shootingSpotID.replace("shootingSpot", "")), 2)
+            );
+            if (out.getBound1() != null && out.getBound2() != null) {
+                return out;
+            } else {
+                return null;
+            }
+        } else {
+            return null;
+        }
+    }
+
     public List<Location> getTargetsForGame(String gameID) {
         List<Location> result = new ArrayList<>();
         if (gameExists(gameID)) {
@@ -822,6 +842,38 @@ public class BiaMineDataUtility {
 
     public boolean shootingSpotExists(String gameID, int spotID) {
         return main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + gameID + ".shootingRange.shootingSpot" + spotID) != null;
+    }
+
+    public boolean isTarget(Block b) {
+        return CustomBlockData.hasCustomBlockData(b, main);
+    }
+
+    public Object getTargetData(Block block, TargetProperty property) {
+        if (!CustomBlockData.hasCustomBlockData(block, main)) {
+            return null;
+        }
+        CustomBlockData blockData = new CustomBlockData(block, main);
+        switch (property) {
+            case GAME:
+                return blockData.get(new NamespacedKey(main, "ownerGameID"),
+                        PersistentDataType.STRING);
+            case SPOT:
+                return blockData.get(new NamespacedKey(main, "range_spot_number"),
+                        PersistentDataType.INTEGER);
+            case ORDER:
+                return blockData.get(new NamespacedKey(main, "target_number"),
+                        PersistentDataType.INTEGER);
+            case LOCATION:
+                int[] locArray = blockData.get(new NamespacedKey(main, "location"),
+                        PersistentDataType.PrimitivePersistentDataType.INTEGER_ARRAY);
+                String world = blockData.get(new NamespacedKey(main, "location_world"),
+                        PersistentDataType.STRING);
+                return new Location(Bukkit.getWorld(world), locArray[0], locArray[1], locArray[2]);
+            case WORLD:
+                return blockData.get(new NamespacedKey(main, "location_world"),
+                        PersistentDataType.STRING);
+        }
+        return null;
     }
 
     public void setTemporaryValue(String key, Object value) {

@@ -220,6 +220,11 @@ public class ShootingRangeConfig implements CommandExecutor, Listener {
 
                                 }
                                 break;
+                            case "target":
+                                main.dataUtility.setTemporaryValue("pendingOperation.operation", "targetInfo");
+                                main.dataUtility.setTemporaryValue("pendingOperation.playerUUID", ((Player) sender).getUniqueId());
+                                initTimeLimit(10, sender, main.localizationUtility.getLocalizedPhrase("commands.shootingrange.showinfo.targetinfo-click"));
+                                break;
                         }
 
                     }
@@ -241,7 +246,7 @@ public class ShootingRangeConfig implements CommandExecutor, Listener {
                 } else {
                     main.dataUtility.setTemporaryValue("pendingOperation", null);
                     main.getServer().getScheduler().cancelTask(Integer.parseInt(main.dataUtility.getTemporaryValue("timers.click-task")));
-                    main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.shootingrange.generic.timed-out"));
+                    main.messageUtility.sendActionbarMessage((Player) sender, main.localizationUtility.getLocalizedPhrase("commands.shootingrange.generic.timed-out"));
                 }
             }
         }, 0, 20L));
@@ -261,13 +266,11 @@ public class ShootingRangeConfig implements CommandExecutor, Listener {
             if (!main.dataUtility.getTemporaryValue("pendingOperation.operation").equalsIgnoreCase("none")) {
                 if (main.dataUtility.getTemporaryValue("pendingOperation.playerUUID") != null) {
                     if (interactEvent.getPlayer().getUniqueId().equals(UUID.fromString(main.dataUtility.getTemporaryValue("pendingOperation.playerUUID")))) {
-                        // Primary Variables
                         Block target = interactEvent.getClickedBlock();
                         String gameID = main.dataUtility.getTemporaryValue("pendingOperation.gameID");
                         String spotID = main.dataUtility.getTemporaryValue("pendingOperation.spotID");
                         String spotNumber = main.dataUtility.getTemporaryValue("pendingOperation.spotNumber");
 
-                        // Make sure the target block is not air.
                         if (!target.isEmpty()) {
                             CustomBlockData dataContainer = new CustomBlockData(target, main);
                             switch (main.dataUtility.getTemporaryValue("pendingOperation.operation")) {
@@ -275,6 +278,8 @@ public class ShootingRangeConfig implements CommandExecutor, Listener {
 
                                     // If there is data for the block, it's definitely in use by some game.
                                     if (!dataContainer.getKeys().isEmpty()) {
+                                        main.getServer().getScheduler().cancelTask(Integer.parseInt(main.dataUtility.getTemporaryValue("timers.click-task")));
+                                        main.dataUtility.setTemporaryValue("pendingOperation", null);
                                         main.messageUtility.sendMessage(interactEvent.getPlayer(), main.localizationUtility.getLocalizedPhrase("commands.shootingrange.editspot.addtarget-inuse")
                                                 .replaceAll("%spot%", "Shooting Spot #" + dataContainer.get(new NamespacedKey(main, "range_spot_number"), PersistentDataType.PrimitivePersistentDataType.INTEGER))
                                                 .replaceAll("%game%", dataContainer.get(new NamespacedKey(main, "ownerGameID"), PersistentDataType.PrimitivePersistentDataType.STRING))
@@ -294,7 +299,7 @@ public class ShootingRangeConfig implements CommandExecutor, Listener {
                                     dataContainer.set(new NamespacedKey(main, "location_world"),
                                             PersistentDataType.STRING, target.getLocation().getWorld().getName());
                                     dataContainer.set(new NamespacedKey(main, "target_number"),
-                                            PersistentDataType.INTEGER, !main.dataUtility.getShootingTargetsForSpot(gameID, Integer.parseInt(spotNumber)).isEmpty() ? main.dataUtility.getShootingTargetsForSpot(gameID, Integer.parseInt(spotNumber)).size() : 1);
+                                            PersistentDataType.INTEGER, !main.dataUtility.getShootingTargetsForSpot(gameID, Integer.parseInt(spotNumber)).isEmpty() ? main.dataUtility.getShootingTargetsForSpot(gameID, Integer.parseInt(spotNumber)).size() + 1 : 1);
                                     dataContainer.set(new NamespacedKey(main, "range_spot_number"),
                                             PersistentDataType.INTEGER, Integer.parseInt(spotNumber));
                                     dataContainer.set(new NamespacedKey(main, "ownerGameID"),
@@ -318,18 +323,24 @@ public class ShootingRangeConfig implements CommandExecutor, Listener {
                                     dataContainer = new CustomBlockData(target.getLocation().getBlock(), main);
 
                                     if (dataContainer.getKeys().isEmpty()) {
+                                        main.getServer().getScheduler().cancelTask(Integer.parseInt(main.dataUtility.getTemporaryValue("timers.click-task")));
+                                        main.dataUtility.setTemporaryValue("pendingOperation", null);
                                         main.messageUtility.sendMessage(interactEvent.getPlayer(), main.localizationUtility.getLocalizedPhrase("commands.shootingrange.editspot.removetarget-notatarget")
                                                 .replaceAll("%number%", spotNumber)
                                         );
                                         return;
                                     } else {
                                         if (!dataContainer.get(new NamespacedKey(main, "ownerGameID"), PersistentDataType.STRING).equals(gameID)) {
+                                            main.getServer().getScheduler().cancelTask(Integer.parseInt(main.dataUtility.getTemporaryValue("timers.click-task")));
+                                            main.dataUtility.setTemporaryValue("pendingOperation", null);
                                             main.messageUtility.sendMessage(interactEvent.getPlayer(), main.localizationUtility.getLocalizedPhrase("commands.shootingrange.editspot.removetarget-wrong")
                                                     .replaceAll("%param%", "game")
                                                     .replaceAll("%number%", spotNumber)
                                             );
                                             return;
                                         } else if (!dataContainer.get(new NamespacedKey(main, "range_spot_number"), PersistentDataType.INTEGER).equals(Integer.parseInt(spotNumber))) {
+                                            main.getServer().getScheduler().cancelTask(Integer.parseInt(main.dataUtility.getTemporaryValue("timers.click-task")));
+                                            main.dataUtility.setTemporaryValue("pendingOperation", null);
                                             main.messageUtility.sendMessage(interactEvent.getPlayer(), main.localizationUtility.getLocalizedPhrase("commands.shootingrange.editspot.removetarget-wrong")
                                                     .replaceAll("%param%", "shooting spot")
                                                     .replaceAll("%number%", spotNumber)
@@ -350,8 +361,93 @@ public class ShootingRangeConfig implements CommandExecutor, Listener {
                                             .replaceAll("%z%", String.valueOf(target.getLocation().getBlockZ()))
                                     );
                                     break;
+                                case "targetInfo":
+
+                                    boolean isCorrupted = false;
+
+                                    int[] info_location;
+                                    String info_world;
+                                    int info_targetnum;
+                                    int info_spotID;
+                                    String info_gameID;
+
+                                    if (CustomBlockData.hasCustomBlockData(target, main)) {
+
+                                        try {
+                                            info_location = dataContainer.get(new NamespacedKey(main, "location"),
+                                                    PersistentDataType.PrimitivePersistentDataType.INTEGER_ARRAY);
+                                        } catch (NullPointerException e) {
+                                            isCorrupted = true;
+                                            info_location = null;
+                                        }
+                                        try {
+                                            info_world = dataContainer.get(new NamespacedKey(main, "location_world"),
+                                                    PersistentDataType.STRING);
+                                        } catch (NullPointerException e) {
+                                            isCorrupted = true;
+                                            info_world = "N/A";
+                                        }
+                                        try {
+                                            info_targetnum = dataContainer.get(new NamespacedKey(main, "target_number"),
+                                                    PersistentDataType.INTEGER);
+                                        } catch (NullPointerException e) {
+                                            isCorrupted = true;
+                                            info_targetnum = -1;
+                                        }
+                                        try {
+                                            info_spotID = dataContainer.get(new NamespacedKey(main, "range_spot_number"),
+                                                    PersistentDataType.INTEGER);
+                                        } catch (NullPointerException e) {
+                                            isCorrupted = true;
+                                            info_spotID = -1;
+                                        }
+                                        try {
+                                            info_gameID = dataContainer.get(new NamespacedKey(main, "ownerGameID"),
+                                                    PersistentDataType.STRING);
+                                        } catch (NullPointerException e) {
+                                            isCorrupted = true;
+                                            info_gameID = "N/A";
+                                        }
+
+                                        if (isCorrupted) {
+                                            main.getServer().getScheduler().cancelTask(Integer.parseInt(main.dataUtility.getTemporaryValue("timers.click-task")));
+                                            main.dataUtility.setTemporaryValue("pendingOperation", null);
+                                            main.messageUtility.sendMessage(interactEvent.getPlayer(), main.localizationUtility.getLocalizedPhrase("commands.shootingrange.showinfo.targetinfo-corrupted")
+                                                    .replaceAll("%order%", info_targetnum == -1 ? "?" : String.valueOf(info_targetnum))
+                                                    .replaceAll("%spot%", info_spotID == -1 ? "N/A" : String.valueOf(info_spotID))
+                                                    .replaceAll("%game%", info_gameID)
+                                                    .replaceAll("%x%", info_location == null ? "?" : String.valueOf(info_location[0]))
+                                                    .replaceAll("%y%", info_location == null ? "?" : String.valueOf(info_location[1]))
+                                                    .replaceAll("%z%", info_location == null ? "?" : String.valueOf(info_location[2]))
+                                                    .replaceAll("%world%", info_world)
+                                            );
+                                        } else {
+                                            main.getServer().getScheduler().cancelTask(Integer.parseInt(main.dataUtility.getTemporaryValue("timers.click-task")));
+                                            main.dataUtility.setTemporaryValue("pendingOperation", null);
+                                            main.messageUtility.sendMessage(interactEvent.getPlayer(), main.localizationUtility.getLocalizedPhrase("commands.shootingrange.showinfo.targetinfo-info")
+                                                    .replaceAll("%order%", info_targetnum == -1 ? "?" : String.valueOf(info_targetnum))
+                                                    .replaceAll("%spot%", info_spotID == -1 ? "N/A" : String.valueOf(info_spotID))
+                                                    .replaceAll("%game%", info_gameID)
+                                                    .replaceAll("%x%", info_location == null ? "?" : String.valueOf(info_location[0]))
+                                                    .replaceAll("%y%", info_location == null ? "?" : String.valueOf(info_location[1]))
+                                                    .replaceAll("%z%", info_location == null ? "?" : String.valueOf(info_location[2]))
+                                                    .replaceAll("%world%", info_world)
+                                            );
+                                        }
+                                    } else {
+                                        main.getServer().getScheduler().cancelTask(Integer.parseInt(main.dataUtility.getTemporaryValue("timers.click-task")));
+                                        main.dataUtility.setTemporaryValue("pendingOperation", null);
+                                        main.messageUtility.sendMessage(interactEvent.getPlayer(), main.localizationUtility.getLocalizedPhrase("commands.shootingrange.showinfo.targetinfo-notarget")
+                                                .replaceAll("%x%", String.valueOf(target.getLocation().getBlockX()))
+                                                .replaceAll("%y%", String.valueOf(target.getLocation().getBlockX()))
+                                                .replaceAll("%z%", String.valueOf(target.getLocation().getBlockX()))
+                                        );
+                                    }
+                                    break;
                             }
                         } else {
+                            main.getServer().getScheduler().cancelTask(Integer.parseInt(main.dataUtility.getTemporaryValue("timers.click-task")));
+                            main.dataUtility.setTemporaryValue("pendingOperation", null);
                             Player p = Bukkit.getPlayer(main.dataUtility.getTemporaryValue("pendingOperation.playerUUID"));
                             main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("commands.shootingrange.editspot.addtarget-notair")
                                     .replaceAll("%number%", String.valueOf(spotNumber))

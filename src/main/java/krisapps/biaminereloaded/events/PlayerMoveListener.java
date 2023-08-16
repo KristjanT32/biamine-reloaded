@@ -2,6 +2,7 @@ package krisapps.biaminereloaded.events;
 
 import krisapps.biaminereloaded.BiamineReloaded;
 import krisapps.biaminereloaded.types.CollidableRegion;
+import krisapps.biaminereloaded.types.CuboidRegion;
 import krisapps.biaminereloaded.types.InstanceStatus;
 import krisapps.biaminereloaded.utilities.RegionCollisionUtility;
 import org.bukkit.Bukkit;
@@ -20,6 +21,8 @@ public class PlayerMoveListener implements Listener {
     RegionCollisionUtility collisionUtility;
     Map<UUID, Long> waitMap = new HashMap<>();
 
+    Map<UUID, String> playerTracker = new HashMap<>();
+
 
     public PlayerMoveListener(BiamineReloaded main) {
         this.main = main;
@@ -35,10 +38,14 @@ public class PlayerMoveListener implements Listener {
     }
 
 
+    // Checkpoint collision
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent moveEvent) {
         Player p = moveEvent.getPlayer();
         String activeGame = main.dataUtility.getActiveGame();
+        if (activeGame == null) {
+            return;
+        }
 
         // Freeze player if in the active game, and the game is paused.
         if (main.gameUtility.getStatus(activeGame).equals(InstanceStatus.PAUSED)) {
@@ -63,6 +70,43 @@ public class PlayerMoveListener implements Listener {
                 } else {
                     addPlayerToSleepMap(p.getUniqueId());
                     Bukkit.getPluginManager().callEvent(new CheckpointPassEvent(moveEvent.getPlayer(), checkpointRegion));
+                }
+            }
+        }
+    }
+
+    // Shooting spot collision
+    @EventHandler
+    public void onPlayerMove2(PlayerMoveEvent moveEvent) {
+        Player p = moveEvent.getPlayer();
+        String activeGame = main.dataUtility.getActiveGame();
+        if (activeGame == null) {
+            return;
+        }
+
+        for (String shootingSpot : main.dataUtility.getShootingSpots(activeGame)) {
+            CuboidRegion shootingSpotRegion;
+            try {
+                shootingSpotRegion = main.dataUtility.getShootingSpotRegion(activeGame, shootingSpot);
+            } catch (NullPointerException e) {
+                continue;
+            }
+            if (collisionUtility.checkIntersect(moveEvent.getTo(), shootingSpotRegion)) {
+                if (!collisionUtility.checkIntersect(moveEvent.getFrom(), shootingSpotRegion)) {
+                    playerTracker.put(p.getUniqueId(), shootingSpot);
+                    Bukkit.getPluginManager().callEvent(new BiathlonShootingSpotEnterEvent(Integer.parseInt(shootingSpot.replaceAll("shootingSpot", "")), activeGame, p));
+                    return;
+                }
+            } else {
+
+                if (collisionUtility.checkIntersect(moveEvent.getFrom(), shootingSpotRegion)) {
+                    // Remove the player, since they're not in a spot anymore.
+                    Bukkit.getPluginManager().callEvent(new BiathlonShootingSpotExitEvent(Integer.parseInt(playerTracker.get(p.getUniqueId()).replaceAll("shootingSpot", "")),
+                            activeGame,
+                            p
+                    ));
+                    playerTracker.remove(p.getUniqueId());
+                    return;
                 }
             }
         }

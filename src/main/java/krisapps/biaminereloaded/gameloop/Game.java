@@ -1,17 +1,17 @@
 package krisapps.biaminereloaded.gameloop;
 
 import krisapps.biaminereloaded.BiamineReloaded;
-import krisapps.biaminereloaded.events.BiathlonPlayerKickEvent;
-import krisapps.biaminereloaded.events.CheckpointPassEvent;
-import krisapps.biaminereloaded.events.InstanceStatusChangeEvent;
+import krisapps.biaminereloaded.events.*;
 import krisapps.biaminereloaded.logging.BiaMineLogger;
 import krisapps.biaminereloaded.scoreboard.ScoreboardManager;
 import krisapps.biaminereloaded.timers.BiathlonTimer;
 import krisapps.biaminereloaded.types.*;
 import krisapps.biaminereloaded.utilities.ItemDispenserUtility;
+import krisapps.biaminereloaded.utilities.ReportUtility;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -19,6 +19,8 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitScheduler;
@@ -34,7 +36,7 @@ public class Game implements Listener {
 
     public static Game instance;
     public ArrayList<Player> players;
-    public HashMap<Player, FinishInfo> finishedPlayers;
+    private final Map<UUID, List<HitInfo>> shootingStats = new LinkedHashMap<>();
     public Location startLocation_bound1 = null;
     public Location startLocation_bound2 = null;
     public boolean isPaused = false;
@@ -54,9 +56,13 @@ public class Game implements Listener {
     BukkitScheduler scheduler = Bukkit.getScheduler();
     CommandSender initiator;
     ItemDispenserUtility dispenser;
+    private final Map<UUID, Integer> playerPositions = new HashMap<UUID, Integer>();
     Random random = new Random();
+    public LinkedHashMap<Player, FinishInfo> finishedPlayers;
 
     private final Map<UUID, Location> disconnectedPlayers = new HashMap<>();
+    ReportUtility reporter;
+    boolean gameInitiated = false;
 
     public Game(String id, BiamineBiathlon gameInfo, BiamineReloaded main) {
         this.currentGameID = id;
@@ -64,10 +70,12 @@ public class Game implements Listener {
         this.currentGameInfo = gameInfo;
         this.main = main;
         this.players = new ArrayList<>();
-        this.finishedPlayers = new HashMap<>();
+        this.finishedPlayers = new LinkedHashMap<>();
         this.timer = new BiathlonTimer(main);
         this.scoreboardManager = new ScoreboardManager(main);
         this.dispenser = new ItemDispenserUtility(main);
+        this.reporter = new ReportUtility(main);
+        this.gameInitiated = false;
 
         activeGameLogger = new BiaMineLogger("BiaMine", "Active Game", main);
         gameSetupLogger = new BiaMineLogger("BiaMine", "Setup", main);
@@ -187,6 +195,57 @@ public class Game implements Listener {
         }
     }
 
+    @EventHandler
+    public void onTargetHit(BiathlonArrowHitEvent hitEvent) {
+        if (players.contains(hitEvent.getShooter()) && !finishedPlayers.containsKey(hitEvent.getShooter())) {
+            if (hitEvent.getHitType().equals(HitType.HIT)) {
+                shootingStats.get(hitEvent.getShooter().getUniqueId()).add(
+                        new HitInfo(
+                                hitEvent.getTarget(),
+                                hitEvent.getSpot(),
+                                HitType.HIT,
+                                getItemCount(hitEvent.getShooter().getInventory(), Material.ARROW)
+                        ));
+                broadcastToEveryone(main.localizationUtility.getLocalizedPhrase("gameloop.runtime.player-target-hit")
+                        .replaceAll("%player%", hitEvent.getShooter().getName())
+                        .replaceAll("%order%", String.valueOf(hitEvent.getTarget()))
+                        .replaceAll("%spot%", String.valueOf(hitEvent.getSpot()))
+                );
+            } else if (hitEvent.getHitType().equals(HitType.MISS)) {
+                if (hitEvent.getSpot() != -1) {
+                    shootingStats.get(hitEvent.getShooter().getUniqueId()).add(
+                            new HitInfo(
+                                    hitEvent.getSpot(),
+                                    HitType.MISS,
+                                    getItemCount(hitEvent.getShooter().getInventory(), Material.ARROW)
+                            ));
+                    broadcastToEveryone(main.localizationUtility.getLocalizedPhrase("gameloop.runtime.player-target-miss")
+                            .replaceAll("%player%", hitEvent.getShooter().getName())
+                            .replaceAll("%spot%", String.valueOf(hitEvent.getSpot()))
+                    );
+                } else if (hitEvent.getSpot() == -1) {
+                    broadcastToEveryone(main.localizationUtility.getLocalizedPhrase("gameloop.runtime.player-target-misfire")
+                            .replaceAll("%player%", hitEvent.getShooter().getName())
+                    );
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    public void onShootingSpotEnter(BiathlonShootingSpotEnterEvent enterEvent) {
+        activeGameLogger.logInfo("[" + currentGameID + "] Player " + enterEvent.getPlayer().getName() + " ENTERED SHOOTING SPOT #" + enterEvent.getSpotID());
+        main.getLogger().info("[" + currentGameID + "] Player " + enterEvent.getPlayer().getName() + " ENTERED SHOOTING SPOT #" + enterEvent.getSpotID());
+        playerPositions.put(enterEvent.getPlayer().getUniqueId(), enterEvent.getSpotID());
+    }
+
+    @EventHandler
+    public void onShootingSpotExit(BiathlonShootingSpotExitEvent exitEvent) {
+        activeGameLogger.logInfo("[" + currentGameID + "] Player " + exitEvent.getPlayer().getName() + " EXITED SHOOTING SPOT #" + exitEvent.getSpotID());
+        main.getLogger().info("[" + currentGameID + "] Player " + exitEvent.getPlayer().getName() + " EXITED SHOOTING SPOT #" + exitEvent.getSpotID());
+        playerPositions.remove(exitEvent.getPlayer().getUniqueId());
+    }
+
     // Control Methods
 
     public void startGame(CommandSender initiator) {
@@ -194,9 +253,11 @@ public class Game implements Listener {
         if (cleanupTask != null) {
             cleanupTask.cancel();
         }
-        if (REFRESH_TASK != -1) {
+        if (Boolean.parseBoolean(main.dataUtility.getCoreData(CoreDataField.GAME_IN_PROGRESS).toString())) {
             main.messageUtility.sendMessage(initiator, main.localizationUtility.getLocalizedPhrase("gameloop.error-gamerunning"));
             return;
+        } else {
+            main.dataUtility.saveCoreData(CoreDataField.GAME_IN_PROGRESS, true);
         }
 
         gameSetupLogger.logInfo("Starting BiaMine Biathlon instance '" + currentGameID + "' [...]");
@@ -223,9 +284,12 @@ public class Game implements Listener {
 
     public void startGame(List<String> pList, CommandSender initiator) {
         this.initiator = initiator;
-        if (REFRESH_TASK != -1) {
+
+        if (Boolean.parseBoolean(main.dataUtility.getCoreData(CoreDataField.GAME_IN_PROGRESS).toString())) {
             main.messageUtility.sendMessage(initiator, main.localizationUtility.getLocalizedPhrase("gameloop.error-gamerunning"));
             return;
+        } else {
+            main.dataUtility.saveCoreData(CoreDataField.GAME_IN_PROGRESS, true);
         }
 
         gameSetupLogger.logInfo("Starting BiaMine Biathlon instance '" + currentGameID + "' with selected players [...]");
@@ -345,6 +409,7 @@ public class Game implements Listener {
 
 
     private void finishGame() {
+        reporter.generateGameReport(shootingStats, finishedPlayers, currentGameInfo);
         for (Player p : players) {
             main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.game-finished")
                     .replaceAll("%totalTime%", timer.getFormattedTime())
@@ -603,6 +668,7 @@ public class Game implements Listener {
             for (Player p : Bukkit.getOnlinePlayers()) {
                 if (!excluded.contains(p.getUniqueId())) {
                     players.add(p);
+                    shootingStats.put(p.getUniqueId(), new ArrayList<HitInfo>());
                 }
             }
             this.currentGameInfo.totalPlayers = players.size();
@@ -684,6 +750,7 @@ public class Game implements Listener {
         if (!context.equals(TerminationContext.GAME_FINISHED)) {
             announceTermination(context, details);
         }
+        this.gameInitiated = false;
         timer.stopGlobalTimer();
         scheduler.cancelTask(PREP_TASK);
         scheduler.cancelTask(COUNTDOWN_TASK);
@@ -691,10 +758,12 @@ public class Game implements Listener {
             main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.PREVTERM);
         } else {
             main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.FINALIZING);
-            scheduler.cancelTask(REFRESH_TASK);
-            scheduler.cancelTasks(main);
-            main.dataUtility.setActiveGame(null);
-            cleanupTask = scheduler.runTaskLater(main, this::cleanup, 20L * 3);
+            scheduler.runTaskLater(main, () -> {
+                scheduler.cancelTask(REFRESH_TASK);
+                scheduler.cancelTasks(main);
+                main.dataUtility.setActiveGame(null);
+                cleanupTask = scheduler.runTaskLater(main, this::cleanup, 20L * 3);
+            }, 20L);
         }
     }
 
@@ -709,6 +778,7 @@ public class Game implements Listener {
         scheduler.cancelTasks(main);
         scoreboardManager.hideScoreboard();
         scoreboardManager.resetScoreboard();
+        this.gameInitiated = false;
         this.currentGameInfo = null;
         this.currentGameID = null;
         this.players = new ArrayList<>();
@@ -722,6 +792,7 @@ public class Game implements Listener {
 
     private void cleanup() {
         activeGameLogger.logInfo("[" + currentGameID + "/Service]: Cleaning up");
+        this.gameInitiated = false;
         this.currentGameInfo = null;
         this.currentGameID = null;
         this.players = new ArrayList<>();
@@ -738,6 +809,8 @@ public class Game implements Listener {
                 scoreboardManager.resetScoreboard();
             }
         }, 20L * 5);
+        main.dataUtility.saveCoreData(CoreDataField.GAME_IN_PROGRESS, false);
+        main.dataUtility.updateGameRunstate(lastGame, InstanceStatus.STANDBY);
     }
 
     private void announceTermination(TerminationContext context, String msg) {
@@ -837,6 +910,20 @@ public class Game implements Listener {
                 main.messageUtility.sendMessage(p, txt);
             }
         }
+    }
+
+    public int getItemCount(Inventory inv, Material item) {
+        ItemStack[] items = inv.getContents();
+        for (ItemStack stack : items) {
+            if (stack.getType() == item) {
+                return stack.getAmount();
+            }
+        }
+        return 0;
+    }
+
+    public int getPlayerSpotID(UUID playerUUID) {
+        return playerPositions.get(playerUUID) == null ? -1 : playerPositions.get(playerUUID);
     }
 
     public ArrayList<Player> getPlayers() {

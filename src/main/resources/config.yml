@@ -78,6 +78,13 @@ options:
   # Should players be given a maximum level slowness effect as to halt them when the final countdown starts?
   halt-players-with-effect: true
 
+  # Should BiaMine generate a game report file?
+  generate-report: true
+
+  # Where should the game report be stored?
+  # Use '%dataFolder%' to save the file to the plugin's data folder (plugins/BiaMine-Reloaded)
+  game-report-path: "%dataFolder%"
+
 
 
 # ===================================================================================================================#

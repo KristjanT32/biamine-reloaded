@@ -2,7 +2,9 @@ package krisapps.biaminereloaded;
 
 import krisapps.biaminereloaded.commands.*;
 import krisapps.biaminereloaded.commands.tabcompleter.*;
+import krisapps.biaminereloaded.events.ArrowHitListener;
 import krisapps.biaminereloaded.events.PlayerMoveListener;
+import krisapps.biaminereloaded.types.CoreDataField;
 import krisapps.biaminereloaded.utilities.*;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -202,6 +204,7 @@ public final class BiamineReloaded extends JavaPlugin {
     private void registerEvents() {
         getServer().getPluginManager().registerEvents(new PlayerMoveListener(this), this);
         getServer().getPluginManager().registerEvents(new ShootingRangeConfig(this), this);
+        getServer().getPluginManager().registerEvents(new ArrowHitListener(this), this);
 
         getLogger().info("Events registered.");
     }
@@ -247,7 +250,7 @@ public final class BiamineReloaded extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        if (gameUtility.getActiveGameID() != null) {
+        if (Boolean.parseBoolean(dataUtility.getCoreData(CoreDataField.GAME_IN_PROGRESS).toString())) {
             gameUtility.reloadTerminate();
         }
     }
