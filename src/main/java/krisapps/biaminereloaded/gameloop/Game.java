@@ -235,15 +235,32 @@ public class Game implements Listener {
     @EventHandler
     public void onShootingSpotEnter(BiathlonShootingSpotEnterEvent enterEvent) {
         activeGameLogger.logInfo("[" + currentGameID + "] Player " + enterEvent.getPlayer().getName() + " ENTERED SHOOTING SPOT #" + enterEvent.getSpotID());
-        main.getLogger().info("[" + currentGameID + "] Player " + enterEvent.getPlayer().getName() + " ENTERED SHOOTING SPOT #" + enterEvent.getSpotID());
         playerPositions.put(enterEvent.getPlayer().getUniqueId(), enterEvent.getSpotID());
+        main.messageUtility.sendActionbarMessage(enterEvent.getPlayer(), main.localizationUtility.getLocalizedPhrase("gameloop.runtime.spot-claim")
+                .replaceAll("%num%", String.valueOf(enterEvent.getSpotID())
+                ));
+        broadcastToEveryone(main.localizationUtility.getLocalizedPhrase("gameloop.runtime.spot-claim-others")
+                .replaceAll("%player%", enterEvent.getPlayer().getName())
+                .replaceAll("%num%", String.valueOf(enterEvent.getSpotID()))
+        );
+    }
+
+    @EventHandler
+    public void onOccupiedShootingSpotEnter(BiathlonOccupiedShootingSpotEnterEvent occupiedEvent) {
+        activeGameLogger.logInfo("[" + currentGameID + "] Player " + occupiedEvent.getPlayer().getName() + " ATTEMPTED TO CLAIM SHOOTING SPOT #" + occupiedEvent.getSpotID() + " (FAIL, OCCUPIED)");
+        main.messageUtility.sendActionbarMessage(occupiedEvent.getPlayer(), main.localizationUtility.getLocalizedPhrase("gameloop.runtime.spot-occupied")
+                .replaceAll("%num%", String.valueOf(occupiedEvent.getSpotID())
+                ));
     }
 
     @EventHandler
     public void onShootingSpotExit(BiathlonShootingSpotExitEvent exitEvent) {
         activeGameLogger.logInfo("[" + currentGameID + "] Player " + exitEvent.getPlayer().getName() + " EXITED SHOOTING SPOT #" + exitEvent.getSpotID());
-        main.getLogger().info("[" + currentGameID + "] Player " + exitEvent.getPlayer().getName() + " EXITED SHOOTING SPOT #" + exitEvent.getSpotID());
         playerPositions.remove(exitEvent.getPlayer().getUniqueId());
+        broadcastToEveryone(main.localizationUtility.getLocalizedPhrase("gameloop.runtime.spot-leave")
+                .replaceAll("%player%", exitEvent.getPlayer().getName())
+                .replaceAll("%num%", String.valueOf(exitEvent.getSpotID()))
+        );
     }
 
     // Control Methods
@@ -758,17 +775,18 @@ public class Game implements Listener {
             main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.PREVTERM);
         } else {
             main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.FINALIZING);
-            scheduler.runTaskLater(main, () -> {
+            scheduler.runTask(main, () -> {
                 scheduler.cancelTask(REFRESH_TASK);
                 scheduler.cancelTasks(main);
                 main.dataUtility.setActiveGame(null);
-                cleanupTask = scheduler.runTaskLater(main, this::cleanup, 20L * 3);
-            }, 20L);
+                cleanupTask = scheduler.runTaskLater(main, this::cleanup, 5);
+            });
         }
     }
 
     public void reloadTerminate() {
         main.pluginGames.set("games." + currentGameID + ".runState", InstanceStatus.TERMINATED);
+        main.dataUtility.setDataValue("coredata.gameInProgress", String.valueOf(false));
         Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("internals.reload-termination")));
         activeGameLogger.logInfo("Terminating current game due to server reload...");
         timer.stopGlobalTimer();

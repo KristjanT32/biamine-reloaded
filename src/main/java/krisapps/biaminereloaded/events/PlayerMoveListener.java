@@ -13,6 +13,7 @@ import org.bukkit.event.player.PlayerMoveEvent;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 public class PlayerMoveListener implements Listener {
@@ -92,6 +93,16 @@ public class PlayerMoveListener implements Listener {
                 continue;
             }
             if (collisionUtility.checkIntersect(moveEvent.getTo(), shootingSpotRegion)) {
+
+                if (playerTracker.containsValue(shootingSpot) && getPlayerForRegion(shootingSpot) != null && !getPlayerForRegion(shootingSpot).equals(p.getUniqueId())) {
+                    Bukkit.getPluginManager().callEvent(new BiathlonOccupiedShootingSpotEnterEvent(
+                            Integer.parseInt(shootingSpot.replaceAll("shootingSpot", "")),
+                            activeGame,
+                            p
+                    ));
+                    return;
+                }
+
                 if (!collisionUtility.checkIntersect(moveEvent.getFrom(), shootingSpotRegion)) {
                     playerTracker.put(p.getUniqueId(), shootingSpot);
                     Bukkit.getPluginManager().callEvent(new BiathlonShootingSpotEnterEvent(Integer.parseInt(shootingSpot.replaceAll("shootingSpot", "")), activeGame, p));
@@ -110,6 +121,15 @@ public class PlayerMoveListener implements Listener {
                 }
             }
         }
+    }
+
+    private UUID getPlayerForRegion(String region) {
+        for (Map.Entry<UUID, String> entry : playerTracker.entrySet()) {
+            if (Objects.equals(region, entry.getValue())) {
+                return entry.getKey();
+            }
+        }
+        return null;
     }
 
 }

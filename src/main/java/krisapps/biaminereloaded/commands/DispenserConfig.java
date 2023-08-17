@@ -31,6 +31,11 @@ public class DispenserConfig implements CommandExecutor {
                         String itemName = args[2].toUpperCase();
                         int amount = Integer.parseInt(args[3]);
 
+                        if (amount < 0) {
+                            main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.dispenser.additem-negative"));
+                            return true;
+                        }
+
                         Material itemMaterial = Material.getMaterial(itemName);
                         ItemStack item = new ItemStack(itemMaterial);
                         item.setAmount(amount);
@@ -49,17 +54,15 @@ public class DispenserConfig implements CommandExecutor {
                     if (args.length >= 3) {
                         String itemName = args[2].toUpperCase();
                         Material itemMaterial = Material.getMaterial(itemName);
-                        ItemStack item = new ItemStack(itemMaterial);
-
-                        if (main.dataUtility.isInDispenserList(gameID, item)) {
-                            main.dataUtility.removeItemToDispense(gameID, item);
+                        if (main.dataUtility.isInDispenserList(gameID, itemMaterial)) {
+                            main.dataUtility.removeItemToDispense(gameID, itemMaterial);
                             main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.dispenser.removeitem-success")
-                                    .replaceAll("%item%", capitalize(item.getType().name().replace("_", " ")))
+                                    .replaceAll("%item%", capitalize(itemMaterial.name().replace("_", " ")))
                                     .replaceAll("%game%", gameID)
                             );
                         } else {
                             main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.dispenser.removeitem-notfound")
-                                    .replaceAll("%item%", capitalize(item.getType().name().replace("_", " ")))
+                                    .replaceAll("%item%", capitalize(itemMaterial.name().replace("_", " ")))
                                     .replaceAll("%game%", gameID)
                             );
                         }

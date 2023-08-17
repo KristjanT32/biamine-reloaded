@@ -38,12 +38,12 @@ public class ShootingRangeConfig implements CommandExecutor, Listener {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        // Syntax: /shootingrange <gameID> <addSpot|editSpot|removeSpot|visualizeSpots|showInfo>
+        // Syntax: /shootingrange <gameID> <addSpot|editSpot|removeSpot|visualiseSpots|showInfo>
         /*
                    addSpot: <none>
                    editSpot: <spotID> <setbound1|setbound2|addTarget|removeTarget>
                    removeSpot <spotID>
-                   visualizeSpots: <none>
+                   visualiseSpots: <none>
                    showInfo: <shootingRange|spots>
          */
 
@@ -135,12 +135,12 @@ public class ShootingRangeConfig implements CommandExecutor, Listener {
                         }
                     }
                     break;
-                case "visualizeSpots":
-                    if (main.visualisationUtility.isRunning() && main.visualisationUtility.getActiveVisualisationTypes().contains(VisualisationType.AREA)) {
-                        main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.shootingrange.visualize.blocked"));
+                case "visualiseSpots":
+                    if (main.visualisationUtility.isRunning() && main.visualisationUtility.isBusyWith(VisualisationType.AREA)) {
+                        main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.shootingrange.visualise.blocked"));
                         return true;
                     }
-                    main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.shootingrange.visualize.start"));
+                    main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.shootingrange.visualise.start"));
                     ArrayList<ArmorStand> numberEntities = new ArrayList<>();
                     ArrayList<CuboidRegion> areaList = new ArrayList<>();
 
@@ -149,7 +149,7 @@ public class ShootingRangeConfig implements CommandExecutor, Listener {
                             Location b1 = main.dataUtility.getShootingSpotBound(gameID, Integer.parseInt(shootingSpot.replaceAll("shootingSpot", "")), 1);
                             Location b2 = main.dataUtility.getShootingSpotBound(gameID, Integer.parseInt(shootingSpot.replaceAll("shootingSpot", "")), 2);
                             if (b1 == null || b2 == null) {
-                                main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.shootingrange.visualize.err-spot")
+                                main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.shootingrange.visualise.err-spot")
                                         .replaceAll("%spot%", shootingSpot)
                                 );
                                 continue;

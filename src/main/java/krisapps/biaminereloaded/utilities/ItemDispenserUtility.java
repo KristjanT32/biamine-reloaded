@@ -19,22 +19,29 @@ public class ItemDispenserUtility {
         PlayerInventory inventory = p.getInventory();
         int skippedItems = 0;
         for (ItemStack item : items) {
-            if (inventory.containsAtLeast(item, item.getAmount())) {
-                skippedItems++;
-            } else {
-                inventory.addItem(item);
-                main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.itemdispense.gave")
-                        .replaceAll("%item%", capitalize(item.getType().name().replace("_", " ")))
-                        .replaceAll("%count%", String.valueOf(item.getAmount()))
-                );
+            for (ItemStack existingItem : inventory.getContents()) {
+                if (existingItem.getType() == item.getType()) {
+                    if (existingItem.getAmount() > item.getAmount() || existingItem.getAmount() < item.getAmount()) {
+                        inventory.remove(existingItem);
+                        inventory.addItem(item);
+                        main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.itemdispense.gave")
+                                .replaceAll("%item%", capitalize(item.getType().name().replace("_", " ")))
+                                .replaceAll("%count%", String.valueOf(item.getAmount()))
+                        );
+                    } else if (existingItem.getAmount() == item.getAmount()) {
+                        skippedItems++;
+                    }
+                }
             }
         }
-        if (skippedItems > 0) {
+        if (skippedItems == items.size()) {
             main.messageUtility.sendActionbarMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.itemdispense.finished-skip")
                     .replaceAll("%skipped%", String.valueOf(skippedItems))
             );
-        } else {
+        } else if (skippedItems == 0) {
             main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.itemdispense.finished"));
+        } else if (skippedItems > 0 && skippedItems < items.size()) {
+            main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.itemdispense.finished-skipped-some"));
         }
     }
 
@@ -43,20 +50,30 @@ public class ItemDispenserUtility {
             PlayerInventory inventory = player.getInventory();
             int skippedItems = 0;
             for (ItemStack item : items) {
-                if (inventory.containsAtLeast(item, item.getAmount())) {
-                    skippedItems++;
-                } else {
-                    inventory.addItem(item);
-                    main.messageUtility.sendMessage(player, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.itemdispense.gave")
-                            .replaceAll("%item%", capitalize(item.getType().name().replace("_", " ")))
-                            .replaceAll("%count%", String.valueOf(item.getAmount()))
-                    );
+                for (ItemStack existingItem : inventory.getContents()) {
+                    if (existingItem == null) {
+                        continue;
+                    }
+                    if (existingItem.getType() == item.getType()) {
+                        inventory.remove(existingItem);
+                        inventory.addItem(item);
+                        main.messageUtility.sendMessage(player, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.itemdispense.gave")
+                                .replaceAll("%item%", capitalize(item.getType().name().replace("_", " ")))
+                                .replaceAll("%count%", String.valueOf(item.getAmount()))
+                        );
+                    } else if (existingItem.getAmount() == item.getAmount()) {
+                        skippedItems++;
+                    }
                 }
             }
-            if (skippedItems > 0) {
+            if (skippedItems == items.size()) {
                 main.messageUtility.sendActionbarMessage(player, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.itemdispense.finished-skip")
                         .replaceAll("%skipped%", String.valueOf(skippedItems))
                 );
+            } else if (skippedItems == 0) {
+                main.messageUtility.sendMessage(player, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.itemdispense.finished"));
+            } else if (skippedItems > 0 && skippedItems < items.size()) {
+                main.messageUtility.sendMessage(player, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.itemdispense.finished-skipped-some"));
             }
         }
     }

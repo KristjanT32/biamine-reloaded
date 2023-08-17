@@ -19,7 +19,7 @@ public class CheckpointConfig implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        // Syntax: /checkpoint <gameID> <add|remove|find|list|setbound> <none|id|bound>
+        // Syntax: /checkpoint <gameID> <add|remove|find|show|list|setbound> <none|id|bound>
         if (!(sender instanceof Player)) {
             main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("errors.player-only"));
         } else {
@@ -178,6 +178,22 @@ public class CheckpointConfig implements CommandExecutor {
                                 }
                             }
                             break;
+                        case "show":
+                            if (args.length >= 3) {
+                                String checkpoint = args[2];
+                                if (main.dataUtility.checkpointExists(gameID, checkpoint)) {
+                                    if (main.dataUtility.checkpointSetup(gameID, checkpoint)) {
+                                        main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.checkpoint.show-notice")
+                                                .replaceAll("%checkpoint%", checkpoint)
+                                        );
+                                        main.visualisationUtility.visualiseCheckpoint(main.dataUtility.getCheckpoint(gameID, checkpoint), 10);
+                                    } else {
+                                        main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.checkpoint.show-incomplete"));
+                                    }
+                                } else {
+                                    main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.checkpoint.show-notfound"));
+                                }
+                            }
                     }
                 } else {
                     main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.checkpoint.error-nogame").replaceAll("%game%", args[0]));

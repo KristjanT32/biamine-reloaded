@@ -6,6 +6,7 @@ import krisapps.biaminereloaded.events.InstanceStatusChangeEvent;
 import krisapps.biaminereloaded.types.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -545,14 +546,22 @@ public class BiaMineDataUtility {
         }
     }
 
-    public void removeItemToDispense(String gameID, ItemStack item) {
+    public void removeItemToDispense(String gameID, Material item) {
         if (!gameExists(gameID)) {
             return;
         }
         if (main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems") != null) {
-            main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems").remove(item);
-            main.saveGames();
+            List<ItemStack> items = (List<ItemStack>) main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems");
+            for (ItemStack existing : items) {
+                if (existing.getType() == item) {
+                    items.remove(existing);
+                    main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems", items);
+                    main.saveGames();
+                    return;
+                }
+            }
         }
+        main.saveGames();
     }
 
     public void addItemToDispense(String gameID, ItemStack item) {
@@ -564,25 +573,35 @@ public class BiaMineDataUtility {
         }
         List<ItemStack> list = (List<ItemStack>) main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems");
 
-        if (!list.contains(item)) {
-            list.add(item);
+        for (ItemStack existing : list) {
+            if (existing.getType() == item.getType()) {
+                existing.setAmount(item.getAmount());
+                main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems", list);
+                main.saveGames();
+                return;
+            }
         }
+        list.add(item);
         main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems", list);
         main.saveGames();
     }
 
-    public boolean isInDispenserList(String gameID, ItemStack item) {
+    public boolean isInDispenserList(String gameID, Material item) {
         if (!gameExists(gameID)) {
             return false;
         }
         if (main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems") == null) {
             main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems", new ArrayList<ItemStack>());
-        } else {
             return false;
         }
         List<ItemStack> list = (List<ItemStack>) main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems");
 
-        return list.contains(item);
+        for (ItemStack existing : list) {
+            if (existing.getType() == item) {
+                return true;
+            }
+        }
+        return false;
     }
     public String getCurrentLanguage() {
         if (main.pluginData.getString("options.currentLanguage") == null) {
@@ -874,6 +893,11 @@ public class BiaMineDataUtility {
                         PersistentDataType.STRING);
         }
         return null;
+    }
+
+    public void setDataValue(String path, String value) {
+        main.pluginData.set(path, value);
+        main.saveCoredata();
     }
 
     public void setTemporaryValue(String key, Object value) {

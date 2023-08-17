@@ -62,7 +62,10 @@ commands:
 
   shootingrange:
     description: "Manages an instance's shooting range."
-    usage: "/shootingrange <gameID> <addSpot|editSpot|removeSpot|visualizeSpots|showInfo>"
+    usage: "/shootingrange <gameID> <addSpot|editSpot|removeSpot|visualiseSpots|showInfo>"
+  biainfo:
+    description: "Shows information about BiaMine instances."
+    usage: "/biainfo <gameID>"
 
   # Scoreboard Customization
   sconfig:

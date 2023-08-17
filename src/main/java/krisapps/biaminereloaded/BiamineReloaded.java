@@ -227,6 +227,7 @@ public final class BiamineReloaded extends JavaPlugin {
         getCommand("biamineutil").setExecutor(new BiaMineUtility(this));
         getCommand("dispenser").setExecutor(new DispenserConfig(this));
         getCommand("shootingrange").setExecutor(new ShootingRangeConfig(this));
+        getCommand("biainfo").setExecutor(new GameInfo(this));
 
 
         getCommand("sconfig").setTabCompleter(new ScoreboardConfigAC(this));
@@ -244,6 +245,7 @@ public final class BiamineReloaded extends JavaPlugin {
         getCommand("biamineutil").setTabCompleter(new BiaMineUtilAC());
         getCommand("dispenser").setTabCompleter(new DispenserAC(this));
         getCommand("shootingrange").setTabCompleter(new ShootingRangeAC(this));
+        getCommand("biainfo").setTabCompleter(new BiaInfoAC(this));
 
         getLogger().info("Commands registered.");
     }

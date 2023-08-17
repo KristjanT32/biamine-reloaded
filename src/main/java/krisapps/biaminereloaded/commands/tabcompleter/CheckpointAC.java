@@ -23,7 +23,7 @@ public class CheckpointAC implements TabCompleter {
         if (args.length == 1) {
             completions.addAll(main.dataUtility.getGames());
         } else if (args.length == 2) {
-            completions.addAll(Arrays.asList("add", "remove", "find", "list", "setbound", "setname", "setfinish"));
+            completions.addAll(Arrays.asList("add", "remove", "find", "list", "setbound", "setname", "setfinish", "show"));
         } else if (args.length == 3) {
             switch (args[1]) {
                 case "find":
@@ -31,6 +31,7 @@ public class CheckpointAC implements TabCompleter {
                 case "setname":
                 case "setbound":
                 case "remove":
+                case "show":
                     completions.addAll(main.dataUtility.getCheckpoints(args[0]));
                     break;
             }

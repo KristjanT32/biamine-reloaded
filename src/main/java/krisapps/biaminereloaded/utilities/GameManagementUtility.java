@@ -101,12 +101,13 @@ public class GameManagementUtility {
         try {
             if (Game.instance == null) {
                 return "unknown";
+            } else {
+                return Game.instance.getCurrentGameInfo().gameID;
             }
-            return Game.instance.getCurrentGameInfo().gameID;
-        } catch (NoClassDefFoundError e) {
+        } catch (NoClassDefFoundError | NullPointerException e) {
             try {
-                return (String) main.dataUtility.getCoreData(CoreDataField.LAST_ACTIVE_GAME);
-            } catch (NoClassDefFoundError err) {
+                return main.dataUtility.getCoreData(CoreDataField.LAST_ACTIVE_GAME).toString();
+            } catch (NoClassDefFoundError | NullPointerException err) {
                 return null;
             }
         }

@@ -29,6 +29,7 @@ generic:
 
 gameloop:
   error-gamerunning: "&cCannot start this game, since an instance is already running, or has not yet finalized. To start a game, please stop the running instance with &e/terminate <gameID>&c.&r"
+  error-dispense-norange: "&cFailed to automatically determine the amount of item: &b%item% &f(&ethe active game has no shooting targets&f)&r"
 
   checkpoint-reached: "&b%player% &ehas just reached %checkpoint%&e at &a%time%&e!"
   checkpoint-reached-target: "&b&lCheckpoint reached &e(&a%time%&e)&r"
@@ -69,9 +70,15 @@ gameloop:
     player-target-miss: "&f[&eSpot &b#%spot%&f] &c&lMiss! &r&b%player% &amissed a target!"
     player-target-misfire: "&6&lMisfire! &r&b%player% &efired outside of a shooting spot!"
 
+    spot-claim: "&e&lClaimed &b&lShooting Spot #%num%"
+    spot-claim-others: "&b%player% &eclaimed &aShooting Spot #%num%"
+    spot-occupied: "&c&lSorry, but this shooting spot is already occupied!"
+    spot-leave: "&b%player% &eleft &aShooting Spot #%num%"
+
     itemdispense:
       gave: "&bYou received: &e%item% &fx&a%count%"
       finished-skip: "&bYou had the required items, so you were given &c&lNOTHING."
+      finished-skipped-some: "&bSome of the items were skipped, since you already had them."
 
     player-disconnected:
       notice: "&cWarning! &eA player from this game has disconnected! Pausing the game in &b%delay% &eseconds!"
@@ -161,6 +168,7 @@ commands:
   dispenser:
     additem-error-insuff: "&cInsufficient parameters. &eTo add an item to the dispenser for this game, provide &bthe item to add&e."
     additem-success: "&aSuccess! &b%item% &eis now in the dispenser list of &b%game%&e."
+    additem-negative: "&cCannot add an item with negative amount."
 
     removeitem-error-insuff: "&cInsufficient parameters. &eTo remove an item from the dispenser for this game, provide &bthe item to remove&e."
     removeitem-success: "&aSuccess! &b%item% &ewas removed from the dispenser list of &b%game%&e."
@@ -233,6 +241,23 @@ commands:
     playeronly: "&cSorry, but this command is player-only."
     success: "&a&lSuccessfully rejoined to &r&b&l%game%!"
     fail: "&cCouldn't find any games to join to."
+
+  gameinfo:
+    notfound: "&cCould not find &b%game%&c. &eAre you sure that's the &bid&e?"
+    info: " &e===========================================\n
+    &bViewing information for &a%game%
+    &e===========================================\n
+    &bDisplay Name: &f\"&r%disname%&f\"\n
+    &bPrep Duration: &a%prep%\n
+    &bFinal Countdown: &a%final%\n
+    &bScoreboard Config: &a%sconf%\n
+    &bExclusion List: &a%exlist%\n
+    &bDispenser: &r%dispenser%\n
+    &bSaved Runstate: &r%runstate%\n
+    &bCheckpoints: &a%chkpnt%\n
+    &bShooting Range: &a%shtrng%\n
+    &e===========================================\n
+    &fDetailed info available via the respective commands"
 
   biamineutil:
     refresh-files:
@@ -324,6 +349,11 @@ commands:
 
     setname-error-insuff: "&cInsufficient parameters. &eTo change the display name of a checkpoint, provide a valid &bcheckpoint&e and the &bnew display name&e."
     setfinish-error-generic: "&cCouldn't set the provided checkpoint as the finish. &ePlease verify you've provided the correct &bgame ID&e and an existing &bcheckpoint ID&e."
+    
+    show-notice: "&b[&eVisualize&b]: &fVisualising &b%checkpoint%&f. &eVisualisation will end in 10 seconds."
+    show-incomplete: "&b[&eVisualize&b]: &cCannot visualise this checkpoint - the checkpoint is incomplete."
+    show-notfound: "&b[&eVisualize&b]: &cCannot find the checkpoint to visualise."
+    show-insuff: "&cInsufficient parameters. &eTo visualise a checkpoint, provide the &bid &efor that checkpoint."
 
     success-setfinish: "&aThe finishing checkpoint is now set to &e%checkpoint%&a."
     success-remove: "&aSuccessfully removed &b%target%&a."
@@ -366,10 +396,10 @@ commands:
       removetarget-click: "&eClick on the target you wish to &c&lREMOVE &r&f[&b%time% s&f]"
       removetarget-wrong: "&aShooting Spot &b#%number%&a]: &cThe selected target is not from this &b%param%&c."
 
-    visualize:
-      err-spot: "&b[&eVisualize&b]: &fFailed to visualize &7%spot% &f- &cincomplete"
-      start: "&b[&eVisualize&b]: &fVisualizing shooting spots: visualization will end in 10 seconds."
-      blocked: "&b[&eVisualize&b]: &fPlease wait for the active visualization to conclude."
+    visualise:
+      err-spot: "&b[&eVisualise&b]: &fFailed to visualise &7%spot% &f- &cincomplete"
+      start: "&b[&eVisualise&b]: &fVisualising shooting spots: visualisation will end in 10 seconds."
+      blocked: "&b[&eVisualise&b]: &fPlease wait for the active visualisation to conclude."
 
     showinfo:
       header: "&e=============================\n&bShooting Range Information\n"

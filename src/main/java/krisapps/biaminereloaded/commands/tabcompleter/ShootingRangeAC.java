@@ -25,7 +25,7 @@ public class ShootingRangeAC implements TabCompleter {
         if (args.length == 1) {
             completions.addAll(main.dataUtility.getGames());
         } else if (args.length == 2) {
-            completions.addAll(Arrays.asList("addSpot", "editSpot", "removeSpot", "visualizeSpots", "showInfo"));
+            completions.addAll(Arrays.asList("addSpot", "editSpot", "removeSpot", "visualiseSpots", "showInfo"));
         } else if (args.length == 3) {
             switch (args[1]) {
                 case "editSpot":
