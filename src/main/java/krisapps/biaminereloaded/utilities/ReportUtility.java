@@ -2,10 +2,8 @@ package krisapps.biaminereloaded.utilities;
 
 import krisapps.biaminereloaded.BiamineReloaded;
 import krisapps.biaminereloaded.gameloop.BiamineBiathlon;
-import krisapps.biaminereloaded.types.ConfigProperty;
-import krisapps.biaminereloaded.types.FinishInfo;
-import krisapps.biaminereloaded.types.HitInfo;
-import krisapps.biaminereloaded.types.HitType;
+import krisapps.biaminereloaded.timers.TimerFormatter;
+import krisapps.biaminereloaded.types.*;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -25,7 +23,7 @@ public class ReportUtility {
         this.main = main;
     }
 
-    public void generateGameReport(Map<UUID, List<HitInfo>> shootingStats, HashMap<Player, FinishInfo> finishInfo, BiamineBiathlon gameInfo) {
+    public void generateGameReport(Map<UUID, List<HitInfo>> shootingStats, HashMap<Player, FinishInfo> finishInfo, BiamineBiathlon gameInfo, Map<UUID, List<AreaPassInfo>> arrivals) {
         File file;
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
         SimpleDateFormat timeFormat = new SimpleDateFormat("HH-mm-ss");
@@ -80,6 +78,44 @@ public class ReportUtility {
                         shotOrder++;
                     }
                 }
+                writer.append("===============================================================================");
+                writer.newLine();
+                writer.append("===============================================================================");
+                writer.newLine();
+                writer.append("=[ TIMING INFO ]===============================================================");
+                for (UUID playerUUID : arrivals.keySet()) {
+                    Player p = Bukkit.getPlayer(playerUUID);
+                    String playerName;
+                    if (p == null) {
+                        playerName = playerUUID.toString();
+                    } else {
+                        playerName = p.getName();
+                    }
+                    writer.newLine();
+                    writer.append("[ Timings for " + playerName + "]");
+                    Map<String, AreaPassInfo> addedEntries = new HashMap<>();
+                    for (AreaPassInfo info : arrivals.get(playerUUID)) {
+                        writer.newLine();
+                        if (info.leftArea()) {
+                            if (addedEntries.get(info.getAreaName()) == null) {
+                                writer.append("   *[<-] Left " + info.getAreaName() + " at " + info.getTimerTime());
+                            } else {
+                                writer.append("   *[<-] Left " + info.getAreaName() + " at " + info.getTimerTime());
+                                writer.newLine();
+                                writer.append("       [" + info.getAreaName() + "] Segment duration: " + TimerFormatter.getDifference(info.getTimerTime(), addedEntries.get(info.getAreaName()).getTimerTime()));
+                                writer.newLine();
+                            }
+                        } else {
+                            if (addedEntries.get(info.getAreaName()) == null) {
+                                writer.append("   *[->] Arrived at " + info.getAreaName() + " at " + info.getTimerTime());
+                                addedEntries.put(info.getAreaName(), info);
+                            }
+                        }
+                    }
+                    writer.newLine();
+                    writer.newLine();
+                }
+                writer.newLine();
                 writer.append("===============================================================================");
                 writer.newLine();
                 writer.append("## END REPORT ##");

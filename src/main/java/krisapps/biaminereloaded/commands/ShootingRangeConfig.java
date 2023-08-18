@@ -158,13 +158,13 @@ public class ShootingRangeConfig implements CommandExecutor, Listener {
 
                             // Spawn an invisible armor stand with the spot info
                             Location centerPoint = new Location(b1.getWorld(),
-                                    ((double) (b1.getBlockX() + b2.getBlockX()) / 2),
-                                    ((double) (b1.getBlockY() + b2.getBlockY()) / 2),
-                                    ((double) (b1.getBlockZ() + b2.getBlockZ()) / 2)
+                                    ((double) (b1.getBlockX() + b2.getBlockX()) / 2) + 0.5,
+                                    ((double) (b1.getBlockY() + b2.getBlockY()) / 2) + 0.5,
+                                    ((double) (b1.getBlockZ() + b2.getBlockZ()) / 2) + 0.5
                             );
                             ArmorStand stand = (ArmorStand) p.getWorld().spawnEntity(centerPoint, EntityType.ARMOR_STAND);
                             stand.setCustomNameVisible(true);
-                            stand.setCustomName(ChatColor.translateAlternateColorCodes('&', "&bGame &l%game% &r&f[&4Shooting Spot &l#%spot%&f]&r")
+                            stand.setCustomName(ChatColor.translateAlternateColorCodes('&', "&f[&4Shooting Spot &l#%spot%&f]&b - &f(&e%game%&f)&r")
                                     .replaceAll("%game%", gameID)
                                     .replaceAll("%spot%", shootingSpot.replaceAll("shootingSpot", ""))
                             );

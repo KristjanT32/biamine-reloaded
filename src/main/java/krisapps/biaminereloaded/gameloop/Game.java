@@ -57,6 +57,7 @@ public class Game implements Listener {
     CommandSender initiator;
     ItemDispenserUtility dispenser;
     private final Map<UUID, Integer> playerPositions = new HashMap<UUID, Integer>();
+    private final Map<UUID, List<AreaPassInfo>> arrivalStats = new LinkedHashMap<>();
     Random random = new Random();
     public LinkedHashMap<Player, FinishInfo> finishedPlayers;
 
@@ -132,6 +133,7 @@ public class Game implements Listener {
             main.messageUtility.sendActionbarMessage(event.getPlayer(), main.localizationUtility.getLocalizedPhrase("gameloop.checkpoint-reached-target")
                     .replaceAll("%time%", time)
             );
+            arrivalStats.get(event.getPlayer().getUniqueId()).add(new AreaPassInfo(event.getRegion().getRegionName(), time));
             for (Player p : players) {
                 if (p == event.getPlayer() && Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.EXCLUDE_TARGET_PLAYER_FROM_CHECKPOINT_MESSAGE)))
                     continue;
@@ -235,7 +237,12 @@ public class Game implements Listener {
     @EventHandler
     public void onShootingSpotEnter(BiathlonShootingSpotEnterEvent enterEvent) {
         activeGameLogger.logInfo("[" + currentGameID + "] Player " + enterEvent.getPlayer().getName() + " ENTERED SHOOTING SPOT #" + enterEvent.getSpotID());
+        String time = timer.getFormattedTime();
+
+
         playerPositions.put(enterEvent.getPlayer().getUniqueId(), enterEvent.getSpotID());
+        arrivalStats.get(enterEvent.getPlayer().getUniqueId()).add(new AreaPassInfo("Shooting Spot #" + enterEvent.getSpotID(), time));
+
         main.messageUtility.sendActionbarMessage(enterEvent.getPlayer(), main.localizationUtility.getLocalizedPhrase("gameloop.runtime.spot-claim")
                 .replaceAll("%num%", String.valueOf(enterEvent.getSpotID())
                 ));
@@ -255,8 +262,13 @@ public class Game implements Listener {
 
     @EventHandler
     public void onShootingSpotExit(BiathlonShootingSpotExitEvent exitEvent) {
+        String time = timer.getFormattedTime();
+
         activeGameLogger.logInfo("[" + currentGameID + "] Player " + exitEvent.getPlayer().getName() + " EXITED SHOOTING SPOT #" + exitEvent.getSpotID());
+
         playerPositions.remove(exitEvent.getPlayer().getUniqueId());
+        arrivalStats.get(exitEvent.getPlayer().getUniqueId()).add(new AreaPassInfo("Shooting Spot #" + exitEvent.getSpotID(), time, true));
+
         broadcastToEveryone(main.localizationUtility.getLocalizedPhrase("gameloop.runtime.spot-leave")
                 .replaceAll("%player%", exitEvent.getPlayer().getName())
                 .replaceAll("%num%", String.valueOf(exitEvent.getSpotID()))
@@ -299,6 +311,7 @@ public class Game implements Listener {
         }
     }
 
+
     public void startGame(List<String> pList, CommandSender initiator) {
         this.initiator = initiator;
 
@@ -330,13 +343,18 @@ public class Game implements Listener {
 
         for (String playerName : pList) {
             if (Bukkit.getPlayer(playerName) != null) {
-                players.add(Bukkit.getPlayer(playerName));
+                Player p = Bukkit.getPlayer(playerName);
+                players.add(p);
+                shootingStats.put(p.getUniqueId(), new ArrayList<>());
+                arrivalStats.put(p.getUniqueId(), new ArrayList<>());
             }
         }
 
         if (players.isEmpty()) {
             terminate(true, TerminationContext.CANNOT_GATHER_PLAYERS, "No players were eligible to be added to the game.");
         } else {
+            this.currentGameInfo.totalPlayers = players.size();
+            this.currentGameInfo.finishedPlayers = finishedPlayers.size();
             teleportToStart();
             initRefreshTask();
         }
@@ -426,7 +444,7 @@ public class Game implements Listener {
 
 
     private void finishGame() {
-        reporter.generateGameReport(shootingStats, finishedPlayers, currentGameInfo);
+        reporter.generateGameReport(shootingStats, finishedPlayers, currentGameInfo, arrivalStats);
         for (Player p : players) {
             main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.game-finished")
                     .replaceAll("%totalTime%", timer.getFormattedTime())
@@ -686,6 +704,7 @@ public class Game implements Listener {
                 if (!excluded.contains(p.getUniqueId())) {
                     players.add(p);
                     shootingStats.put(p.getUniqueId(), new ArrayList<HitInfo>());
+                    arrivalStats.put(p.getUniqueId(), new ArrayList<>());
                 }
             }
             this.currentGameInfo.totalPlayers = players.size();
@@ -919,7 +938,7 @@ public class Game implements Listener {
         double maxY = Math.max(loc1.getY(), loc2.getY());
         double maxZ = Math.max(loc1.getZ(), loc2.getZ());
 
-        return new Location(loc1.getWorld(), randomDouble(minX, maxX), randomDouble(minY, maxY), randomDouble(minZ, maxZ));
+        return new Location(loc1.getWorld(), randomDouble(minX, maxX) + 0.5, randomDouble(minY, maxY) + 0.5, randomDouble(minZ, maxZ) + 0.5);
     }
 
     public void broadcastToEveryone(String txt) {

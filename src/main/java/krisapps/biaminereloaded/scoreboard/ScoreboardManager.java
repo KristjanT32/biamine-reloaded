@@ -48,6 +48,10 @@ public class ScoreboardManager {
 
     private void setScoreboardLine(String text, String accessKey, int lineNumber) {
 
+        if (mainScoreboard.getObjective("biathlonGame") == null) {
+            gameObjective = mainScoreboard.registerNewObjective("biathlonGame", "dummy", "name");
+        }
+
         // Safeguard: if a line is already occupied, meaning a team already exists, reregister it.
         if (mainScoreboard.getTeam(accessKey) != null) {
             mainScoreboard.getTeam(accessKey).unregister();
@@ -80,6 +84,11 @@ public class ScoreboardManager {
     }
 
     public void refreshScoreboardData(String scoreboardConfigurationID, BiamineBiathlon gameInfo) {
+
+        if (mainScoreboard.getObjective("biathlonGame") == null) {
+            gameObjective = mainScoreboard.registerNewObjective("biathlonGame", "dummy", "name");
+        }
+
         String l1 = main.dataUtility.getScoreboardConfigProperty(scoreboardConfigurationID, ScoreboardLine.LINE1);
         String l2 = main.dataUtility.getScoreboardConfigProperty(scoreboardConfigurationID, ScoreboardLine.LINE2);
         String l3 = main.dataUtility.getScoreboardConfigProperty(scoreboardConfigurationID, ScoreboardLine.LINE3);
@@ -114,6 +123,10 @@ public class ScoreboardManager {
         result = result.replaceAll("%timer%", info.latestTime);
         result = result.replaceAll("%state%", ChatColor.translateAlternateColorCodes('&', main.dataUtility.getGameProperty(info.gameID, GameProperty.RUN_STATE)));
         result = result.replaceAll("%title%", ChatColor.translateAlternateColorCodes('&', main.dataUtility.getGameProperty(info.gameID, GameProperty.DISPLAY_NAME)));
+
+        if (mainScoreboard.getObjective("biathlonGame") == null) {
+            gameObjective = mainScoreboard.registerNewObjective("biathlonGame", "dummy", "name");
+        }
 
         gameObjective.setDisplayName(ChatColor.translateAlternateColorCodes('&', result));
     }

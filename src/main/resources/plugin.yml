@@ -30,7 +30,7 @@ commands:
     usage: "/resumegame <gameID>"
   terminate:
     description: "Terminates a BiaMine Biathlon instance."
-    usage: "/terminate <game> [reason]"
+    usage: "/terminate [reason]"
   kickplayer:
     description: "Removes a player from the current game."
     usage: "/kickplayer <player> [reason]"

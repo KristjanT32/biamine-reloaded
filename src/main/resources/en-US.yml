@@ -28,7 +28,7 @@ generic:
     succeeded: "&e[&bBia&fMine&e]: &aOperation succeeded."
 
 gameloop:
-  error-gamerunning: "&cCannot start this game, since an instance is already running, or has not yet finalized. To start a game, please stop the running instance with &e/terminate <gameID>&c.&r"
+  error-gamerunning: "&cCannot start this game, since an instance is already running, or has not yet finalized. To start a game, please stop the running instance with &e/terminate&c.&r"
   error-dispense-norange: "&cFailed to automatically determine the amount of item: &b%item% &f(&ethe active game has no shooting targets&f)&r"
 
   checkpoint-reached: "&b%player% &ehas just reached %checkpoint%&e at &a%time%&e!"
@@ -151,10 +151,8 @@ commands:
     insuff: "&cInsufficient parameters. &eTo resume a paused instance, provide the &bid of the instance&e."
 
   terminate:
-    insuff: "&cInsufficient parameters. &eIf you wish to terminate an existing game, provide a &bvalid game ID&e and optionally a &breason&e."
-    noch: "&eNothing changed. This game is not currently active."
     noactive: "&cThere are no active games."
-    success: "&6Terminated &b%game%&6."
+    success: "&6&b%game%&6 will now be &cterminated."
     success-reason: "&6Terminated &b%game%&6: &b%reason%"
 
   kickplayer:

@@ -11,6 +11,7 @@ public class BiathlonTimer {
     int seconds = 0;
     int minutes = 0;
     int hours = 0;
+    int elapsedSeconds;
     String formattedTime = "";
     String timerFormat = "";
     private int globalTimerTaskID = -20;
@@ -41,6 +42,7 @@ public class BiathlonTimer {
                         hours++;
                     }
                 }
+                elapsedSeconds++;
                 formattedTime = TimerFormatter.formatTimer(timerFormat, seconds, minutes, hours);
             }
         }, 0, 20);
@@ -66,6 +68,10 @@ public class BiathlonTimer {
 
     public int getHours() {
         return hours;
+    }
+
+    public int getElapsedSeconds() {
+        return elapsedSeconds;
     }
 
     public int getGlobalTimerTaskID() {
