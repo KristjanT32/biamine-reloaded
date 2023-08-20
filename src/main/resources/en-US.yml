@@ -23,6 +23,12 @@ internals:
   reload-complete: "&e[&bBia&fMine&e]: &aPlugin reloaded."
   reload-termination: "&e[&bBia&fMine&e]: &eThe currently active game was terminated due to a &bserver-wide reload."
 
+orderphrases:
+  1: "st"
+  2: "nd"
+  3: "rd"
+  generic: "th"
+
 generic:
   operation:
     succeeded: "&e[&bBia&fMine&e]: &aOperation succeeded."
@@ -30,9 +36,15 @@ generic:
 gameloop:
   error-gamerunning: "&cCannot start this game, since an instance is already running, or has not yet finalized. To start a game, please stop the running instance with &e/terminate&c.&r"
   error-dispense-norange: "&cFailed to automatically determine the amount of item: &b%item% &f(&ethe active game has no shooting targets&f)&r"
+  error-invalid-player: "&e[&bBia&fMine&e]: &eInvalid player entry in player list: &b%player%"
+
+  player-new-lap: "&b%player% &ejust started their &a%lap%%orderphrase% &elap!"
 
   checkpoint-reached: "&b%player% &ehas just reached %checkpoint%&e at &a%time%&e!"
+  checkpoint-reached-lagbehind: "&b%player% &ehas just reached %checkpoint%&e at &a%time%&e &f(&a+%lag%&f)!"
   checkpoint-reached-target: "&b&lCheckpoint reached &e(&a%time%&e)&r"
+
+  player-lag: "&bBehind: &f+&a%lag%"
 
   player-finish: "&b%player% &ehas just reached the finish line at &a%time%&e!"
   player-finish-target: "&b&lYou've finished the run!"
@@ -77,8 +89,6 @@ gameloop:
 
     itemdispense:
       gave: "&bYou received: &e%item% &fx&a%count%"
-      finished-skip: "&bYou had the required items, so you were given &c&lNOTHING."
-      finished-skipped-some: "&bSome of the items were skipped, since you already had them."
 
     player-disconnected:
       notice: "&cWarning! &eA player from this game has disconnected! Pausing the game in &b%delay% &eseconds!"
@@ -167,6 +177,7 @@ commands:
     additem-error-insuff: "&cInsufficient parameters. &eTo add an item to the dispenser for this game, provide &bthe item to add&e."
     additem-success: "&aSuccess! &b%item% &eis now in the dispenser list of &b%game%&e."
     additem-negative: "&cCannot add an item with negative amount."
+    additem-unknown: "&cUnknown item type &b%item%&c."
 
     removeitem-error-insuff: "&cInsufficient parameters. &eTo remove an item from the dispenser for this game, provide &bthe item to remove&e."
     removeitem-success: "&aSuccess! &b%item% &ewas removed from the dispenser list of &b%game%&e."
@@ -368,6 +379,7 @@ commands:
       nospot: "&cNo such spot exists. &ePlease make sure you've provided the correct spotID."
       failed: "&cSomething went wrong when applying current changes. &eMake sure all of the provided arguments are correct."
       timed-out: "&c&lOperation cancelled: timed-out"
+      invalidblock: "&c&lInvalid block."
 
     addspot:
       added: "&aSuccessfully added a shooting spot to &b%game%'s shooting range. &eYou might want to adjust it's boundaries using &7/shootingrange &f%game%&7 editSpot setbound1/setbound2&r"

@@ -207,6 +207,10 @@ public class ExclusionListConfig implements CommandExecutor {
                                 for (String playerUUID : main.dataUtility.getExcludedPlayers(targetList)) {
 
                                     Player bukkitPlayer = (Bukkit.getPlayer(UUID.fromString(playerUUID)));
+                                    if (bukkitPlayer == null) {
+                                        main.appendToLog("Found invalid player entry in exclusion list #" + targetList + " - UUID: " + playerUUID);
+                                        continue;
+                                    }
                                     String playerName = bukkitPlayer.getName();
                                     if (bukkitPlayer.isOnline()) {
                                         online.add(bukkitPlayer);

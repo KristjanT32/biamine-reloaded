@@ -37,6 +37,15 @@ public class DispenserConfig implements CommandExecutor {
                         }
 
                         Material itemMaterial = Material.getMaterial(itemName);
+
+                        if (itemMaterial == null) {
+                            main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.dispenser.additem-unknown")
+                                    .replaceAll("%item%", itemName)
+                            );
+                            return true;
+                        }
+
+
                         ItemStack item = new ItemStack(itemMaterial);
                         item.setAmount(amount);
 

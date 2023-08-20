@@ -33,7 +33,16 @@ public class VisualisationUtility {
 
     public void visualiseArea(Location bound1, Location bound2, int duration) {
         World world = bound1.getWorld();
-        int TASK = main.getServer().getScheduler().scheduleSyncRepeatingTask(main, new Runnable() {
+        if (world == null) {
+            return;
+        }
+        int TASK = runVisualise(bound1, bound2, world);
+        runningTasks.put(TASK, VisualisationType.AREA);
+        cancelVisualisation(TASK, duration);
+    }
+
+    private int runVisualise(Location bound1, Location bound2, World world) {
+        return main.getServer().getScheduler().scheduleSyncRepeatingTask(main, new Runnable() {
 
                 final int minX = Math.min(bound1.getBlockX(), bound2.getBlockX());
                 final int minY = Math.min(bound1.getBlockY(), bound2.getBlockY());
@@ -54,8 +63,6 @@ public class VisualisationUtility {
                     }
                 }
             }, 0, 1);
-        runningTasks.put(TASK, VisualisationType.AREA);
-        cancelVisualisation(TASK, duration);
     }
 
     public void massVisualiseAreas(ArrayList<CuboidRegion> areaList, int duration) {
@@ -64,27 +71,7 @@ public class VisualisationUtility {
         for (CuboidRegion region : areaList) {
             Location bound1 = region.getBound1();
             Location bound2 = region.getBound2();
-            int TASK = main.getServer().getScheduler().scheduleSyncRepeatingTask(main, new Runnable() {
-
-                final int minX = Math.min(bound1.getBlockX(), bound2.getBlockX());
-                final int minY = Math.min(bound1.getBlockY(), bound2.getBlockY());
-                final int minZ = Math.min(bound1.getBlockZ(), bound2.getBlockZ());
-
-                final int maxX = Math.max(bound1.getBlockX(), bound2.getBlockX());
-                final int maxY = Math.max(bound1.getBlockY(), bound2.getBlockY());
-                final int maxZ = Math.max(bound1.getBlockZ(), bound2.getBlockZ());
-
-                @Override
-                public void run() {
-                    for (int x = minX; x <= maxX; x++) {
-                        for (int y = minY; y <= maxY; y++) {
-                            for (int z = minZ; z <= maxZ; z++) {
-                                world.spawnParticle(Particle.BLOCK_MARKER, x + 0.5, y + 0.5, z + 0.5, 5, 0, 0, 0, 0, Material.BARRIER.createBlockData());
-                            }
-                        }
-                    }
-                }
-            }, 0, 1);
+            int TASK = runVisualise(bound1, bound2, world);
             tasks.add(TASK);
             runningTasks.put(TASK, VisualisationType.AREA);
         }

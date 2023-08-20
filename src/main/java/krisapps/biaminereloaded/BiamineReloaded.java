@@ -209,6 +209,7 @@ public final class BiamineReloaded extends JavaPlugin {
         getLogger().info("Events registered.");
     }
 
+    @SuppressWarnings("ConstantConditions")
     private void registerCommands() {
         getCommand("createbiathlon").setExecutor(new CreateBiathlon(this));
         getCommand("deletebiathlon").setExecutor(new DeleteBiathlon(this));

@@ -261,7 +261,7 @@ public class ShootingRangeConfig implements CommandExecutor, Listener {
             return;
         }
 
-        if (interactEvent.getHand().equals(EquipmentSlot.HAND)) {
+        if (interactEvent.getHand() == EquipmentSlot.HAND) {
 
             if (!main.dataUtility.getTemporaryValue("pendingOperation.operation").equalsIgnoreCase("none")) {
                 if (main.dataUtility.getTemporaryValue("pendingOperation.playerUUID") != null) {
@@ -270,6 +270,12 @@ public class ShootingRangeConfig implements CommandExecutor, Listener {
                         String gameID = main.dataUtility.getTemporaryValue("pendingOperation.gameID");
                         String spotID = main.dataUtility.getTemporaryValue("pendingOperation.spotID");
                         String spotNumber = main.dataUtility.getTemporaryValue("pendingOperation.spotNumber");
+
+                        if (target == null) {
+                            main.appendToLog("Failed to register clicked block while processing operation.");
+                            main.messageUtility.sendActionbarMessage(interactEvent.getPlayer(), main.localizationUtility.getLocalizedPhrase("commands.shootingrange.generic.invalidblock"));
+                            return;
+                        }
 
                         if (!target.isEmpty()) {
                             CustomBlockData dataContainer = new CustomBlockData(target, main);

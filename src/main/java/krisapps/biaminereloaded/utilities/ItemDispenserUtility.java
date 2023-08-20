@@ -50,7 +50,6 @@ public class ItemDispenserUtility {
     public void dispenseToAll(List<Player> players, List<ItemStack> items) {
         for (Player player : players) {
             PlayerInventory inventory = player.getInventory();
-            int skippedItems = 0;
             for (ItemStack item : items) {
                 if (!hasItem(inventory, item)) {
                     inventory.addItem(item);
@@ -68,13 +67,6 @@ public class ItemDispenserUtility {
                             .replaceAll("%count%", String.valueOf(item.getAmount()))
                     );
                 }
-            }
-            if (skippedItems == items.size()) {
-                main.messageUtility.sendActionbarMessage(player, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.itemdispense.finished-skip")
-                        .replaceAll("%skipped%", String.valueOf(skippedItems))
-                );
-            } else if (skippedItems > 0 && skippedItems < items.size()) {
-                main.messageUtility.sendMessage(player, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.itemdispense.finished-skipped-some"));
             }
         }
     }

@@ -46,7 +46,7 @@ public class GameManagementUtility {
     }
 
     public void reloadTerminate() {
-        if (Game.instance == null || Game.class == null) {
+        if (Game.instance == null) {
             return;
         }
         Game.instance.reloadTerminate();

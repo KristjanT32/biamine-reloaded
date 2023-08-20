@@ -5,6 +5,7 @@ import krisapps.biaminereloaded.events.*;
 import krisapps.biaminereloaded.logging.BiaMineLogger;
 import krisapps.biaminereloaded.scoreboard.ScoreboardManager;
 import krisapps.biaminereloaded.timers.BiathlonTimer;
+import krisapps.biaminereloaded.timers.TimerFormatter;
 import krisapps.biaminereloaded.types.*;
 import krisapps.biaminereloaded.utilities.ItemDispenserUtility;
 import krisapps.biaminereloaded.utilities.ReportUtility;
@@ -56,8 +57,11 @@ public class Game implements Listener {
     BukkitScheduler scheduler = Bukkit.getScheduler();
     CommandSender initiator;
     ItemDispenserUtility dispenser;
+    private final Map<String, BestTimeEntry> bestTimes = new HashMap<>();
     private final Map<UUID, Integer> playerPositions = new HashMap<UUID, Integer>();
     private final Map<UUID, List<AreaPassInfo>> arrivalStats = new LinkedHashMap<>();
+    private final Map<UUID, List<String>> passedCheckpoints = new LinkedHashMap<>();
+    private final Map<UUID, Integer> lapTracker = new HashMap<>();
     Random random = new Random();
     public LinkedHashMap<Player, FinishInfo> finishedPlayers;
 
@@ -127,8 +131,60 @@ public class Game implements Listener {
     }
 
     @EventHandler
-    public void onRegionEnter(CheckpointPassEvent event) {
+    public void onCheckpointPass(CheckpointPassEvent event) {
         String time = timer.getFormattedTime();
+
+        if (!bestTimes.containsKey(event.getRegion().getRegionName())) {
+            activeGameLogger.logInfo("New best time for " + event.getRegion().getRegionName() + ": " + time);
+            bestTimes.put(event.getRegion().getRegionName(), new BestTimeEntry(event.getPlayer(), time));
+        }
+
+        // If the player has not passed any checkpoints, add him to the list, and the passed region to his personal list.
+        if (passedCheckpoints.get(event.getPlayer().getUniqueId()).isEmpty()) {
+            passedCheckpoints.get(event.getPlayer().getUniqueId()).add(event.getRegion().getRegionName());
+            if (lapTracker.containsKey(event.getPlayer().getUniqueId())) {
+                lapTracker.put(event.getPlayer().getUniqueId(), 1);
+                main.appendToLog(event.getPlayer().getName() + " has started a new lap: " + 1);
+                broadcastToEveryone(main.localizationUtility.getLocalizedPhrase("gameloop.player-new-lap")
+                        .replaceAll("%lap%", String.valueOf(1))
+                        .replaceAll("%player%", event.getPlayer().getName())
+                        .replaceAll("%orderphrase%", getOrderLettersFor(1))
+                );
+            }
+        } else {
+            // If there are records of him passing a checkpoint, and a record of him passing the current checkpoint
+            if (passedCheckpoints.get(event.getPlayer().getUniqueId()).contains(event.getRegion().getRegionName())) {
+
+                if (passedCheckpoints.size() < main.dataUtility.getCheckpoints(currentGameID).size() - 1) {
+                    main.appendToLog("Player " + event.getPlayer().getName() + " attempted to pass through " + event.getRegion().getRegionName() + " again!");
+                    return;
+                }
+
+                // Clear his passed checkpoints, since he's started a new lap
+                passedCheckpoints.get(event.getPlayer().getUniqueId()).clear();
+                if (lapTracker.containsKey(event.getPlayer().getUniqueId())) {
+                    int curLap = lapTracker.get(event.getPlayer().getUniqueId());
+                    lapTracker.remove(event.getPlayer().getUniqueId());
+                    lapTracker.put(event.getPlayer().getUniqueId(), curLap + 1);
+                    int lap = lapTracker.get(event.getPlayer().getUniqueId());
+
+                    main.appendToLog(event.getPlayer().getName() + " has started a new lap: " + lap);
+                    broadcastToEveryone(main.localizationUtility.getLocalizedPhrase("gameloop.player-new-lap")
+                            .replaceAll("%lap%", String.valueOf(lap))
+                            .replaceAll("%player%", event.getPlayer().getName())
+                            .replaceAll("%orderphrase%", getOrderLettersFor(lap))
+                    );
+                } else {
+                    lapTracker.put(event.getPlayer().getUniqueId(), 1);
+                }
+
+                // Refresh the best time for the lastly passed checkpoint, and add it to passed checkpoints.
+                //bestTimes.get(event.getRegion().getRegionName()).setTime(time);
+                passedCheckpoints.get(event.getPlayer().getUniqueId()).add(event.getRegion().getRegionName());
+            } else {
+                passedCheckpoints.get(event.getPlayer().getUniqueId()).add(event.getRegion().getRegionName());
+            }
+        }
         if (!event.getRegion().isFinish()) {
             main.messageUtility.sendActionbarMessage(event.getPlayer(), main.localizationUtility.getLocalizedPhrase("gameloop.checkpoint-reached-target")
                     .replaceAll("%time%", time)
@@ -138,11 +194,20 @@ public class Game implements Listener {
                 if (p == event.getPlayer() && Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.EXCLUDE_TARGET_PLAYER_FROM_CHECKPOINT_MESSAGE)))
                     continue;
 
-                main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.checkpoint-reached")
-                        .replaceAll("%checkpoint%", event.getRegion().getRegionName())
-                        .replaceAll("%player%", event.getPlayer().getName())
-                        .replaceAll("%time%", time)
-                );
+                if (bestTimes.get(event.getRegion().getRegionName()).getPlayer().getUniqueId() == event.getPlayer().getUniqueId()) {
+                    main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.checkpoint-reached")
+                            .replaceAll("%checkpoint%", event.getRegion().getRegionName())
+                            .replaceAll("%player%", event.getPlayer().getName())
+                            .replaceAll("%time%", time)
+                    );
+                } else {
+                    main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.checkpoint-reached-lagbehind")
+                            .replaceAll("%checkpoint%", event.getRegion().getRegionName())
+                            .replaceAll("%player%", event.getPlayer().getName())
+                            .replaceAll("%time%", time)
+                            .replaceAll("%lag%", TimerFormatter.getDifference(time, bestTimes.get(event.getRegion().getRegionName()).getTime()))
+                    );
+                }
             }
         } else {
             if (!finishedPlayers.containsKey(event.getPlayer()) && finishedPlayers.size() < players.size()) {
@@ -185,13 +250,9 @@ public class Game implements Listener {
         disconnectedPlayers.put(event.getPlayer().getUniqueId(), event.getPlayer().getLocation());
         if (event.getKickType().equals(KickType.UNINTENTIONAL)) {
             if (Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.PAUSE_IF_PLAYER_DISCONNECT))) {
-                for (Player p : players) {
-                    if (!finishedPlayers.containsKey(p)) {
-                        main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.player-disconnected.notice")
-                                .replaceAll("%delay%", main.dataUtility.getConfigProperty(ConfigProperty.EMERGENCY_PAUSE_DELAY))
-                        );
-                    }
-                }
+                broadcastToEveryone(main.localizationUtility.getLocalizedPhrase("gameloop.player-disconnected.notice")
+                        .replaceAll("%delay%", main.dataUtility.getConfigProperty(ConfigProperty.EMERGENCY_PAUSE_DELAY))
+                );
                 delayPause(Integer.parseInt(main.dataUtility.getConfigProperty(ConfigProperty.EMERGENCY_PAUSE_DELAY)));
             }
         }
@@ -201,19 +262,26 @@ public class Game implements Listener {
     public void onTargetHit(BiathlonArrowHitEvent hitEvent) {
         if (players.contains(hitEvent.getShooter()) && !finishedPlayers.containsKey(hitEvent.getShooter())) {
             if (hitEvent.getHitType().equals(HitType.HIT)) {
-                shootingStats.get(hitEvent.getShooter().getUniqueId()).add(
-                        new HitInfo(
-                                hitEvent.getTarget(),
-                                hitEvent.getSpot(),
-                                HitType.HIT,
-                                getItemCount(hitEvent.getShooter().getInventory(), Material.ARROW)
-                        ));
-                broadcastToEveryone(main.localizationUtility.getLocalizedPhrase("gameloop.runtime.player-target-hit")
-                        .replaceAll("%player%", hitEvent.getShooter().getName())
-                        .replaceAll("%order%", String.valueOf(hitEvent.getTarget()))
-                        .replaceAll("%spot%", String.valueOf(hitEvent.getSpot()))
-                );
+                // If the player hit a target, but was outside the shooting spot
+                if (hitEvent.getSpot() != -1) {
+                    shootingStats.get(hitEvent.getShooter().getUniqueId()).add(
+                            new HitInfo(
+                                    hitEvent.getTarget(),
+                                    hitEvent.getSpot(),
+                                    HitType.HIT,
+                                    getItemCount(hitEvent.getShooter().getInventory(), Material.ARROW)
+                            ));
+                    broadcastToEveryone(main.localizationUtility.getLocalizedPhrase("gameloop.runtime.player-target-hit")
+                            .replaceAll("%player%", hitEvent.getShooter().getName())
+                            .replaceAll("%order%", String.valueOf(hitEvent.getTarget()))
+                            .replaceAll("%spot%", String.valueOf(hitEvent.getSpot()))
+                    );
+                } else if (hitEvent.getSpot() == -1) {
+                    main.messageUtility.sendMessage(hitEvent.getShooter(), main.localizationUtility.getLocalizedPhrase("gameloop.runtime.player-target-misfire")
+                            .replaceAll("%player%", hitEvent.getShooter().getName()));
+                }
             } else if (hitEvent.getHitType().equals(HitType.MISS)) {
+                // If the player missed a target, but was outside the shooting spot
                 if (hitEvent.getSpot() != -1) {
                     shootingStats.get(hitEvent.getShooter().getUniqueId()).add(
                             new HitInfo(
@@ -226,9 +294,8 @@ public class Game implements Listener {
                             .replaceAll("%spot%", String.valueOf(hitEvent.getSpot()))
                     );
                 } else if (hitEvent.getSpot() == -1) {
-                    broadcastToEveryone(main.localizationUtility.getLocalizedPhrase("gameloop.runtime.player-target-misfire")
-                            .replaceAll("%player%", hitEvent.getShooter().getName())
-                    );
+                    main.messageUtility.sendMessage(hitEvent.getShooter(), main.localizationUtility.getLocalizedPhrase("gameloop.runtime.player-target-misfire")
+                            .replaceAll("%player%", hitEvent.getShooter().getName()));
                 }
             }
         }
@@ -271,7 +338,8 @@ public class Game implements Listener {
 
         broadcastToEveryone(main.localizationUtility.getLocalizedPhrase("gameloop.runtime.spot-leave")
                 .replaceAll("%player%", exitEvent.getPlayer().getName())
-                .replaceAll("%num%", String.valueOf(exitEvent.getSpotID()))
+                        .replaceAll("%num%", String.valueOf(exitEvent.getSpotID())),
+                exitEvent.getPlayer().getUniqueId()
         );
     }
 
@@ -344,9 +412,15 @@ public class Game implements Listener {
         for (String playerName : pList) {
             if (Bukkit.getPlayer(playerName) != null) {
                 Player p = Bukkit.getPlayer(playerName);
+                if (p == null) {
+                    main.messageUtility.sendMessage(initiator, main.localizationUtility.getLocalizedPhrase("gameloop.error-invalid-player")
+                            .replaceAll("%player%", playerName)
+                    );
+                }
                 players.add(p);
                 shootingStats.put(p.getUniqueId(), new ArrayList<>());
                 arrivalStats.put(p.getUniqueId(), new ArrayList<>());
+                passedCheckpoints.put(p.getUniqueId(), new ArrayList<>());
             }
         }
 
@@ -457,25 +531,25 @@ public class Game implements Listener {
                 switch (finishEntry.getValue().getLeaderboardOrder()) {
                     case 1:
                         main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.leaderboard.gold")
-                                .replaceAll("%player%", p.getName())
+                                .replaceAll("%player%", finishEntry.getKey().getName())
                                 .replaceAll("%time%", finishEntry.getValue().getFinishTime())
                         );
                         break;
                     case 2:
                         main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.leaderboard.silver")
-                                .replaceAll("%player%", p.getName())
+                                .replaceAll("%player%", finishEntry.getKey().getName())
                                 .replaceAll("%time%", finishEntry.getValue().getFinishTime())
                         );
                         break;
                     case 3:
                         main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.leaderboard.bronze")
-                                .replaceAll("%player%", p.getName())
+                                .replaceAll("%player%", finishEntry.getKey().getName())
                                 .replaceAll("%time%", finishEntry.getValue().getFinishTime())
                         );
                         break;
                     default:
                         main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.leaderboard.generic")
-                                .replaceAll("%player%", p.getName())
+                                .replaceAll("%player%", finishEntry.getKey().getName())
                                 .replaceAll("%time%", finishEntry.getValue().getFinishTime())
                                 .replaceAll("%orderNum%", String.valueOf(finishEntry.getValue().getLeaderboardOrder()))
                         );
@@ -524,6 +598,26 @@ public class Game implements Listener {
             return;
         }
         scoreboardManager.refreshScoreboardLine(currentGameInfo, ScoreboardLine.asEnum(main.dataUtility.getPropertyLineNumber(currentGameInfo.scoreboardConfig, "%state%")));
+
+        for (Player p : players) {
+            if (finishedPlayers.containsKey(p)) {
+                continue;
+            }
+            if (passedCheckpoints.get(p.getUniqueId()) != null) {
+                if (passedCheckpoints.get(p.getUniqueId()).size() >= bestTimes.values().size()) {
+                    continue;
+                }
+                try {
+                    List<String> playerPassedCheckpoints = passedCheckpoints.get(p.getUniqueId());
+                    String lastPassedCheckpoint = playerPassedCheckpoints.get(playerPassedCheckpoints.size() - 1);
+                    main.messageUtility.sendActionbarMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.player-lag")
+                            .replace("%lag%", TimerFormatter.getDifference(timer.getFormattedTime(), bestTimes.get(lastPassedCheckpoint).getTime()))
+                    );
+                } catch (IndexOutOfBoundsException e) {
+                    main.getLogger().info("Failed to show lag time, reason: " + e.getMessage());
+                }
+            }
+        }
     }
 
     // Phase Methods
@@ -578,59 +672,61 @@ public class Game implements Listener {
 
             @Override
             public void run() {
-                if (countdown >= 0) {
-                    for (Player p : players) {
-                        switch (countdown) {
-                            case 3:
+                if (countdown >= 1) {
+                    switch (countdown) {
+                        case 3:
+                            for (Player p : players) {
+                                if (finishedPlayers.containsKey(p)) {
+                                    continue;
+                                }
                                 p.sendTitle(ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("gameloop.timertick.ready.title")),
                                         ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("gameloop.timertick.ready.subtitle")),
                                         0, 20, 0
                                 );
-
                                 main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.timertick.countdown")
                                         .replaceAll("%time%", String.valueOf(countdown))
                                 );
-                                break;
-                            case 2:
+                            }
+                            break;
+                        case 2:
+                            for (Player p : players) {
+                                if (finishedPlayers.containsKey(p)) {
+                                    continue;
+                                }
                                 p.sendTitle(ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("gameloop.timertick.set.title")),
                                         ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("gameloop.timertick.set.subtitle")),
                                         0, 20, 0
                                 );
-
-                                main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.timertick.countdown")
-                                        .replaceAll("%time%", String.valueOf(countdown))
-                                );
-                                break;
-                            case 1:
+                            }
+                            break;
+                        case 1:
+                            for (Player p : players) {
+                                if (finishedPlayers.containsKey(p)) {
+                                    continue;
+                                }
                                 p.sendTitle(ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("gameloop.timertick.go.title")),
                                         ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("gameloop.timertick.go.subtitle")),
                                         0, 20, 0
                                 );
-                                main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.timertick.countdown")
-                                        .replaceAll("%time%", String.valueOf(countdown))
-                                );
-                                break;
-                            case 0:
-                                p.sendTitle(ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("gameloop.timertick.release.title")),
-                                        ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("gameloop.timertick.release.subtitle")),
-                                        0, 20, 0
-                                );
-                                main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.timertick.countdown")
-                                        .replaceAll("%time%", String.valueOf(countdown))
-                                );
-
-                                // Start the game
-                                scheduler.cancelTask(COUNTDOWN_TASK);
-                                releasePlayers();
-                                break;
-                            default:
-                                main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.timertick.countdown")
-                                        .replaceAll("%time%", String.valueOf(countdown))
-                                );
-                                break;
-                        }
+                            }
+                            break;
                     }
+                    broadcastToEveryone(main.localizationUtility.getLocalizedPhrase("gameloop.timertick.countdown")
+                            .replaceAll("%time%", String.valueOf(countdown)));
+                    // Start the game
                     countdown--;
+                } else {
+                    for (Player p : players) {
+                        if (finishedPlayers.containsKey(p)) {
+                            continue;
+                        }
+                        p.sendTitle(ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("gameloop.timertick.release.title")),
+                                ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("gameloop.timertick.release.subtitle")),
+                                0, 20, 0
+                        );
+                    }
+                    scheduler.cancelTask(COUNTDOWN_TASK);
+                    releasePlayers();
                 }
             }
         }, 0, 20);
@@ -705,6 +801,7 @@ public class Game implements Listener {
                     players.add(p);
                     shootingStats.put(p.getUniqueId(), new ArrayList<HitInfo>());
                     arrivalStats.put(p.getUniqueId(), new ArrayList<>());
+                    passedCheckpoints.put(p.getUniqueId(), new ArrayList<>());
                 }
             }
             this.currentGameInfo.totalPlayers = players.size();
@@ -941,6 +1038,17 @@ public class Game implements Listener {
         return new Location(loc1.getWorld(), randomDouble(minX, maxX) + 0.5, randomDouble(minY, maxY) + 0.5, randomDouble(minZ, maxZ) + 0.5);
     }
 
+    public void broadcastToEveryone(String txt, UUID skipPlayer) {
+        for (Player p : players) {
+            if (p.getUniqueId().equals(skipPlayer) && Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.EXCLUDE_TARGET_PLAYER_FROM_CHECKPOINT_MESSAGE))) {
+                continue;
+            }
+            if (!finishedPlayers.containsKey(p)) {
+                main.messageUtility.sendMessage(p, txt);
+            }
+        }
+    }
+
     public void broadcastToEveryone(String txt) {
         for (Player p : players) {
             if (!finishedPlayers.containsKey(p)) {
@@ -952,6 +1060,9 @@ public class Game implements Listener {
     public int getItemCount(Inventory inv, Material item) {
         ItemStack[] items = inv.getContents();
         for (ItemStack stack : items) {
+            if (stack == null) {
+                continue;
+            }
             if (stack.getType() == item) {
                 return stack.getAmount();
             }
@@ -961,6 +1072,21 @@ public class Game implements Listener {
 
     public int getPlayerSpotID(UUID playerUUID) {
         return playerPositions.get(playerUUID) == null ? -1 : playerPositions.get(playerUUID);
+    }
+
+    public String getOrderLettersFor(int num) {
+        String strNum = String.valueOf(num);
+        char lastChar = strNum.charAt(strNum.length() - 1);
+        switch (Integer.parseInt(String.valueOf(lastChar))) {
+            case 1:
+                return main.localizationUtility.getLocalizedPhrase("orderphrases.1");
+            case 2:
+                return main.localizationUtility.getLocalizedPhrase("orderphrases.2");
+            case 3:
+                return main.localizationUtility.getLocalizedPhrase("orderphrases.3");
+            default:
+                return main.localizationUtility.getLocalizedPhrase("orderphrases.generic");
+        }
     }
 
     public ArrayList<Player> getPlayers() {

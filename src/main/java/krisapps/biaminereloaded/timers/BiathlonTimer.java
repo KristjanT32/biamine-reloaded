@@ -38,7 +38,6 @@ public class BiathlonTimer {
                         minutes++;
                     } else {
                         minutes = 0;
-                        seconds = 0;
                         hours++;
                     }
                 }

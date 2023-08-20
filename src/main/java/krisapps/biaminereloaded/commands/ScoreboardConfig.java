@@ -283,14 +283,13 @@ public class ScoreboardConfig implements CommandExecutor {
                     }
                     break;
                 case "delete":
-                    if (args[1].equalsIgnoreCase("default")) {
-                        main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.error-editdefault"));
-                        return true;
-                    }
-
                     // Deleting configs.
                     if (args.length >= 2) {
                         String id = args[1];
+                        if (id.equalsIgnoreCase("default")) {
+                            main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.error-editdefault"));
+                            return true;
+                        }
                         if (main.dataUtility.scoreboardConfigExists(id)) {
                             if (main.dataUtility.deleteScoreboardConfig(id)) {
                                 main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.delete-success-deleted").replaceAll("%id%", id));

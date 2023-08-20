@@ -285,6 +285,9 @@ public class BiaMineDataUtility {
 
     public int getPropertyLineNumber(String scoreboardConfigurationID, String property) {
         if (!scoreboardConfigurationID.equalsIgnoreCase("default")) {
+            if (main.pluginScoreboardConfig.getConfigurationSection(SCOREBOARD_FILE_PATH_PREFIX + scoreboardConfigurationID) == null) {
+                return 404;
+            }
             for (String line : main.pluginScoreboardConfig.getConfigurationSection(SCOREBOARD_FILE_PATH_PREFIX + scoreboardConfigurationID).getKeys(false)) {
                 if (main.pluginScoreboardConfig.getString(SCOREBOARD_FILE_PATH_PREFIX + scoreboardConfigurationID + "." + line).contains(property)) {
                     if (!line.equalsIgnoreCase("title")) {
@@ -292,7 +295,6 @@ public class BiaMineDataUtility {
                     }
                 }
             }
-            return 404;
         } else {
             for (String line : main.pluginConfig.getConfigurationSection("defaults.scoreboardconfig").getKeys(false)) {
                 if (main.pluginConfig.getString("defaults.scoreboardconfig." + line).contains(property)) {
@@ -301,8 +303,8 @@ public class BiaMineDataUtility {
                     }
                 }
             }
-            return 404;
         }
+        return 404;
     }
 
     public boolean overwriteScoreboardProperty(String id, int lineToOverwrite, String overwriteWithProperty) {
@@ -830,6 +832,9 @@ public class BiaMineDataUtility {
         for (Location target : getShootingTargetsForSpot(gameID, spotID)) {
             for (Block b : CustomBlockData.getBlocksWithCustomData(main, target.getChunk())) {
                 CustomBlockData blockData = new CustomBlockData(b, main);
+                if (blockData.isEmpty()) {
+                    continue;
+                }
                 if (blockData.get(new NamespacedKey(main, "ownerGameID"), PersistentDataType.STRING).equalsIgnoreCase(gameID)) {
                     if (blockData.get(new NamespacedKey(main, "range_spot_number"), PersistentDataType.INTEGER) == spotID) {
                         main.appendToLog("Deleting shooting target for spot #" + spotID + " of game {" + gameID + "}");

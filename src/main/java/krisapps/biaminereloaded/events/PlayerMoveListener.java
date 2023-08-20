@@ -94,7 +94,7 @@ public class PlayerMoveListener implements Listener {
             }
             if (collisionUtility.checkIntersect(moveEvent.getTo(), shootingSpotRegion)) {
 
-                if (playerTracker.containsValue(shootingSpot) && getPlayerForRegion(shootingSpot) != null && !getPlayerForRegion(shootingSpot).equals(p.getUniqueId())) {
+                if (playerTracker.containsValue(shootingSpot) && getPlayerForRegion(shootingSpot) != null && getPlayerForRegion(shootingSpot) != p.getUniqueId()) {
                     Bukkit.getPluginManager().callEvent(new BiathlonOccupiedShootingSpotEnterEvent(
                             Integer.parseInt(shootingSpot.replaceAll("shootingSpot", "")),
                             activeGame,

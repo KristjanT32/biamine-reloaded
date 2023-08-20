@@ -39,7 +39,7 @@ public class StartGame implements CommandExecutor {
 
                 main.gameUtility.initGameWithPlayers(instance, sender, players);
             } else {
-                BiamineBiathlon instance = new BiamineBiathlon(shootings, players.size(), 0, "00:00:00",
+                BiamineBiathlon instance = new BiamineBiathlon(shootings, 0, 0, "00:00:00",
                         main.dataUtility.getGameProperty(gameID, GameProperty.SCOREBOARD_CONFIGURATION_ID),
                         main.dataUtility.getGameProperty(gameID, GameProperty.EXCLUSION_LIST_ID), gameID);
                 main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.startgame.starting-notice"));

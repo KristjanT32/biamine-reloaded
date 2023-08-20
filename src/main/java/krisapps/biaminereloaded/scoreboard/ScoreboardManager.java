@@ -31,13 +31,14 @@ public class ScoreboardManager {
             ChatColor.BLACK + String.valueOf(ChatColor.LIGHT_PURPLE),
             ChatColor.BLACK + String.valueOf(ChatColor.DARK_GREEN)
     };
-    Scoreboard mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+    Scoreboard mainScoreboard;
     Objective gameObjective;
     BiamineReloaded main;
 
 
     public ScoreboardManager(BiamineReloaded main) {
         this.main = main;
+        this.mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
         if (mainScoreboard.getObjective("biathlonGame") == null) {
             gameObjective = mainScoreboard.registerNewObjective("biathlonGame", "dummy", "name");
         } else {
