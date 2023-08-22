@@ -2,15 +2,15 @@ package krisapps.biaminereloaded.logging;
 
 import krisapps.biaminereloaded.BiamineReloaded;
 
-import java.sql.Date;
-import java.text.SimpleDateFormat;
-import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class BiaMineLogger {
 
     BiamineReloaded main;
     private final String loggerPrefix;
     private final String modulePrefix;
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy-HH:mm:ss");
 
     public BiaMineLogger(String loggerPrefix, String modulePrefix, BiamineReloaded main) {
         this.loggerPrefix = loggerPrefix;
@@ -30,21 +30,20 @@ public class BiaMineLogger {
         this.main = main;
     }
 
-    private String getDate() {
-        return SimpleDateFormat.getDateTimeInstance().format(Date.from(Instant.now()));
+    private String getTimeStamp() {
+        return formatter.format(LocalDateTime.now());
     }
 
     public void logCritError(String msg) {
-        main.appendToLog(String.format("[%s::%s at %s CRIT]: " + msg, loggerPrefix, modulePrefix, getDate()));
-
+        main.appendToLog(String.format("[%s] [%s/%s CRIT]: " + msg, getTimeStamp(), loggerPrefix, modulePrefix));
     }
 
     public void logError(String msg) {
-        main.appendToLog(String.format("[%s::%s at %s ERR]: " + msg, loggerPrefix, modulePrefix, getDate()));
+        main.appendToLog(String.format("[%s] [%s/%s ERR]: " + msg, getTimeStamp(), loggerPrefix, modulePrefix));
     }
 
     public void logInfo(String msg) {
-        main.appendToLog(String.format("[%s::%s at %s INF]: " + msg, loggerPrefix, modulePrefix, getDate()));
+        main.appendToLog(String.format("[%s] [%s/%s INFO]: " + msg, getTimeStamp(), loggerPrefix, modulePrefix));
     }
 
 }

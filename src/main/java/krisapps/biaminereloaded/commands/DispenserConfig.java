@@ -1,6 +1,7 @@
 package krisapps.biaminereloaded.commands;
 
 import krisapps.biaminereloaded.BiamineReloaded;
+import krisapps.biaminereloaded.types.DispenserEntry;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -49,7 +50,7 @@ public class DispenserConfig implements CommandExecutor {
                         ItemStack item = new ItemStack(itemMaterial);
                         item.setAmount(amount);
 
-                        main.dataUtility.addItemToDispense(gameID, item);
+                        main.dataUtility.addItemToDispense(gameID, item, false);
                         main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.dispenser.additem-success")
                                 .replaceAll("%item%", capitalize(item.getType().name().replace("_", " ")))
                                 .replaceAll("%count%", String.valueOf(amount))
@@ -80,21 +81,44 @@ public class DispenserConfig implements CommandExecutor {
                     }
                     break;
                 case "show":
-                    List<ItemStack> dispenserList = main.dataUtility.getItemsToDispense(gameID);
+                    List<DispenserEntry> dispenserList = main.dataUtility.getDispenserEntries(gameID);
                     main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.dispenser.show-notice")
                             .replaceAll("%game%", gameID)
                     );
                     if (!dispenserList.isEmpty()) {
-                        for (ItemStack item : dispenserList) {
+                        for (DispenserEntry itemEntry : dispenserList) {
                             main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.dispenser.show-item")
-                                    .replaceAll("%item%", capitalize(item.getType().name().replace("_", " ")))
-                                    .replaceAll("%count%", String.valueOf(item.getAmount()))
+                                    .replaceAll("%item%", capitalize(itemEntry.getItem().getType().name().replace("_", " ")))
+                                    .replaceAll("%count%", String.valueOf(itemEntry.isAuto() ? "[automatically determined]" : itemEntry.getItem().getAmount()))
                             );
                         }
                     } else {
                         main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.dispenser.show-empty"));
                     }
                     main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.dispenser.show-footer"));
+                    break;
+
+                case "enableauto":
+                    if (args.length >= 3) {
+                        String itemName = args[2].toUpperCase();
+                        Material itemMaterial = Material.getMaterial(itemName);
+                        main.dataUtility.enableAutoForDispenserItem(gameID, itemMaterial);
+                        main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.dispenser.auto-enabled")
+                                .replaceAll("%item%", capitalize(itemMaterial.name().replace("_", " ")))
+                        );
+                    }
+                    break;
+
+                case "disableauto":
+                    if (args.length >= 3) {
+                        String itemName = args[2].toUpperCase();
+                        Material itemMaterial = Material.getMaterial(itemName);
+                        main.dataUtility.disableAutoForDispenserItem(gameID, itemMaterial);
+                        main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.dispenser.auto-disabled")
+                                .replaceAll("%item%", capitalize(itemMaterial.name().replace("_", " ")))
+                                .replaceAll("%value%", String.valueOf(main.dataUtility.getItemEntry(gameID, itemMaterial).getItem().getAmount()))
+                        );
+                    }
                     break;
             }
 

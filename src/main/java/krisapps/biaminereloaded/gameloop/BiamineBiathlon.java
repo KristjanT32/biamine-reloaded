@@ -18,6 +18,4 @@ public class BiamineBiathlon {
         this.exclusionList = exclusionList;
         this.gameID = gameID;
     }
-
-
 }

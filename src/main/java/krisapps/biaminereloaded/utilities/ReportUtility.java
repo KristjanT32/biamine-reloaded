@@ -3,7 +3,10 @@ package krisapps.biaminereloaded.utilities;
 import krisapps.biaminereloaded.BiamineReloaded;
 import krisapps.biaminereloaded.gameloop.BiamineBiathlon;
 import krisapps.biaminereloaded.timers.TimerFormatter;
-import krisapps.biaminereloaded.types.*;
+import krisapps.biaminereloaded.types.AreaPassInfo;
+import krisapps.biaminereloaded.types.FinishInfo;
+import krisapps.biaminereloaded.types.HitInfo;
+import krisapps.biaminereloaded.types.HitType;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -28,7 +31,7 @@ public class ReportUtility {
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
         SimpleDateFormat timeFormat = new SimpleDateFormat("HH-mm-ss");
         SimpleDateFormat timeFormat2 = new SimpleDateFormat("HH:mm:ss");
-        if (main.dataUtility.getConfigProperty(ConfigProperty.GAME_REPORT_PATH).equals("%dataFolder%")) {
+        if (main.dataUtility.getConfigPropertyRaw("options.game-report.path").equals("%dataFolder%")) {
             try {
                 file = new File(main.getDataFolder(), "report-biathlon-" + dateFormat.format(Date.from(Instant.now())) + "-" + timeFormat.format(Date.from(Instant.now())) + ".txt");
                 FileWriter fWriter = new FileWriter(file);

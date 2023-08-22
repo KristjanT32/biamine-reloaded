@@ -46,6 +46,9 @@ gameloop:
 
   player-lag: "&bBehind: &f+&a%lag%"
 
+  too-early: "&bToo early! &eYou've not finished all of the laps yet!"
+  too-early-others: "&cWrong way! &b%player% &ethought they'd finished all their laps!"
+
   player-finish: "&b%player% &ehas just reached the finish line at &a%time%&e!"
   player-finish-target: "&b&lYou've finished the run!"
 
@@ -182,6 +185,9 @@ commands:
     removeitem-error-insuff: "&cInsufficient parameters. &eTo remove an item from the dispenser for this game, provide &bthe item to remove&e."
     removeitem-success: "&aSuccess! &b%item% &ewas removed from the dispenser list of &b%game%&e."
     removeitem-notfound: "&cThere are no items of type &b%item% &cin the dispenser list for &b%game%&c."
+
+    auto-enabled: "&aThe amount of &b%item% &ato dispense will now be &eautomatically determined, based on the amount of shooting targets per shooting spot and the amount of shootings."
+    auto-disabled: "&aThe amount of &b%item% &ato dispense will no longer be automatically determined. &bCurrent amount: &d%value%"
 
     show-notice: "&e================================================\n&bItem Dispenser List for &d%game%"
     show-item: "&f- &e%item% &7(&fx&a%count%&7)"
@@ -423,6 +429,15 @@ commands:
       targetinfo-click: "&e&lClick on the target to &bVIEW&e the info &r&f[&b%time% s&f]"
       targetinfo-info: "&e=============================\n&fTarget Information\n&bTarget Number: &e#%order%\n&bParent Shooting Spot: &e%spot%\n&bGame: &e%game%\n&bLocation: &bX:&f%x% &bY:&f%y% &bZ:&f%z%\n&bWorld: &e%world%&r\n&e============================="
       targetinfo-corrupted: "&e=============================\n&fTarget Information\n&bTarget Number: &e#%order%\n&bParent Shooting Spot: &e%spot%\n&bGame: &e%game%\n&bLocation: &bX:&f%x% &bY:&f%y% &bZ:&f%z%\n&bWorld: &e%world%&r\n&cThis entry appears to be incomplete.\nIt is recommended that you remove this target\nand re-add it to avoid unexpected behaviour!&e============================="
+
+  biaedit:
+    error-nogame: "&cCould not find &b%game%&c. &eAre you sure you've typed the correct ID?"
+    error-invalid-property: "&cInvalid property &b%property%&c."
+    insuff: "&cInsufficient parameters. &eTo edit a game's properties, provide the &bgame ID&e, &bproperty&e, and the &bvalue&e to assign."
+
+    set-success: "&aSuccess! &dChanged property &b%property% &don &b%game%&d: &efrom &f'&r%old%&f' &eto &f'&r%new%&f'"
+    set-fail-empty: "&cFailed! &dCould not change property &b%property%&d: &enew value cannot be empty"
+    set-fail-notzero: "&cFailed! &dCould not change property &b%property%&d: &evalue cannot be zero or negative"
 
 
 

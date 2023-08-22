@@ -1,7 +1,8 @@
-package krisapps.biaminereloaded.events;
+package krisapps.biaminereloaded.events.listeners;
 
 import com.jeff_media.customblockdata.CustomBlockData;
 import krisapps.biaminereloaded.BiamineReloaded;
+import krisapps.biaminereloaded.events.BiathlonArrowHitEvent;
 import krisapps.biaminereloaded.gameloop.Game;
 import krisapps.biaminereloaded.types.HitType;
 import krisapps.biaminereloaded.types.TargetProperty;

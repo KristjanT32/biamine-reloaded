@@ -1,6 +1,7 @@
 package krisapps.biaminereloaded.utilities;
 
 import krisapps.biaminereloaded.BiamineReloaded;
+import krisapps.biaminereloaded.types.DispenserEntry;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -17,8 +18,10 @@ public class ItemDispenserUtility {
         this.main = main;
     }
 
-    public void dispense(Player p, List<ItemStack> items) {
+    public void dispense(Player p, String gameID, int shootings) {
         PlayerInventory inventory = p.getInventory();
+        List<ItemStack> items = getItemList(gameID, shootings);
+
         int skippedItems = 0;
         for (ItemStack item : items) {
             for (ItemStack existingItem : inventory.getContents()) {
@@ -47,9 +50,11 @@ public class ItemDispenserUtility {
         }
     }
 
-    public void dispenseToAll(List<Player> players, List<ItemStack> items) {
+    public void dispenseToAll(List<Player> players, String gameID, int shootings) {
+        List<ItemStack> items = getItemList(gameID, shootings);
         for (Player player : players) {
             PlayerInventory inventory = player.getInventory();
+
             for (ItemStack item : items) {
                 if (!hasItem(inventory, item)) {
                     inventory.addItem(item);
@@ -69,6 +74,22 @@ public class ItemDispenserUtility {
                 }
             }
         }
+    }
+
+    private List<ItemStack> getItemList(String gameID, int shootings) {
+        List<ItemStack> items = new ArrayList<>();
+        for (DispenserEntry entry : main.dataUtility.getDispenserEntries(gameID)) {
+            if (entry.isAuto()) {
+                ItemStack toAdd = entry.getItem();
+                toAdd.setAmount(main.dataUtility.getShootingTargetsForSpot(gameID, 1).size() * shootings);
+                main.appendToLog("Auto-determined amount of " + entry.getItem().getType() + ": " + main.dataUtility.getShootingTargetsForSpot(gameID, 1).size() * shootings);
+                items.add(toAdd);
+            } else {
+                main.appendToLog("Regular item: " + entry.getItem().getType());
+                items.add(entry.getItem());
+            }
+        }
+        return items;
     }
 
     private String capitalize(String str) {

@@ -9,6 +9,7 @@ import org.bukkit.command.TabCompleter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class DispenserAC implements TabCompleter {
 
@@ -25,7 +26,7 @@ public class DispenserAC implements TabCompleter {
         if (args.length == 1) {
             completions.addAll(main.dataUtility.getGames());
         } else if (args.length == 2) {
-            completions.addAll(Arrays.asList("addItem", "removeItem", "show"));
+            completions.addAll(Arrays.asList("addItem", "removeItem", "show", "enableauto", "disableauto"));
         } else if (args.length == 3) {
             if (args[1].equalsIgnoreCase("addItem")) {
                 for (Material mat : Material.values()) {
@@ -34,7 +35,19 @@ public class DispenserAC implements TabCompleter {
                     }
                 }
             } else if (args[1].equalsIgnoreCase("removeItem")) {
-                for (Material mat : Material.values()) {
+                for (Material mat : main.dataUtility.getDispenserEntries(args[0]).stream().map(dispenserEntry -> dispenserEntry.getItem().getType()).collect(Collectors.toList())) {
+                    if (mat.name().toLowerCase().startsWith(args[2].toLowerCase())) {
+                        completions.add(mat.name().toLowerCase());
+                    }
+                }
+            } else if (args[1].equalsIgnoreCase("enableauto")) {
+                for (Material mat : main.dataUtility.getDispenserEntries(args[0]).stream().map(dispenserEntry -> dispenserEntry.getItem().getType()).collect(Collectors.toList())) {
+                    if (mat.name().toLowerCase().startsWith(args[2].toLowerCase())) {
+                        completions.add(mat.name().toLowerCase());
+                    }
+                }
+            } else if (args[1].equalsIgnoreCase("disableauto")) {
+                for (Material mat : main.dataUtility.getDispenserEntries(args[0]).stream().map(dispenserEntry -> dispenserEntry.getItem().getType()).collect(Collectors.toList())) {
                     if (mat.name().toLowerCase().startsWith(args[2].toLowerCase())) {
                         completions.add(mat.name().toLowerCase());
                     }

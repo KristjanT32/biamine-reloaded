@@ -2,8 +2,8 @@ package krisapps.biaminereloaded;
 
 import krisapps.biaminereloaded.commands.*;
 import krisapps.biaminereloaded.commands.tabcompleter.*;
-import krisapps.biaminereloaded.events.ArrowHitListener;
-import krisapps.biaminereloaded.events.PlayerMoveListener;
+import krisapps.biaminereloaded.events.listeners.ArrowHitListener;
+import krisapps.biaminereloaded.events.listeners.PlayerMoveListener;
 import krisapps.biaminereloaded.types.CoreDataField;
 import krisapps.biaminereloaded.utilities.*;
 import org.bukkit.Bukkit;
@@ -229,6 +229,7 @@ public final class BiamineReloaded extends JavaPlugin {
         getCommand("dispenser").setExecutor(new DispenserConfig(this));
         getCommand("shootingrange").setExecutor(new ShootingRangeConfig(this));
         getCommand("biainfo").setExecutor(new GameInfo(this));
+        getCommand("biaedit").setExecutor(new BiaEdit(this));
 
 
         getCommand("sconfig").setTabCompleter(new ScoreboardConfigAC(this));
@@ -247,6 +248,7 @@ public final class BiamineReloaded extends JavaPlugin {
         getCommand("dispenser").setTabCompleter(new DispenserAC(this));
         getCommand("shootingrange").setTabCompleter(new ShootingRangeAC(this));
         getCommand("biainfo").setTabCompleter(new BiaInfoAC(this));
+        getCommand("biaedit").setTabCompleter(new BiaEditAC(this));
 
         getLogger().info("Commands registered.");
     }

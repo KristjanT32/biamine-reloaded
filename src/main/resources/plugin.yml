@@ -7,7 +7,6 @@ authors: [ _TheTechGuy_ ]
 description: A remake of BiaMine, my Minecraft Biathlon plugin.
 
 commands:
-  # Game Creation
   createbiathlon:
     description: "Creates a new instance of BiaMine's biathlon game."
     usage: "/createbiathlon <gameID>"
@@ -18,7 +17,6 @@ commands:
     description: "Changes the language of the plugin."
     usage: "/setlanguage <langCode>"
 
-  # Game Management
   startgame:
     description: "Starts a BiaMine Biathlon game."
     usage: "/startgame <gameID> <shootings> [players...]"
@@ -38,7 +36,6 @@ commands:
     description: "Attempts to add you back to the most recent game."
     usage: "/rejoinbiathlon"
 
-  # Game Setup
   exclusionlist:
     description: "Manages exclusion lists."
     usage: "/exclusionlist <create|edit|assign|delete> <...>"
@@ -51,6 +48,9 @@ commands:
   listgames:
     description: "List the existing games."
     usage: "/listgames"
+  biaedit:
+    usage: "/biaedit <gameID> <property> <newValue>"
+    description: "Allows editing game properties."
 
   biamineutil:
     description: "Utility command for BiaMine."
@@ -67,7 +67,6 @@ commands:
     description: "Shows information about BiaMine instances."
     usage: "/biainfo <gameID>"
 
-  # Scoreboard Customization
   sconfig:
     description: "Manages scoreboard configurations."
     usage: "/sconfig <create|edit|delete|list|clear|assign>

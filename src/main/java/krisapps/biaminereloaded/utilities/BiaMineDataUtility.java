@@ -9,6 +9,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
@@ -333,6 +334,11 @@ public class BiaMineDataUtility {
         return main.pluginGames.getString(GAME_FILE_PATH_PREFIX + gameID + "." + property.getFieldName());
     }
 
+    public void setGameProperty(String gameID, GameProperty property, String val) {
+        main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + "." + property.getFieldName(), val);
+        main.saveGames();
+    }
+
     public boolean updateGameRunstate(String gameID, InstanceStatus runstate) {
         InstanceStatus oldStatus = InstanceStatus.valueOf(main.pluginGames.getString(GAME_FILE_PATH_PREFIX + gameID + ".runState"));
         main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".runState", runstate.toString());
@@ -537,70 +543,131 @@ public class BiaMineDataUtility {
         return main.saveGames();
     }
 
-    public List<ItemStack> getItemsToDispense(String gameID) {
+    public List<DispenserEntry> getDispenserEntries(String gameID) {
         if (!gameExists(gameID)) {
-            return new ArrayList<ItemStack>();
+            return new ArrayList<>(0);
         }
-        if (main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems") != null) {
-            return (List<ItemStack>) main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems");
+        ConfigurationSection itemSection = main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems");
+        if (itemSection != null) {
+            List<DispenserEntry> out = new ArrayList<>();
+            for (String entry : itemSection.getKeys(false)) {
+                out.add(new DispenserEntry(
+                        main.pluginGames.getItemStack(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems." + entry + ".item"),
+                        Objects.equals(main.pluginGames.getString(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems." + entry + ".valueType"), "auto")
+                ));
+            }
+            return out;
         } else {
-            return new ArrayList<ItemStack>();
+            return new ArrayList<>(0);
         }
+
+    }
+
+    public void enableAutoForDispenserItem(String gameID, Material item) {
+        if (!gameExists(gameID)) {
+            return;
+        }
+
+        ConfigurationSection itemSection = main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems");
+        if (!getDispenserEntries(gameID).isEmpty()) {
+            for (String entry : itemSection.getKeys(false)) {
+                if (main.pluginGames.getItemStack(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems." + entry + ".item").getType() == item) {
+                    main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems." + entry + ".valueType", "auto");
+                    main.saveGames();
+                    return;
+                }
+            }
+        }
+    }
+
+    public void disableAutoForDispenserItem(String gameID, Material item) {
+        if (!gameExists(gameID)) {
+            return;
+        }
+
+        ConfigurationSection itemSection = main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems");
+        if (!getDispenserEntries(gameID).isEmpty()) {
+            for (String entry : itemSection.getKeys(false)) {
+                if (main.pluginGames.getItemStack(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems." + entry + ".item").getType() == item) {
+                    main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems." + entry + ".valueType", "amount");
+                    main.saveGames();
+                    return;
+                }
+            }
+        }
+    }
+
+    public DispenserEntry getItemEntry(String gameID, Material item) {
+        if (!gameExists(gameID)) {
+            return null;
+        }
+
+        ConfigurationSection itemSection = main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems");
+        if (itemSection != null) {
+            for (String entry : itemSection.getKeys(false)) {
+                return new DispenserEntry(
+                        main.pluginGames.getItemStack(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems." + entry + ".item"),
+                        Objects.equals(main.pluginGames.getString(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems." + entry + ".valueType"), "auto")
+                );
+            }
+        }
+        return null;
     }
 
     public void removeItemToDispense(String gameID, Material item) {
         if (!gameExists(gameID)) {
             return;
         }
-        if (main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems") != null) {
-            List<ItemStack> items = (List<ItemStack>) main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems");
-            for (ItemStack existing : items) {
-                if (existing.getType() == item) {
-                    items.remove(existing);
-                    main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems", items);
+
+        ConfigurationSection itemSection = main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems");
+        if (itemSection != null) {
+            for (String entry : itemSection.getKeys(false)) {
+                if (main.pluginGames.getObject(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems." + entry + ".item", ItemStack.class).getType() == item) {
+                    main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems." + entry, null);
                     main.saveGames();
                     return;
                 }
             }
         }
-        main.saveGames();
     }
 
-    public void addItemToDispense(String gameID, ItemStack item) {
+    public void addItemToDispense(String gameID, ItemStack item, boolean isAuto) {
         if (!gameExists(gameID)) {
             return;
         }
-        if (main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems") == null) {
-            main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems", new ArrayList<ItemStack>());
-        }
-        List<ItemStack> list = (List<ItemStack>) main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems");
 
-        for (ItemStack existing : list) {
-            if (existing.getType() == item.getType()) {
-                existing.setAmount(item.getAmount());
-                main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems", list);
-                main.saveGames();
-                return;
+        ConfigurationSection itemSection = main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems");
+
+        if (itemSection != null) {
+            for (String itemEntry : itemSection.getKeys(false)) {
+                if (main.pluginGames.getObject(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems." + itemEntry + ".item", ItemStack.class).getType() == item.getType()) {
+                    main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems." + itemEntry + ".item", item);
+                    main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems." + itemEntry + ".valueType", isAuto ? "auto" : "amount");
+                    main.saveGames();
+                    return;
+                }
             }
+            int entryID = (itemSection.getKeys(false).size() + 1);
+            main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems.item" + entryID + ".item", item);
+            main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems.item" + entryID + ".valueType", isAuto ? "auto" : "amount");
+            main.saveGames();
+        } else {
+            main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems.item1" + ".item", item);
+            main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems.item1" + ".valueType", isAuto ? "auto" : "amount");
+            main.saveGames();
         }
-        list.add(item);
-        main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems", list);
-        main.saveGames();
     }
 
     public boolean isInDispenserList(String gameID, Material item) {
         if (!gameExists(gameID)) {
             return false;
         }
-        if (main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems") == null) {
-            main.pluginGames.set(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems", new ArrayList<ItemStack>());
-            return false;
-        }
-        List<ItemStack> list = (List<ItemStack>) main.pluginGames.getList(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems");
-
-        for (ItemStack existing : list) {
-            if (existing.getType() == item) {
-                return true;
+        ConfigurationSection itemSection = main.pluginGames.getConfigurationSection(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems");
+        if (itemSection != null) {
+            for (String entry : itemSection.getKeys(false)) {
+                if (main.pluginGames.getObject(GAME_FILE_PATH_PREFIX + gameID + ".dispenseItems." + entry + ".item", ItemStack.class).getType() == item) {
+                    return true;
+                }
             }
         }
         return false;
@@ -632,8 +699,6 @@ public class BiaMineDataUtility {
                 return main.pluginConfig.getString("options.date-format-full");
             case TIME_FORMAT:
                 return main.pluginConfig.getString("options.time-format");
-            case EXCLUDE_TARGET_PLAYER_FROM_CHECKPOINT_MESSAGE:
-                return main.pluginConfig.getString("options.exclude-target-player-from-event-notification");
             case NOTIFY_STATUS_CHANGE:
                 return main.pluginConfig.getString("options.notify-instance-status-change");
             case PAUSE_IF_PLAYER_DISCONNECT:
@@ -646,12 +711,16 @@ public class BiaMineDataUtility {
                 return main.pluginConfig.getString("options.halt-players-with-effect");
             case SEND_ITEM_DISPENSER_MESSAGES:
                 return main.pluginConfig.getString("options.send-dispenser-messages");
-            case GAME_REPORT_PATH:
-                return main.pluginConfig.getString("options.game-report-path");
-            case GENERATE_GAME_REPORT:
-                return main.pluginConfig.getString("options.generate-report");
             default:
                 throw new InvalidParameterException("Unknown config property provided.");
+        }
+    }
+
+    public String getConfigPropertyRaw(String path) {
+        if (main.pluginConfig.get(path) != null) {
+            return main.pluginConfig.getString(path);
+        } else {
+            return null;
         }
     }
 

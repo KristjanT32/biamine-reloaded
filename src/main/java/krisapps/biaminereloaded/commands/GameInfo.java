@@ -27,7 +27,7 @@ public class GameInfo implements CommandExecutor {
                     .replaceAll("%final%", main.dataUtility.getGameProperty(args[0], GameProperty.COUNTDOWN_TIME))
                     .replaceAll("%sconf%", main.dataUtility.getGameProperty(args[0], GameProperty.SCOREBOARD_CONFIGURATION_ID))
                     .replaceAll("%exlist%", main.dataUtility.getGameProperty(args[0], GameProperty.EXCLUSION_LIST_ID))
-                    .replaceAll("%dispenser%", main.dataUtility.getItemsToDispense(args[0]).isEmpty() ? "&c&lNOT IN USE" : "&a&lIN USE")
+                    .replaceAll("%dispenser%", main.dataUtility.getDispenserEntries(args[0]).isEmpty() ? "&c&lNOT IN USE" : "&a&lIN USE")
                     .replaceAll("%runstate%", main.dataUtility.getGameProperty(args[0], GameProperty.RUN_STATE))
                     .replaceAll("%chkpnt%", String.valueOf(main.dataUtility.getCheckpoints(args[0]).size()))
                     .replaceAll("%shtrng%", main.dataUtility.getShootingSpots(args[0]).isEmpty() ? "&c&lNOT IN USE" : "&a&lIN USE")

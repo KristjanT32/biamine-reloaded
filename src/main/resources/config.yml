@@ -1,15 +1,8 @@
 # Configuration file for ${project.name} ${project.version}
 
 # ===================================================================================================================#
-#                                               GLOBAL PLACEHOLDERS                                                  #
-#                             * global placeholders do not support built-in placeholders                             #
-# ===================================================================================================================#
-placeholders:
-  _placeholder: "replacement"
-
-# ===================================================================================================================#
-#                                               Placeholder Information                                              #
-#    Placeholders are pieces of text that will be automatically replaced by the plugin with the appropriate value.  #
+#                                                ABOUT PLACEHOLDERS                                                  #
+#    Placeholders are pieces of text that will be automatically replaced by the plugin with the appropriate value.   #
 #    The following placeholders are available for use in a SCOREBOARD LINE:                                          #
 #    ______________________________________________________________________________________________________________  #
 #    | Placeholder             | Description                                                                      |  #
@@ -25,6 +18,7 @@ placeholders:
 #    - %dateTime%               *Replaced by the local date and time (ex: 22/05/2023 14:33:20).                      #
 #    - %localTime%              *Replaced by the local time (ex: 14:33:20).                                          #
 #    - %state%                  Replaced by the internal game status (ex: STANDBY).                                  #
+#    - %bestTime%               Replaced by [first-finished-player] - [time] or 'N/A' if no best time is available.  #
 #    - global placeholders      Replaced by the values configured under 'placeholders'                               #
 #                                                                                                                    #
 #     * these values have configurable formats under 'options'                                                       #
@@ -39,6 +33,16 @@ placeholders:
 #    - %title%                  Replaced by the game's display name.                                                 #
 # ===================================================================================================================#
 
+
+
+# ===================================================================================================================#
+#                                               GLOBAL PLACEHOLDERS                                                  #
+#                             * global placeholders do not support built-in placeholders                             #
+# ===================================================================================================================#
+
+placeholders:
+  _placeholder: "replacement"
+
 # ===================================================================================================================#
 
 
@@ -47,26 +51,30 @@ placeholders:
 # ===================================================================================================================#
 options:
 
-  # ________________________________________________________________________________________________________________ #
-  # | Setting                             | Placeholder          | Description                                     | #
-  # ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ #
+  # ===================================================================================================================#
+  #                                               FORMAT OPTIONS                                                       #
+  #                               * Keep in mind: time formats are case sensitive                                      #
+  # ===================================================================================================================#
+
+  # __________________________________________________________________________________________________________________ #
+  # | Setting                             | Placeholder          | Description                                       | #
+  # ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾ #
   date-format: "dd/MM/yyyy"               # %date%                Generic date
   date-format-full: "dd/MM/yyyy hh:mm:ss" # %dateTime%            Date and time
   timer-format: "hh:mm:ss"                # %timer%               In-game timer format
   time-format: "hh:mm:ss"                 # %localTime%           Clock format
 
 
-  # Game Process Settings
+  # ===================================================================================================================#
+  #                                            GAME PROCESS SETTINGS                                                   #
+  # ===================================================================================================================#
 
-  # Should the target of an event also receive the notification?
-  # EX: should the player who passes through a checkpoint also be notified with the same message as the others.
-  exclude-target-player-from-event-notification: false
-
-  # Controls whether the instance status changes (e.g "PAUSED -> RUNNING") should be sent to the player that started the game.
-  notify-instance-status-change: true
+  # Controls whether the instance status changes (e.g "PAUSED -> RUNNING") should be sent to the player that
+  # started the game.
+  notify-instance-status-change: false
 
   # Should the game be paused if a player that is participating disconnects?
-  # If set to true, a countdown will start counting down from [delay].
+  # If set to true, a countdown will start counting down from [delay], after which the game will be paused.
   pause-if-player-disconnect:
     state: true
     delay: 5
@@ -78,13 +86,48 @@ options:
   # Should players be given a maximum level slowness effect as to halt them when the final countdown starts?
   halt-players-with-effect: true
 
+  # Enable sound effects?
+  sound-effects: true
+
   # Should BiaMine generate a game report file?
-  generate-report: true
+  # %dataFolder% will generate the report file in plugins/BiaMine-Reloaded/
+  game-report:
+    enabled: true
+    path: "%dataFolder%"
 
-  # Where should the game report be stored?
-  # Use '%dataFolder%' to save the file to the plugin's data folder (plugins/BiaMine-Reloaded)
-  game-report-path: "%dataFolder%"
 
+# ===================================================================================================================#
+#                                               MESSAGE SETTINGS                                                     #
+# ===================================================================================================================#
+notification-settings:
+
+  # This section contains settings for various settings the plugin sends out.
+  # Change value after 'enabled' to either false, to disable this message, or true, to enable it.
+  # You may also change the target of those messages. Valid settings for 'target' are: all, player
+  # 'all' => send to everyone
+  # 'player' => send to message target
+
+  player-finished:
+    enabled: true
+    target: all
+
+  checkpoint-reached:
+    enabled: true
+    target: all
+
+  target-hit:
+    enabled: true
+    target: all
+
+  new-lap:
+    enabled: true
+
+  shooting-spot-claim:
+    enabled: true
+
+  shooting-spot-exit:
+    enabled: true
+    target: all
 
 
 # ===================================================================================================================#

@@ -1,6 +1,10 @@
-package krisapps.biaminereloaded.events;
+package krisapps.biaminereloaded.events.listeners;
 
 import krisapps.biaminereloaded.BiamineReloaded;
+import krisapps.biaminereloaded.events.BiathlonOccupiedShootingSpotEnterEvent;
+import krisapps.biaminereloaded.events.BiathlonShootingSpotEnterEvent;
+import krisapps.biaminereloaded.events.BiathlonShootingSpotExitEvent;
+import krisapps.biaminereloaded.events.CheckpointPassEvent;
 import krisapps.biaminereloaded.types.CollidableRegion;
 import krisapps.biaminereloaded.types.CuboidRegion;
 import krisapps.biaminereloaded.types.InstanceStatus;

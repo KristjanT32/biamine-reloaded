@@ -12,5 +12,4 @@ public enum TerminationContext {
     SCOREBOARD_CONFIG_MISSING,
     GAME_FINISHED
 
-
 }

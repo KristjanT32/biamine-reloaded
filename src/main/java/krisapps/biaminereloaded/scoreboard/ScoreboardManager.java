@@ -2,6 +2,7 @@ package krisapps.biaminereloaded.scoreboard;
 
 import krisapps.biaminereloaded.BiamineReloaded;
 import krisapps.biaminereloaded.gameloop.BiamineBiathlon;
+import krisapps.biaminereloaded.gameloop.Game;
 import krisapps.biaminereloaded.types.ConfigProperty;
 import krisapps.biaminereloaded.types.GameProperty;
 import krisapps.biaminereloaded.types.InstanceStatus;
@@ -146,6 +147,7 @@ public class ScoreboardManager {
         input = input.replaceAll("%playersParticipating%", String.valueOf(info.totalPlayers));
         input = input.replaceAll("%timer%", info.latestTime);
         input = input.replaceAll("%empty%", "");
+        input = input.replaceAll("%bestTime%", Game.instance.getBestFinishTime() == null ? "N/A" : Game.instance.getBestFinishTime().getKey().getName() + " - " + Game.instance.getBestFinishTime().getValue().getFinishTime());
 
         // Find and replace all user-defined placeholders.
         for (String word : input.split(" ")) {
@@ -186,7 +188,6 @@ public class ScoreboardManager {
                 input = input.replaceAll("%state%", ChatColor.translateAlternateColorCodes('&', "&4Preventatively Terminated"));
                 break;
         }
-
 
         return input;
     }
