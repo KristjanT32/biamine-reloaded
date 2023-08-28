@@ -146,6 +146,9 @@ public class Game implements Listener {
 
         // If the player has not passed any checkpoints
         if (getPassedCheckpoints(playerUUID).isEmpty()) {
+            if (event.getRegion().isFinish()) {
+                return;
+            }
             getPassedCheckpoints(playerUUID).add(checkpointID);
             if (getLap(playerUUID) == 0) {
                 lapTracker.replace(playerUUID, 1);
@@ -165,6 +168,9 @@ public class Game implements Listener {
             if (getPassedCheckpoints(playerUUID).contains(checkpointID)) {
                 if (getPassedCheckpoints(playerUUID).size() < main.dataUtility.getCheckpoints(currentGameID).size() - 1) {
                     main.appendToLog("Player " + event.getPlayer().getName() + " attempted to pass through " + checkpointID + " again!");
+                    return;
+                }
+                if (event.getRegion().isFinish()) {
                     return;
                 }
 
@@ -541,8 +547,9 @@ public class Game implements Listener {
 
 
     private void finishGame() {
-        if (Objects.equals(main.dataUtility.getConfigPropertyRaw("options.game-report-enabled"), "true")) {
-            reporter.generateGameReport(shootingStats, finishedPlayers, currentGameInfo, arrivalStats);
+        if (Objects.equals(main.dataUtility.getConfigPropertyRaw("options.game-report.enabled"), "true")) {
+            main.messageUtility.sendMessage(initiator, main.localizationUtility.getLocalizedPhrase("gameloop.report-generate"));
+            reporter.generateGameReport(shootingStats, finishedPlayers, currentGameInfo, arrivalStats, initiator);
         }
         for (Player p : players) {
             main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.game-finished")
@@ -923,6 +930,13 @@ public class Game implements Listener {
         scheduler.cancelTask(COUNTDOWN_TASK);
         if (preventative) {
             main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.PREVTERM);
+            main.dataUtility.saveCoreData(CoreDataField.GAME_IN_PROGRESS, false);
+            scheduler.runTask(main, () -> {
+                scheduler.cancelTask(REFRESH_TASK);
+                scheduler.cancelTasks(main);
+                main.dataUtility.setActiveGame(null);
+                cleanupTask = scheduler.runTaskLater(main, this::cleanup, 5);
+            });
         } else {
             main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.FINALIZING);
             scheduler.runTask(main, () -> {

@@ -717,7 +717,7 @@ public class BiaMineDataUtility {
     }
 
     public String getConfigPropertyRaw(String path) {
-        if (main.pluginConfig.get(path) != null) {
+        if (main.pluginConfig.getString(path) != null) {
             return main.pluginConfig.getString(path);
         } else {
             return null;

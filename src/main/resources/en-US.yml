@@ -12,9 +12,11 @@ errors:
 
 hovertext:
   teleport-spot: "&bTeleport to this shooting spot's location!\n&eClick on this button to teleport straight to the shooting point."
+  report-file: "&eGame Report\n&bReport has been saved to: &f%path%"
 
 clicktext:
   teleport: "&a[&bTeleport&a]"
+  view-report: "&f[&eReport file&f]"
 
 internals:
   setupsb-err-invconf: "&cFailed to setup a scoreboard for the current game: &eThere is no scoreboard configuration that corresponds to the active game.&r"
@@ -45,6 +47,9 @@ gameloop:
   checkpoint-reached-target: "&b&lCheckpoint reached &e(&a%time%&e)&r"
 
   player-lag: "&bBehind: &f+&a%lag%"
+
+  report-generate: "&fGenerating a report file for this game..."
+  report-ready: "&fReport file saved: "
 
   too-early: "&bToo early! &eYou've not finished all of the laps yet!"
   too-early-others: "&cWrong way! &b%player% &ethought they'd finished all their laps!"
@@ -323,7 +328,7 @@ commands:
 
     list:
       header: "&e============================="
-      item-used: "&f- &eList &b%list% &8(&f in use by &b%uses% &fgames&8)"
+      item-used: "&f- &eList &b%list% &8(&fin use by &b%uses% &fgame(s)&8)"
       item: "&f- &eList &b%list% &8(&fnot in use&8)"
       empty: "&cThere aren't any exclusion lists yet."
 

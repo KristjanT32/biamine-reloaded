@@ -255,8 +255,11 @@ public final class BiamineReloaded extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        if (Boolean.parseBoolean(dataUtility.getCoreData(CoreDataField.GAME_IN_PROGRESS).toString())) {
-            gameUtility.reloadTerminate();
+        try {
+            if (Boolean.parseBoolean(dataUtility.getCoreData(CoreDataField.GAME_IN_PROGRESS).toString())) {
+                gameUtility.reloadTerminate();
+            }
+        } catch (Exception ignored) {
         }
     }
 

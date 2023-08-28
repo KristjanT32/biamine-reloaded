@@ -6,7 +6,7 @@
 
     <groupId>krisapps</groupId>
     <artifactId>biamine-reloaded</artifactId>
-    <version>1.01</version>
+    <version>1.03</version>
     <packaging>jar</packaging>
 
     <name>BiaMine Reloaded</name>

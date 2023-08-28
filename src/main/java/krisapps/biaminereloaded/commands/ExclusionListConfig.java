@@ -207,17 +207,23 @@ public class ExclusionListConfig implements CommandExecutor {
                                 for (String playerUUID : main.dataUtility.getExcludedPlayers(targetList)) {
 
                                     Player bukkitPlayer = (Bukkit.getPlayer(UUID.fromString(playerUUID)));
+                                    OfflinePlayer offlinePlayer = null;
+                                    String playerName = "";
                                     if (bukkitPlayer == null) {
-                                        main.appendToLog("Found invalid player entry in exclusion list #" + targetList + " - UUID: " + playerUUID);
-                                        continue;
-                                    }
-                                    String playerName = bukkitPlayer.getName();
-                                    if (bukkitPlayer.isOnline()) {
+                                        if (!Bukkit.getOfflinePlayer(UUID.fromString(playerUUID)).hasPlayedBefore()) {
+                                            main.appendToLog("Found invalid player entry in exclusion list #" + targetList + " - UUID: " + playerUUID);
+                                            continue;
+                                        } else {
+                                            offlinePlayer = Bukkit.getOfflinePlayer(UUID.fromString(playerUUID));
+                                            playerName = offlinePlayer.getName();
+                                        }
+                                    } else {
+                                        playerName = bukkitPlayer.getName();
                                         online.add(bukkitPlayer);
                                     }
 
                                     main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.exclusionlist.view.item")
-                                            .replaceAll("%player%", playerName == null ? "*unknown*" : (bukkitPlayer.isOnline() ? playerName : playerName + "&c*&r"))
+                                            .replaceAll("%player%", offlinePlayer != null ? playerName + "&c*&r" : playerName)
                                             .replaceAll("%uuid%", playerUUID)
                                     );
                                 }

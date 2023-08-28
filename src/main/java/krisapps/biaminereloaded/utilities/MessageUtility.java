@@ -104,6 +104,15 @@ public class MessageUtility {
         return out;
     }
 
+    public BaseComponent createFileButton(String textPath, String filePath, @Nullable String hoverTextPath) {
+        BaseComponent[] component = TextComponent.fromLegacyText(ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase(textPath)));
+        TextComponent out = new TextComponent(component);
+        if (hoverTextPath != null) {
+            out.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase(hoverTextPath).replaceAll("%path%", filePath)))));
+        }
+        return out;
+    }
+
     public TextComponent createClickableButton(String textPath, String command, @Nullable String hoverTextPath) {
         BaseComponent[] component = TextComponent.fromLegacyText(ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase(textPath)));
         TextComponent out = new TextComponent(component);
