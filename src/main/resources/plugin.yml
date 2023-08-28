@@ -6,66 +6,132 @@ prefix: "|BiaMineReloaded|"
 authors: [ _TheTechGuy_ ]
 description: A remake of BiaMine, my Minecraft Biathlon plugin.
 
+permissions:
+  biamine.player:
+    default: not op
+    description: "Allows all commands needed to participate in a game."
+
+  biamine.admin:
+    default: op
+    description: "Allows administration of BiaMine games, but forbids destructive actions (e.g deletion)."
+    children:
+      biamine.player: true
+
+  biamine.full:
+    description: "Allows full access to BiaMine's commands."
+    children:
+      biamine.admin: true
+      biamine.player: true
+
+
 commands:
   createbiathlon:
     description: "Creates a new instance of BiaMine's biathlon game."
-    usage: "/createbiathlon <gameID>"
+    usage: "/createbiathlon <gameID> <preparationTime> <finalCountdown> <displayName>"
+    permission: biamine.admin
+    permission-message: "You don't have the sufficient permissions to create games."
+
   deletebiathlon:
     description: "Deletes an existing BiaMine biathlon instance."
     usage: "/deletebiathlon <gameID>"
+    permission: biamine.full
+    permission-message: "You don't have the sufficient permissions to delete games."
+
   setlanguage:
     description: "Changes the language of the plugin."
     usage: "/setlanguage <langCode>"
+    permission: biamine.admin
+    permission-message: "You don't have the sufficient permissions to change the language of the plugin."
 
   startgame:
     description: "Starts a BiaMine Biathlon game."
     usage: "/startgame <gameID> <shootings> [players...]"
+    permission: biamine.admin
+    permission-message: "You don't have the sufficient permissions to start games."
+
   pausegame:
     description: "Pauses an in-progress BiaMine Biathlon game."
     usage: "/pausegame <gameID>"
+    permission: biamine.admin
+    permission-message: "You don't have the sufficient permissions to pause games."
+
   resumegame:
     description: "Resumes a paused BiaMine Biathlon game."
     usage: "/resumegame <gameID>"
+    permission: biamine.admin
+    permission-message: "You don't have the sufficient permissions to resume games."
+
   terminate:
     description: "Terminates a BiaMine Biathlon instance."
     usage: "/terminate [reason]"
+    permission: biamine.full
+    permission-message: "You don't have the sufficient permissions to terminate games."
+
   kickplayer:
     description: "Removes a player from the current game."
     usage: "/kickplayer <player> [reason]"
+    permission: biamine.admin
+    permission-message: "You don't have the sufficient permissions to kick players."
+
   rejoinbiathlon:
     description: "Attempts to add you back to the most recent game."
     usage: "/rejoinbiathlon"
+    permission: biamine.player
+    permission-message: "You don't have the sufficient permissions to rejoin games."
 
   exclusionlist:
     description: "Manages exclusion lists."
     usage: "/exclusionlist <create|edit|assign|delete> <...>"
+    permission: biamine.full
+    permission-message: "You don't have the sufficient permissions to manage exclusion lists."
+
   checkpoint:
     description: "Manages checkpoints for the provided game."
-    usage: "/checkpoint <gameID> <add|remove|find|list|setbound> <none|id|bound>"
+    usage: "/checkpoint <gameID> <add|remove|find|show|list|setbound|setname|setfinish> <none|id|bound>"
+    permission: biamine.full
+    permission-message: "You don't have the sufficient permissions to manage checkpoints."
+
   setstart:
     description: "Set the bounds for the starting area."
-    usage: "/setstart <bound1 | bound2>"
+    usage: "/setstart <gameID> <bound1|bound2>"
+    permission: biamine.admin
+    permission-message: "You don't have the sufficient permissions to change the starting area."
+
   listgames:
     description: "List the existing games."
     usage: "/listgames"
+    permission: biamine.admin
+    permission-message: "You don't have the sufficient permissions to list games."
+
   biaedit:
     usage: "/biaedit <gameID> <property> <newValue>"
     description: "Allows editing game properties."
+    permission: biamine.admin
+    permission-message: "You don't have the sufficient permissions to edit games."
 
   biamineutil:
     description: "Utility command for BiaMine."
     usage: "/biamineutil <operation>"
+    permission: biamine.full
+    permission-message: "You don't have the sufficient permissions to run internal utility actions."
 
   dispenser:
     description: "Manages the items that will be dispensed to players in a Biathlon game."
     usage: "/dispenser <gameID> <addItem|removeItem|show> [param]"
+    permission: biamine.admin
+    permission-message: "You don't have the sufficient permissions to modify the dispenser list."
 
   shootingrange:
     description: "Manages an instance's shooting range."
     usage: "/shootingrange <gameID> <addSpot|editSpot|removeSpot|visualiseSpots|showInfo>"
+    permission: biamine.admin
+    permission-message: "You don't have the sufficient permissions to manage shooting ranges."
+
   biainfo:
     description: "Shows information about BiaMine instances."
     usage: "/biainfo <gameID>"
+    permission: biamine.admin
+    permission-message: "You don't have the sufficient permissions to list information about games."
 
   sconfig:
     description: "Manages scoreboard configurations."
@@ -77,6 +143,8 @@ commands:
             \nclear: <none>
             \nassign <targetConfig> <targetGame> [-ra]
             "
+    permission: biamine.admin
+    permission-message: "You don't have the sufficient permissions to modify scoreboard configurations."
 
 
 

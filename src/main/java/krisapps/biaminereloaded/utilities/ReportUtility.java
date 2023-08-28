@@ -98,14 +98,15 @@ public class ReportUtility {
                     writer.append("[ Timings for " + playerName + "]");
                     Map<String, AreaPassInfo> addedEntries = new HashMap<>();
                     for (AreaPassInfo info : arrivals.get(playerUUID)) {
-                        writer.newLine();
                         if (info.leftArea()) {
                             if (addedEntries.get(info.getAreaName()) == null) {
                                 writer.append("   *[<-] Left " + info.getAreaName() + " at " + info.getTimerTime());
+                                writer.newLine();
                             } else {
                                 writer.append("   *[<-] Left " + info.getAreaName() + " at " + info.getTimerTime());
                                 writer.newLine();
                                 writer.append("       [" + info.getAreaName() + "] Segment duration: " + TimerFormatter.getDifference(info.getTimerTime(), addedEntries.get(info.getAreaName()).getTimerTime()));
+                                writer.newLine();
                                 writer.newLine();
                             }
                         } else {

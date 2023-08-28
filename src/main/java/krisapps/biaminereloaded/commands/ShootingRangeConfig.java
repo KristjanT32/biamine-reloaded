@@ -44,7 +44,7 @@ public class ShootingRangeConfig implements CommandExecutor, Listener {
                    editSpot: <spotID> <setbound1|setbound2|addTarget|removeTarget>
                    removeSpot <spotID>
                    visualiseSpots: <none>
-                   showInfo: <shootingRange|spots>
+                   showInfo: <shootingRange|spots|target>
          */
 
         if (args.length >= 2) {

@@ -864,9 +864,7 @@ public class Game implements Listener {
 
             activeGameLogger.logInfo("[" + currentGameID + "/Game]: Kicking player " + p.getName());
             players.remove(p);
-            scoreboardManager.refreshScoreboardLine(currentGameInfo,
-                    ScoreboardLine.asEnum(main.dataUtility.getPropertyLineNumber(currentGameInfo.scoreboardConfig, "%playersParticipating%"))
-            );
+            scoreboardManager.refreshScoreboardData(currentGameInfo.scoreboardConfig, currentGameInfo);
             main.getServer().getPluginManager().callEvent(new BiathlonPlayerKickEvent(KickType.ADMIN_ACTION, p, currentGameInfo.gameID));
             for (Player player : players) {
                 if (finishedPlayers.containsKey(player)) {
