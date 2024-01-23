@@ -235,18 +235,7 @@ commands:
 
     show-error-insuff: "&cInsufficient parameters. &eTo preview a scoreboard configuration, please provide the &l&bid&r&e."
     show-error-notfound: "&cUnknown configuration &b&l%configuration%&r&c. Are you sure you typed the correct id?"
-    show-result: "&e#&f| &ePreview for &b%id%
-                  \n&eT&f| &b%title% 
-                  \n&e &f|--------------
-                  \n&e1&f| &b%line1%
-                  \n&e2&f| &e%line2%
-                  \n&e3&f| &b%line3%
-                  \n&e4&f| &e%line4%
-                  \n&e5&f| &b%line5%
-                  \n&e6&f| &e%line6%
-                  \n&e7&f| &b%line7%
-                  \n&e8&f| &e%line8%
-                "
+    show-showing: "&aPreview for &e%configuration% &aactive for &b5 seconds&a."
 
     assign-success: "&aSuccessfully assigned &b%config%&a to BiaMine instance &b%target%&a."
     assign-success-reassign: "&aSuccessfully reassigned &b%config%&a to BiaMine instance &b%target%&a. &b%config%&e has been removed from all other games."

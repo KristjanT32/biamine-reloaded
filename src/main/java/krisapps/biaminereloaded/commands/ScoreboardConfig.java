@@ -1,10 +1,14 @@
 package krisapps.biaminereloaded.commands;
 
 import krisapps.biaminereloaded.BiamineReloaded;
+import krisapps.biaminereloaded.gameloop.Game;
+import krisapps.biaminereloaded.scoreboard.ScoreboardManager;
 import krisapps.biaminereloaded.types.ScoreboardLine;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.scheduler.BukkitScheduler;
 
 import java.util.List;
 import java.util.Set;
@@ -334,19 +338,19 @@ public class ScoreboardConfig implements CommandExecutor {
                 case "show":
                     if (args.length >= 2) {
                         String id = args[1];
+                        BukkitScheduler scheduler = Bukkit.getScheduler();
                         if (main.dataUtility.scoreboardConfigExists(id)) {
-                            main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.show-result")
-                                    .replaceAll("%id%", id)
-                                    .replaceAll("%title%", main.dataUtility.getScoreboardConfigProperty(id, ScoreboardLine.LINE0))
-                                    .replaceAll("%line1%", main.dataUtility.getScoreboardConfigProperty(id, ScoreboardLine.LINE1))
-                                    .replaceAll("%line2%", main.dataUtility.getScoreboardConfigProperty(id, ScoreboardLine.LINE2))
-                                    .replaceAll("%line3%", main.dataUtility.getScoreboardConfigProperty(id, ScoreboardLine.LINE3))
-                                    .replaceAll("%line4%", main.dataUtility.getScoreboardConfigProperty(id, ScoreboardLine.LINE4))
-                                    .replaceAll("%line5%", main.dataUtility.getScoreboardConfigProperty(id, ScoreboardLine.LINE5))
-                                    .replaceAll("%line6%", main.dataUtility.getScoreboardConfigProperty(id, ScoreboardLine.LINE6))
-                                    .replaceAll("%line7%", main.dataUtility.getScoreboardConfigProperty(id, ScoreboardLine.LINE7))
-                                    .replaceAll("%line8%", main.dataUtility.getScoreboardConfigProperty(id, ScoreboardLine.LINE8))
+                            main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.show-showing")
+                                    .replaceAll("%configuration%", id)
                             );
+                            if (Game.instance != null) {
+                                Game.instance.getScoreboardManager().previewScoreboard(id);
+                                scheduler.scheduleSyncDelayedTask(main, () -> Game.instance.getScoreboardManager().clearPreview(), 20L * 5);
+                            } else {
+                                ScoreboardManager scoreboardManager = new ScoreboardManager(main);
+                                scoreboardManager.previewScoreboard(id);
+                                scheduler.scheduleSyncDelayedTask(main, scoreboardManager::clearPreview, 20L * 5);
+                            }
                         } else {
                             main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.show-error-notfound").replaceAll("%configuration%", id));
                         }

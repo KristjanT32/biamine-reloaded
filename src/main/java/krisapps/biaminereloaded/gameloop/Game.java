@@ -15,6 +15,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
@@ -117,7 +118,7 @@ public class Game implements Listener {
                 main.messageUtility.sendActionbarMessage(event.getPlayer(), main.localizationUtility.getLocalizedPhrase("gameloop.player-rejoin-target"));
             }, 3 * 20L);
 
-            if (!players.stream().map((player -> player.getUniqueId())).collect(Collectors.toSet()).contains(event.getPlayer().getUniqueId())) {
+            if (!players.stream().map((Entity::getUniqueId)).collect(Collectors.toSet()).contains(event.getPlayer().getUniqueId())) {
                 players.add(event.getPlayer());
             } else {
                 for (Player p : players) {
@@ -417,12 +418,9 @@ public class Game implements Listener {
                     main.messageUtility.sendMessage(initiator, main.localizationUtility.getLocalizedPhrase("gameloop.error-invalid-player")
                             .replaceAll("%player%", playerName)
                     );
+                    continue;
                 }
-                players.add(p);
-                shootingStats.put(p.getUniqueId(), new ArrayList<>());
-                arrivalStats.put(p.getUniqueId(), new ArrayList<>());
-                passedCheckpoints.put(p.getUniqueId(), new ArrayList<>());
-                lapTracker.put(p.getUniqueId(), 0);
+                initializeBiathlonPlayer(p);
             }
         }
 
@@ -434,6 +432,14 @@ public class Game implements Listener {
             teleportToStart();
             initRefreshTask();
         }
+    }
+
+    private void initializeBiathlonPlayer(Player p) {
+        players.add(p);
+        shootingStats.put(p.getUniqueId(), new ArrayList<>());
+        arrivalStats.put(p.getUniqueId(), new ArrayList<>());
+        passedCheckpoints.put(p.getUniqueId(), new ArrayList<>());
+        lapTracker.put(p.getUniqueId(), 0);
     }
 
     private boolean initializeGame(CommandSender initiator) {
@@ -488,7 +494,7 @@ public class Game implements Listener {
     }
 
     private void delayPause(int delay) {
-        scheduler.scheduleAsyncRepeatingTask(main, new Runnable() {
+        scheduler.runTaskTimerAsynchronously(main, new Runnable() {
             int counter = delay;
 
             @Override
@@ -513,7 +519,7 @@ public class Game implements Listener {
     public void resumeGame() {
         if (RESUME_COUNTDOWN_TASK == -1) {
             activeGameLogger.logInfo("[" + currentGameID + "] RESUMING");
-            RESUME_COUNTDOWN_TASK = scheduler.scheduleAsyncRepeatingTask(main, new Runnable() {
+            RESUME_COUNTDOWN_TASK = scheduler.runTaskTimerAsynchronously(main, new Runnable() {
                 int countdown = 3;
 
                 @Override
@@ -541,7 +547,7 @@ public class Game implements Listener {
                         main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.RUNNING);
                     }
                 }
-            }, 0, 20L);
+            }, 0, 20L).getTaskId();
         }
     }
 
@@ -677,7 +683,7 @@ public class Game implements Listener {
                     .replaceAll("%SS%", String.valueOf(secs > 9 ? secs : "0" + secs))
             );
         }
-        PREP_TASK = scheduler.scheduleAsyncRepeatingTask(main, new Runnable() {
+        PREP_TASK = scheduler.runTaskTimerAsynchronously(main, new Runnable() {
             int prepTime = Integer.parseInt(main.dataUtility.getGameProperty(currentGameID, GameProperty.PREPARATION_TIME));
 
             @Override
@@ -699,14 +705,14 @@ public class Game implements Listener {
                     startFinalCountdown();
                 }
             }
-        }, 0, 20);
+        }, 0, 20).getTaskId();
     }
 
     private void startFinalCountdown() {
         main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.COUNTDOWN);
         activeGameLogger.logInfo("[" + currentGameID + "/Service]: Final countdown started ");
         haltPlayers();
-        COUNTDOWN_TASK = scheduler.scheduleAsyncRepeatingTask(main, new Runnable() {
+        COUNTDOWN_TASK = scheduler.runTaskTimerAsynchronously(main, new Runnable() {
             int countdown = Integer.parseInt(main.dataUtility.getGameProperty(currentGameID, GameProperty.COUNTDOWN_TIME));
 
             @Override
@@ -776,25 +782,22 @@ public class Game implements Listener {
                     releasePlayers();
                 }
             }
-        }, 0, 20);
+        }, 0, 20).getTaskId();
 
     }
 
     private void haltPlayers() {
         activeGameLogger.logInfo("[" + currentGameID + "/Service]: Halting players ");
-        Bukkit.getScheduler().runTask(main, new Runnable() {
-            @Override
-            public void run() {
-                for (Player p : players) {
-                    if (Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.HALT_PLAYERS_WITH_POTIONEFFECT))) {
-                        p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 999999, 255));
-                        main.messageUtility.sendActionbarMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.actionbar.finalcountdown-start"));
-                    } else {
-                        main.messageUtility.sendActionbarMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.actionbar.finalcountdown-start-nohalt"));
-                    }
+        Bukkit.getScheduler().runTask(main, () -> {
+            for (Player p : players) {
+                if (Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.HALT_PLAYERS_WITH_POTIONEFFECT))) {
+                    p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 999999, 255));
+                    main.messageUtility.sendActionbarMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.actionbar.finalcountdown-start"));
+                } else {
+                    main.messageUtility.sendActionbarMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.actionbar.finalcountdown-start-nohalt"));
                 }
-                dispenseItems();
             }
+            dispenseItems();
         });
     }
 
@@ -802,17 +805,14 @@ public class Game implements Listener {
         activeGameLogger.logInfo("[" + currentGameID + "/Service]: Starting run ");
         main.dataUtility.setActiveGame(currentGameID);
         main.getServer().getPluginManager().registerEvents(this, main);
-        Bukkit.getScheduler().runTask(main, new Runnable() {
-            @Override
-            public void run() {
-                for (Player p : players) {
-                    p.removePotionEffect(PotionEffectType.SLOW);
-                    sounds.playStartSound(p);
-                }
-                main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.RUNNING);
-                timer.startGlobalTimer(main.dataUtility.getConfigProperty(ConfigProperty.TIMER_FORMAT));
-                scoreboardManager.showScoreboard();
+        Bukkit.getScheduler().runTask(main, () -> {
+            for (Player p : players) {
+                p.removePotionEffect(PotionEffectType.SLOW);
+                sounds.playStartSound(p);
             }
+            main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.RUNNING);
+            timer.startGlobalTimer(main.dataUtility.getConfigProperty(ConfigProperty.TIMER_FORMAT));
+            scoreboardManager.showScoreboard();
         });
     }
 
@@ -828,14 +828,11 @@ public class Game implements Listener {
     }
     private void initRefreshTask() {
         activeGameLogger.logInfo("[" + currentGameID + "/Service]: Registering scoreboard refresh task ");
-        REFRESH_TASK = Bukkit.getScheduler().scheduleAsyncRepeatingTask(main, new Runnable() {
-            @Override
-            public void run() {
-                if (!isPaused) {
-                    gameLoop();
-                }
+        REFRESH_TASK = Bukkit.getScheduler().runTaskTimerAsynchronously(main, () -> {
+            if (!isPaused) {
+                gameLoop();
             }
-        }, 0, 20L);
+        }, 0, 20L).getTaskId();
     }
     private void gatherPlayers() {
         gameSetupLogger.logInfo("[" + currentGameID + "]: Gathering players for game");
@@ -843,11 +840,7 @@ public class Game implements Listener {
             ArrayList<UUID> excluded = (ArrayList<UUID>) main.dataUtility.getExcludedPlayersUUIDList(currentGameInfo.exclusionList);
             for (Player p : Bukkit.getOnlinePlayers()) {
                 if (!excluded.contains(p.getUniqueId())) {
-                    players.add(p);
-                    shootingStats.put(p.getUniqueId(), new ArrayList<HitInfo>());
-                    arrivalStats.put(p.getUniqueId(), new ArrayList<>());
-                    passedCheckpoints.put(p.getUniqueId(), new ArrayList<>());
-                    lapTracker.put(p.getUniqueId(), 0);
+                    initializeBiathlonPlayer(p);
                 }
             }
             this.currentGameInfo.totalPlayers = players.size();
@@ -960,6 +953,10 @@ public class Game implements Listener {
         scheduler.cancelTasks(main);
         scoreboardManager.hideScoreboard();
         scoreboardManager.resetScoreboard();
+        resetInstanceVariables();
+    }
+
+    private void resetInstanceVariables() {
         this.currentGameInfo = null;
         this.currentGameID = null;
         this.players = new ArrayList<>();
@@ -973,21 +970,10 @@ public class Game implements Listener {
 
     private void cleanup() {
         activeGameLogger.logInfo("[" + currentGameID + "/Service]: Cleaning up");
-        this.currentGameInfo = null;
-        this.currentGameID = null;
-        this.players = new ArrayList<>();
-        this.REFRESH_TASK = -1;
-        this.PREP_TASK = -1;
-        this.COUNTDOWN_TASK = -1;
-        this.startLocation_bound1 = null;
-        this.startLocation_bound2 = null;
-        HandlerList.unregisterAll(this);
-        scheduler.runTaskLater(main, new Runnable() {
-            @Override
-            public void run() {
-                scoreboardManager.hideScoreboard();
-                scoreboardManager.resetScoreboard();
-            }
+        resetInstanceVariables();
+        scheduler.runTaskLater(main, () -> {
+            scoreboardManager.hideScoreboard();
+            scoreboardManager.resetScoreboard();
         }, 20L * 5);
         main.dataUtility.saveCoreData(CoreDataField.GAME_IN_PROGRESS, false);
         main.dataUtility.updateGameRunstate(lastGame, InstanceStatus.STANDBY);

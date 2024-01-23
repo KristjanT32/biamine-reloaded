@@ -171,10 +171,7 @@ public final class BiamineReloaded extends JavaPlugin {
             e.printStackTrace();
         }
 
-        getLogger().info("Starting localization discovery...");
         loadLocalizations();
-
-
     }
 
     private void loadLocalizations() {
@@ -187,16 +184,15 @@ public final class BiamineReloaded extends JavaPlugin {
         for (String langCode : langList) {
             File langFile = new File(getDataFolder(), "/localization/" + langCode + ".yml");
             if (!langFile.exists()) {
-                getLogger().warning("[404] Could not find the localization file for " + langCode);
+                getLogger().warning("No localization file found for " + langCode);
                 missingLocalizations.add(langCode);
             } else {
-                getLogger().info("[OK] Successfully recognized localization file for " + langCode);
                 foundLocalizations++;
             }
         }
-        getLogger().info("Localization discovery complete. Found " + foundLocalizations + " localization files out of " + langList.size() + " specified localizations.");
+        getLogger().info("Available language files: " + foundLocalizations + " of " + langList.size() + " specified files.");
         if (!missingLocalizations.isEmpty()) {
-            getLogger().info("Missing localization files: " + Arrays.toString(missingLocalizations.toArray()));
+            getLogger().warning("Missing localization files: " + Arrays.toString(missingLocalizations.toArray()));
         }
         localizationUtility.setupCurrentLanguageFile();
     }
@@ -205,8 +201,6 @@ public final class BiamineReloaded extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerMoveListener(this), this);
         getServer().getPluginManager().registerEvents(new ShootingRangeConfig(this), this);
         getServer().getPluginManager().registerEvents(new ArrowHitListener(this), this);
-
-        getLogger().info("Events registered.");
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -249,8 +243,6 @@ public final class BiamineReloaded extends JavaPlugin {
         getCommand("shootingrange").setTabCompleter(new ShootingRangeAC(this));
         getCommand("biainfo").setTabCompleter(new BiaInfoAC(this));
         getCommand("biaedit").setTabCompleter(new BiaEditAC(this));
-
-        getLogger().info("Commands registered.");
     }
 
     @Override
@@ -267,43 +259,37 @@ public final class BiamineReloaded extends JavaPlugin {
         try {
             pluginScoreboardConfig.save(scoreboardConfigFile);
         } catch (IOException e) {
-            e.printStackTrace();
-            getLogger().warning("An error occurred while trying to save the Scoreboard Configurations File.");
+            getLogger().warning("An error occurred while trying to save the Scoreboard Configurations File: \n" + e.getMessage());
         }
 
         try {
             pluginGames.save(gameFile);
         } catch (IOException e) {
-            e.printStackTrace();
-            getLogger().warning("An error occurred while trying to save the Game File.");
+            getLogger().warning("An error occurred while trying to save the Game File. \n" + e.getMessage());
         }
 
         try {
             pluginLocalization.save(localizationFile);
         } catch (IOException e) {
-            e.printStackTrace();
-            getLogger().warning("An error occurred while trying to save the Localization Information File.");
+            getLogger().warning("An error occurred while trying to save the Localization Information File. \n" + e.getMessage());
         }
 
         try {
             pluginData.save(dataFile);
         } catch (IOException e) {
-            e.printStackTrace();
-            getLogger().warning("An error occurred while trying to save the Core Data File.");
+            getLogger().warning("An error occurred while trying to save the Core Data File. \n" + e.getMessage());
         }
 
         try {
             pluginExclusionLists.save(exclusionListFile);
         } catch (IOException e) {
-            e.printStackTrace();
-            getLogger().warning("An error occured while trying to save the Exclusions File.");
+            getLogger().warning("An error occured while trying to save the Exclusions File. \n" + e.getMessage());
         }
 
         try {
             pluginConfig.save(configFile);
         } catch (IOException e) {
-            e.printStackTrace();
-            getLogger().warning("An error occurred while trying to save the General Configuration File.");
+            getLogger().warning("An error occurred while trying to save the General Configuration File. \n" + e.getMessage());
         }
 
     }
@@ -313,8 +299,8 @@ public final class BiamineReloaded extends JavaPlugin {
             pluginGames.save(gameFile);
             return true;
         } catch (IOException e) {
-            e.printStackTrace();
             getLogger().warning("An error occurred while trying to save the Game File.");
+            e.printStackTrace();
             return false;
         }
     }
@@ -324,8 +310,8 @@ public final class BiamineReloaded extends JavaPlugin {
             pluginExclusionLists.save(exclusionListFile);
             return true;
         } catch (IOException e) {
-            e.printStackTrace();
             getLogger().warning("An error occured while trying to save the Exclusions File.");
+            e.printStackTrace();
             return false;
         }
     }
@@ -335,8 +321,8 @@ public final class BiamineReloaded extends JavaPlugin {
             pluginData.save(dataFile);
             return true;
         } catch (IOException e) {
-            e.printStackTrace();
             getLogger().warning("An error occurred while trying to save the Core Data File.");
+            e.printStackTrace();
             return false;
         }
     }
@@ -346,8 +332,8 @@ public final class BiamineReloaded extends JavaPlugin {
             pluginScoreboardConfig.save(scoreboardConfigFile);
             return true;
         } catch (IOException e) {
-            e.printStackTrace();
             getLogger().warning("An error occurred while trying to save the Scoreboard Configurations File.");
+            e.printStackTrace();
             return false;
         }
     }
@@ -429,8 +415,8 @@ public final class BiamineReloaded extends JavaPlugin {
         super.reloadConfig();
     }
 
+    @SuppressWarnings("unchecked")
     public void reloadLocalizations() {
-        LocalizationUtility localizationUtility = new LocalizationUtility(this);
         int foundLocalizations = 0;
 
         ArrayList<String> langList = (ArrayList<String>) pluginLocalization.getList("languages");
@@ -439,14 +425,13 @@ public final class BiamineReloaded extends JavaPlugin {
         for (String langCode : langList) {
             File langFile = new File(getDataFolder(), "/localization/" + langCode + ".yml");
             if (!langFile.exists()) {
-                getLogger().warning("[404] Could not find the localization file for " + langCode);
+                getLogger().warning("No localization file found for " + langCode);
                 missingLocalizations.add(langCode);
             } else {
-                getLogger().info("[OK] Successfully recognized localization file for " + langCode);
                 foundLocalizations++;
             }
         }
-        getLogger().info("Localization discovery complete. Found " + foundLocalizations + " localization files out of " + langList.size() + " specified localizations.");
+        getLogger().info("Available language files: " + foundLocalizations + " of " + langList.size() + " specified files.");
         if (!missingLocalizations.isEmpty()) {
             getLogger().info("Missing localization files: " + Arrays.toString(missingLocalizations.toArray()));
         }
@@ -458,7 +443,6 @@ public final class BiamineReloaded extends JavaPlugin {
             Files.move(Path.of(getDataFolder() + "/en-US.yml"), Path.of(getDataFolder().toPath() + "/localization/en-US.yml"), StandardCopyOption.REPLACE_EXISTING);
             return 200;
         } catch (IOException e) {
-            e.printStackTrace();
             return 500;
         }
     }
