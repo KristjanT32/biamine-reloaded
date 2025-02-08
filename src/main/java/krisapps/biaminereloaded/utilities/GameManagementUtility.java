@@ -33,6 +33,10 @@ public class GameManagementUtility {
 
     public void initGameWithPlayers(BiamineBiathlon info, CommandSender initiator, List<String> players) {
         Game g = new Game(info.gameID, info, main);
+        Game game = Game.instance;
+
+
+
         g.startGame(players, initiator);
     }
 

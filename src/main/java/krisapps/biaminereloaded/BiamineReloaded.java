@@ -46,7 +46,7 @@ public final class BiamineReloaded extends JavaPlugin {
     public File localizationFile = new File(getDataFolder(), "/localization/localization.yml");
 
 
-    // Public Utilities
+    // Public utilities
     public BiaMineDataUtility dataUtility = new BiaMineDataUtility(this);
     public MessageUtility messageUtility = new MessageUtility(this);
     public LocalizationUtility localizationUtility = new LocalizationUtility(this);
@@ -54,8 +54,7 @@ public final class BiamineReloaded extends JavaPlugin {
     public GameManagementUtility gameUtility = new GameManagementUtility(this);
 
 
-    // LOGGING
-
+    // Logging
     File logFile = new File(getDataFolder(), "biamine.log");
 
 

@@ -56,22 +56,18 @@ public class ItemDispenserUtility {
             PlayerInventory inventory = player.getInventory();
 
             for (ItemStack item : items) {
-                if (!hasItem(inventory, item)) {
-                    inventory.addItem(item);
-                    main.messageUtility.sendMessage(player, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.itemdispense.gave")
-                            .replaceAll("%item%", capitalize(item.getType().name().replace("_", " ")))
-                            .replaceAll("%count%", String.valueOf(item.getAmount()))
-                    );
-                } else {
+                if (hasItem(inventory, item)) {
                     for (ItemStack foundItem : findExisting(inventory, item)) {
                         inventory.remove(foundItem);
                     }
-                    inventory.addItem(item);
-                    main.messageUtility.sendMessage(player, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.itemdispense.gave")
-                            .replaceAll("%item%", capitalize(item.getType().name().replace("_", " ")))
-                            .replaceAll("%count%", String.valueOf(item.getAmount()))
-                    );
                 }
+                inventory.addItem(item);
+                main.messageUtility.sendMessage(player,
+                        main.localizationUtility
+                                .getLocalizedPhrase("gameloop.runtime.itemdispense.gave")
+                                .replaceAll("%item%", capitalize(item.getType().name().replace("_", " ")))
+                                .replaceAll("%count%", String.valueOf(item.getAmount()))
+                );
             }
         }
     }

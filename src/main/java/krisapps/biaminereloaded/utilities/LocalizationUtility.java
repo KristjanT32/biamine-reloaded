@@ -106,7 +106,7 @@ public class LocalizationUtility {
         if (lang == null) {
             setupCurrentLanguageFile();
         }
-        return lang.getString(id) != null ? lang.getString(id) : "Localized phrase not found.";
+        return lang.getString(id) != null ? lang.getString(id) : "Localized string not found: " + id;
     }
 
 

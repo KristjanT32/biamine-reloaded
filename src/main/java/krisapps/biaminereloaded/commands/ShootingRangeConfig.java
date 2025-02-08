@@ -214,7 +214,15 @@ public class ShootingRangeConfig implements CommandExecutor, Listener {
                                     );
                                     for (Location t : targetsForSpot) {
                                         main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.shootingrange.showinfo.list-item")
-                                                .replaceAll("%spot%", String.format("&eX: &b%d&f|&eY: &b%d&f|&eZ: &b%d&r", t.getBlockX(), t.getBlockY(), t.getBlockZ()))
+                                                                                                        .replaceAll(
+                                                                                                                "%spot%",
+                                                                                                                String.format(
+                                                                                                                        "&eX: &b%d &eY: &b%d &eZ: &b%d&r",
+                                                                                                                        t.getBlockX(),
+                                                                                                                        t.getBlockY(),
+                                                                                                                        t.getBlockZ()
+                                                                                                                )
+                                                                                                        )
                                         );
                                     }
 

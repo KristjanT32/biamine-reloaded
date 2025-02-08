@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ReportUtility {
 
@@ -49,13 +50,14 @@ public class ReportUtility {
 
             writer.append("===============================================================================");
             writer.newLine();
-            writer.append(String.format("GAME REPORT FILE for %s", gameInfo.gameID));
+            writer.append(String.format("Biathlon Game Report for %s", gameInfo.gameID));
             writer.newLine();
-            writer.append(String.format("DATE: %s", dateFormat.format(Date.from(Instant.now()))));
+            writer.append(String.format("Date: %s", dateFormat.format(Date.from(Instant.now()))));
             writer.newLine();
-            writer.append(String.format("REPORT GENERATED AT: %s", timeFormat2.format(Date.from(Instant.now()))));
+            writer.append(String.format("Report generated at: %s", timeFormat2.format(Date.from(Instant.now()))));
             writer.newLine();
             writer.append("===============================================================================");
+            writer.newLine();
             writer.newLine();
             writer.append("===============================================================================");
             writer.newLine();
@@ -65,37 +67,51 @@ public class ReportUtility {
             writer.newLine();
             writer.append("===============================================================================");
             writer.newLine();
+            writer.newLine();
             writer.append("=[ FINAL SCOREBOARD ]==========================================================");
+            writer.newLine();
             writer.newLine();
             for (Map.Entry<Player, FinishInfo> entry : finishInfo.entrySet()) {
                 writer.append("* [" + entry.getValue().getLeaderboardOrder() + ".] " + entry.getKey().getName());
                 writer.append(" - finished at " + entry.getValue().getFinishTime());
                 writer.newLine();
             }
+            writer.newLine();
             writer.append("===============================================================================");
             writer.newLine();
+            writer.newLine();
             writer.append("=[ SHOOTING STATS ]============================================================");
+            writer.newLine();
             writer.newLine();
             for (Map.Entry<UUID, List<HitInfo>> entry : shootingStats.entrySet()) {
                 writer.append(" Player " + (Bukkit.getPlayer(entry.getKey()) == null ? entry.getKey().toString() : Bukkit.getPlayer(entry.getKey()).getName()));
                 writer.newLine();
                 int shotOrder = 1;
+
+                int arrowsOnStart = entry.getValue().get(0).getArrowsRemaining();
+                int arrowsOnEnd = entry.getValue().get(entry.getValue().size() - 1).getArrowsRemaining();
                 for (HitInfo shot : entry.getValue()) {
                     if (shot.getType().equals(HitType.HIT)) {
-                        writer.append("     #" + shotOrder + ": HIT - Target no." + shot.getTarget() + " on spot no." + shot.getSpot() + " - arrows remaining: " + shot.getArrowsRemaining());
+                        writer.append("     #" + shotOrder + ": HIT - Target no. " + shot.getTarget() + " on spot no. " + shot.getSpot() + " - arrows remaining: " + shot.getArrowsRemaining());
                         writer.newLine();
                     } else {
-                        writer.append("     #" + shotOrder + ": MISS on spot no." + shot.getSpot() + " - arrows remaining: " + shot.getArrowsRemaining());
+                        writer.append("     #" + shotOrder + ": MISS on spot no. " + shot.getSpot() + " - arrows remaining: " + shot.getArrowsRemaining());
                         writer.newLine();
                     }
                     shotOrder++;
                 }
+                // If the arrow count was constant, something's up
+                if (arrowsOnStart == arrowsOnEnd) {
+                    writer.append("     [SUS!] Arrow count constant throughout shooting");
+                    writer.newLine();
+                }
+                writer.newLine();
+                writer.newLine();
             }
             writer.append("===============================================================================");
             writer.newLine();
-            writer.append("===============================================================================");
             writer.newLine();
-            writer.append("=[ TIMING INFO ]===============================================================");
+            writer.append("=[ TIMINGS INFO ]==============================================================");
             for (UUID playerUUID : arrivals.keySet()) {
                 Player p = Bukkit.getPlayer(playerUUID);
                 String playerName;
@@ -105,31 +121,88 @@ public class ReportUtility {
                     playerName = p.getName();
                 }
                 writer.newLine();
-                writer.append("[ Timings for " + playerName + "]");
                 writer.newLine();
-                Map<String, AreaPassInfo> addedEntries = new HashMap<>();
+                writer.append("# Timings for " + playerName);
+                writer.newLine();
+
+                int lastLapLabel = 0;
+                List<String> appendedAreas = new ArrayList<>();
+
                 for (AreaPassInfo info : arrivals.get(playerUUID)) {
-                    if (info.leftArea()) {
-                        if (addedEntries.get(info.getAreaName()) == null) {
-                            writer.append("   *[<-] Left " + info.getAreaName() + " at " + info.getTimerTime());
-                            writer.newLine();
-                        } else {
-                            writer.append("   *[<-] Left " + info.getAreaName() + " at " + info.getTimerTime());
-                            writer.newLine();
-                            writer.append("       [" + info.getAreaName() + "] Segment duration: " + TimerFormatter.getDifference(info.getTimerTime(), addedEntries.get(info.getAreaName()).getTimerTime()));
-                            writer.newLine();
-                            writer.newLine();
-                        }
-                    } else {
-                        if (addedEntries.get(info.getAreaName()) == null) {
-                            writer.append("   *[->] Arrived at " + info.getAreaName() + " at " + info.getTimerTime());
-                            if (!info.getAreaName().contains("checkpoint")) {
-                                addedEntries.put(info.getAreaName(), info);
-                            } else {
-                                writer.newLine();
-                            }
-                        }
+                    if (lastLapLabel != info.getReachedOnLap()) {
+                        lastLapLabel = info.getReachedOnLap();
+                        writer.newLine();
+                        writer.append("--- Lap " + lastLapLabel + " ---");
+                        writer.newLine();
+
+                        // For each new lap, clear the appended segments list.
+                        appendedAreas.clear();
                     }
+
+                    switch (info.getAreaType()) {
+                        case CHECKPOINT:
+                            writer.append("[-/-] Reached checkpoint '" + info.getAreaName() + "' at " + info.getTimerTime());
+                            writer.newLine();
+                            break;
+                        case SHOOTING_SPOT:
+                            // Skip the shooting spot entries that have already been appended to the report for the current lap
+                            if (appendedAreas.contains(info.getAreaName())) {continue;}
+
+                            AreaPassInfo arrivalEntry = null;
+                            AreaPassInfo departureEntry = null;
+                            int currentLap = lastLapLabel;
+
+                            if (info.leftArea()) {
+                                // If the current entry is the departure entry
+
+                                // Find the arrival entry
+                                arrivalEntry = arrivals
+                                        .get(playerUUID)
+                                        .stream()
+                                        .filter(el -> el
+                                                .getAreaName()
+                                                .equals(info.getAreaName()) && !el.leftArea() && el.getReachedOnLap() == currentLap)
+                                        .collect(Collectors.toList())
+                                        .get(0);
+
+                                departureEntry = info;
+                            } else {
+                                // If the current entry is the arrival entry
+
+                                arrivalEntry = info;
+
+                                // Find the departure entry
+                                departureEntry = arrivals
+                                        .get(playerUUID)
+                                        .stream()
+                                        .filter(el -> el
+                                                .getAreaName()
+                                                .equals(info.getAreaName()) && el.leftArea() && el.getReachedOnLap() == currentLap)
+                                        .collect(Collectors.toList())
+                                        .get(0);
+                            }
+
+                            writer.newLine();
+                            writer.append("[-->] Claimed " + arrivalEntry.getAreaName() + " at " + arrivalEntry.getTimerTime());
+                            writer.newLine();
+                            writer.append("[<--] Left " + departureEntry.getAreaName() + " at " + departureEntry.getTimerTime());
+                            writer.newLine();
+                            writer.append("[<->] Total time spent: " + TimerFormatter.getDifference(departureEntry.getTimerTime(),
+                                    arrivalEntry.getTimerTime()
+                            ));
+                            writer.newLine();
+                            writer.newLine();
+
+                            appendedAreas.add(arrivalEntry.getAreaName());
+                            appendedAreas.add(departureEntry.getAreaName());
+                            break;
+                        case FINISH_LINE:
+                            writer.append("[!!!] Reached the finish line at: " + info.getTimerTime());
+                            break;
+                    }
+
+
+
                 }
                 writer.newLine();
                 writer.newLine();
