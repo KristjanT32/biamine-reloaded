@@ -1,4 +1,4 @@
-package krisapps.biaminereloaded.types;
+package krisapps.biaminereloaded.types.area;
 
 import org.bukkit.Location;
 import org.bukkit.World;

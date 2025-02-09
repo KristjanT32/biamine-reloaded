@@ -1,9 +1,9 @@
 package krisapps.biaminereloaded.utilities;
 
 import krisapps.biaminereloaded.BiamineReloaded;
-import krisapps.biaminereloaded.types.CollidableRegion;
-import krisapps.biaminereloaded.types.CuboidRegion;
-import krisapps.biaminereloaded.types.VisualisationType;
+import krisapps.biaminereloaded.types.area.CollidableRegion;
+import krisapps.biaminereloaded.types.area.CuboidRegion;
+import krisapps.biaminereloaded.types.area.VisualisationType;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;

@@ -1,6 +1,6 @@
 package krisapps.biaminereloaded.events;
 
-import krisapps.biaminereloaded.types.KickType;
+import krisapps.biaminereloaded.gameloop.types.KickType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;

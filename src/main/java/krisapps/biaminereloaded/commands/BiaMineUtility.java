@@ -22,7 +22,6 @@ public class BiaMineUtility implements CommandExecutor {
         // Syntax: /biamineutil <operation>
         // Operations: | resetDefaultLanguageFile
         //             | refreshFiles
-        //             | refreshActiveScoreboard
         //             | resetScoreboard
         //             | printActiveGameID
         //             | reloadLocalizations
@@ -35,8 +34,10 @@ public class BiaMineUtility implements CommandExecutor {
                     int response = main.resetDefaultLanguageFile();
                     main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.biamineutil.reset-default-lang.completed")
                             .replaceAll("%response%", response == 200
-                                    ? "Successfully reset the default language file (en-US)."
-                                    : "Something prevented the plugin from completing the operation. Check the logs for more info."
+                                    ? main.localizationUtility.getLocalizedPhrase(
+                                    "commands.biamineutil.reset-default-lang.success")
+                                    : main.localizationUtility.getLocalizedPhrase(
+                                            "commands.biamineutil.reset-default-lang.error")
                             )
                     );
                     break;
@@ -44,10 +45,6 @@ public class BiaMineUtility implements CommandExecutor {
                     main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.biamineutil.refresh-files.start"));
                     main.reloadFiles();
                     main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.biamineutil.refresh-files.completed"));
-                    break;
-                case "refreshActiveScoreboard":
-                    main.gameUtility.refreshScoreboard();
-                    main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("generic.operation.succeeded"));
                     break;
                 case "resetScoreboard":
                     main.gameUtility.resetScoreboard();

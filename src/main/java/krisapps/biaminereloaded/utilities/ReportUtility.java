@@ -2,11 +2,11 @@ package krisapps.biaminereloaded.utilities;
 
 import krisapps.biaminereloaded.BiamineReloaded;
 import krisapps.biaminereloaded.gameloop.BiamineBiathlon;
+import krisapps.biaminereloaded.gameloop.types.AreaPassInfo;
+import krisapps.biaminereloaded.gameloop.types.FinishInfo;
+import krisapps.biaminereloaded.gameloop.types.HitInfo;
+import krisapps.biaminereloaded.gameloop.types.HitType;
 import krisapps.biaminereloaded.timers.TimerFormatter;
-import krisapps.biaminereloaded.types.AreaPassInfo;
-import krisapps.biaminereloaded.types.FinishInfo;
-import krisapps.biaminereloaded.types.HitInfo;
-import krisapps.biaminereloaded.types.HitType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;

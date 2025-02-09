@@ -1,4 +1,4 @@
-package krisapps.biaminereloaded.types;
+package krisapps.biaminereloaded.gameloop.types;
 
 public class HitInfo {
     private final int target;

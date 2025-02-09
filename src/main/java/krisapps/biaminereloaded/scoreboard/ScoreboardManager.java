@@ -3,9 +3,12 @@ package krisapps.biaminereloaded.scoreboard;
 import krisapps.biaminereloaded.BiamineReloaded;
 import krisapps.biaminereloaded.gameloop.BiamineBiathlon;
 import krisapps.biaminereloaded.gameloop.Game;
+import krisapps.biaminereloaded.gameloop.types.BestTimeEntry;
+import krisapps.biaminereloaded.gameloop.types.InstanceStatus;
 import krisapps.biaminereloaded.logging.BiaMineLogger;
 import krisapps.biaminereloaded.timers.TimerFormatter;
-import krisapps.biaminereloaded.types.*;
+import krisapps.biaminereloaded.types.config.ConfigProperty;
+import krisapps.biaminereloaded.types.config.GameProperty;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
@@ -57,6 +60,7 @@ public class ScoreboardManager {
     Objective playersScoreboardObjective;
     BiaMineLogger logger;
     BukkitScheduler scheduler = Bukkit.getScheduler();
+
     private ScoreboardType currentScoreboardCycleBoard = ScoreboardType.PRIMARY;
     private final HashMap<ScoreboardType, PaginationInfo> scoreboardPaginationInfo = new HashMap<>();
 
@@ -65,10 +69,8 @@ public class ScoreboardManager {
         this.mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
         this.logger = new BiaMineLogger("BiaMine", "Scoreboard", main);
 
-        for (ScoreboardType type : ScoreboardType.values()) {
-            if (type == ScoreboardType.PREVIEW || type == ScoreboardType.PRIMARY) {continue;}
-            this.scoreboardPaginationInfo.put(type, new PaginationInfo(1, 1));
-        }
+        this.scoreboardPaginationInfo.put(ScoreboardType.LEADERBOARD, new PaginationInfo(1, 1, 5));
+        this.scoreboardPaginationInfo.put(ScoreboardType.SHOOTING_RANGE, new PaginationInfo(1, 1, 5));
 
         // Register all scoreboards' objectives.
         Arrays.stream(ScoreboardType.values()).forEach(this::registerObjective);
@@ -98,6 +100,17 @@ public class ScoreboardManager {
             ));
             return;
         }
+
+        playersScoreboardObjective.setDisplayName(ChatColor.translateAlternateColorCodes('&',
+                main.localizationUtility
+                        .getLocalizedPhrase("gameloop.scoreboard.leaderboard.title")
+                        .replace("%gameName%", main.dataUtility.getGameProperty(game.gameID, GameProperty.DISPLAY_NAME))
+        ));
+        shootingStatsObjective.setDisplayName(ChatColor.translateAlternateColorCodes('&',
+                main.localizationUtility
+                        .getLocalizedPhrase("gameloop.scoreboard.shooting-stats.title")
+                        .replace("%gameName%", main.dataUtility.getGameProperty(game.gameID, GameProperty.DISPLAY_NAME))
+        ));
 
         scheduler.runTaskTimerAsynchronously(main, () -> {
                     renderScoreboards(game);
@@ -207,7 +220,6 @@ public class ScoreboardManager {
     }
 
     private void refreshShootingScoreboard(BiamineBiathlon gameInfo) {
-        Map<UUID, List<HitInfo>> shootingStats = Game.instance.getShootingStats();
         List<String> playerProgresses = new ArrayList<>();
 
         for (Player p : Game.instance.players) {
@@ -219,23 +231,42 @@ public class ScoreboardManager {
             }
         }
 
+        scoreboardPaginationInfo.computeIfPresent(ScoreboardType.SHOOTING_RANGE, (k, v) -> {
+                    v.setTotalPages((playerProgresses.size() - 1) / v.getItemsPerPage());
+                    return v;
+                }
+        );
+
+        int page = scoreboardPaginationInfo.get(ScoreboardType.SHOOTING_RANGE).getCurrentPage();
+        int maxPages = scoreboardPaginationInfo.get(ScoreboardType.SHOOTING_RANGE).getTotalPages();
+        if (maxPages == 0) {maxPages = 1;}
         setScoreboardLine(ScoreboardType.SHOOTING_RANGE,
                 1,
-                "s_line1",
-                main.localizationUtility.getLocalizedPhrase("gameloop.scoreboard.shooting-stats.title")
+                "s_line1", main.localizationUtility.getLocalizedPhrase("gameloop.scoreboard.shooting-stats.header")
         );
+
+        int paginationAdjustment = ((scoreboardPaginationInfo
+                .get(ScoreboardType.SHOOTING_RANGE)
+                .getCurrentPage() - 1) * scoreboardPaginationInfo.get(ScoreboardType.SHOOTING_RANGE).getItemsPerPage());
+
         // Fills lines 2-7 with player progresses, if possible.
         for (int i = 2; i < 8; i++) {
             if ((i - 2) > playerProgresses.size() - 1) {
                 setScoreboardLine(ScoreboardType.SHOOTING_RANGE, i, "s_line" + i, "&8* ---");
             } else {
-                setScoreboardLine(ScoreboardType.SHOOTING_RANGE, i, "s_line" + i, playerProgresses.get(i - 2));
+                setScoreboardLine(ScoreboardType.SHOOTING_RANGE,
+                        i,
+                        "s_line" + i,
+                        ((i - 1) + (paginationAdjustment)) + ". " + playerProgresses.get((i - 2) + (paginationAdjustment))
+                );
             }
         }
         setScoreboardLine(ScoreboardType.SHOOTING_RANGE,
                 8,
                 "s_line8",
                 main.localizationUtility.getLocalizedPhrase("gameloop.scoreboard.shooting-stats.footer")
+                                        .replace("%page%", (page > 9 ? page : "0" + page).toString())
+                                        .replace("%maxPages%", (maxPages > 9 ? maxPages : "0" + maxPages).toString())
         );
     }
 
@@ -284,22 +315,44 @@ public class ScoreboardManager {
             sortedEntries.add(new AbstractMap.SimpleEntry<>(time, entries.get(time)));
         });
 
+        scoreboardPaginationInfo.computeIfPresent(ScoreboardType.LEADERBOARD, (k, v) -> {
+                    v.setTotalPages((sortedEntries.size() - 1) / v.getItemsPerPage());
+                    return v;
+                }
+        );
+
+        int page = scoreboardPaginationInfo.get(ScoreboardType.LEADERBOARD).getCurrentPage();
+        int maxPages = scoreboardPaginationInfo.get(ScoreboardType.LEADERBOARD).getTotalPages();
+        if (maxPages == 0) {maxPages = 1;}
+
         setScoreboardLine(ScoreboardType.LEADERBOARD,
                 1,
-                "l_line1",
-                main.localizationUtility.getLocalizedPhrase("gameloop.scoreboard.leaderboard.title")
+                "l_line1", main.localizationUtility.getLocalizedPhrase("gameloop.scoreboard.leaderboard.header")
         );
+
+        int paginationAdjustment = ((scoreboardPaginationInfo
+                .get(ScoreboardType.LEADERBOARD)
+                .getCurrentPage() - 1) * scoreboardPaginationInfo.get(ScoreboardType.LEADERBOARD).getItemsPerPage());
+
         for (int i = 2; i < 8; i++) {
             if ((i - 2) > sortedEntries.size() - 1) {
                 setScoreboardLine(ScoreboardType.LEADERBOARD, i, "l_line" + i, "&8* ---");
             } else {
-                setScoreboardLine(ScoreboardType.LEADERBOARD, i, "l_line" + i, sortedEntries.get(i - 2).getValue());
+                setScoreboardLine(ScoreboardType.LEADERBOARD,
+                        i,
+                        "l_line" + i,
+                        ((i - 1) + (paginationAdjustment)) + ". " + sortedEntries
+                                .get((i - 2) + (paginationAdjustment))
+                                .getValue()
+                );
             }
         }
         setScoreboardLine(ScoreboardType.LEADERBOARD,
                 8,
                 "l_line8",
                 main.localizationUtility.getLocalizedPhrase("gameloop.scoreboard.leaderboard.footer")
+                                        .replace("%page%", (page > 9 ? page : "0" + page).toString())
+                                        .replace("%maxPages%", (maxPages > 9 ? maxPages : "0" + maxPages).toString())
         );
     }
 
@@ -356,8 +409,7 @@ public class ScoreboardManager {
             case LEADERBOARD:
                 if (!objectiveExists(scoreboard)) {
                     playersScoreboardObjective = mainScoreboard.registerNewObjective(scoreboard.getObjectiveName(),
-                            "dummy",
-                            "players"
+                            "dummy", "leaderboard"
                     );
                 } else {
                     playersScoreboardObjective = mainScoreboard.getObjective(scoreboard.getObjectiveName());

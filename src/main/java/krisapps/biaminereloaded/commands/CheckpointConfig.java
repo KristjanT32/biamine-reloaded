@@ -1,7 +1,7 @@
 package krisapps.biaminereloaded.commands;
 
 import krisapps.biaminereloaded.BiamineReloaded;
-import krisapps.biaminereloaded.types.CollidableRegion;
+import krisapps.biaminereloaded.types.area.CollidableRegion;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;

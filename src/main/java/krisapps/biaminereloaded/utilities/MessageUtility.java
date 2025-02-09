@@ -1,8 +1,8 @@
 package krisapps.biaminereloaded.utilities;
 
 import krisapps.biaminereloaded.BiamineReloaded;
+import krisapps.biaminereloaded.scoreboard.Placeholder;
 import krisapps.biaminereloaded.types.GenericErrorType;
-import krisapps.biaminereloaded.types.Placeholder;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ClickEvent;

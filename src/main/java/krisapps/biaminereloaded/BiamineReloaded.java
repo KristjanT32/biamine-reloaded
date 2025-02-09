@@ -4,7 +4,7 @@ import krisapps.biaminereloaded.commands.*;
 import krisapps.biaminereloaded.commands.tabcompleter.*;
 import krisapps.biaminereloaded.events.listeners.ArrowHitListener;
 import krisapps.biaminereloaded.events.listeners.PlayerMoveListener;
-import krisapps.biaminereloaded.types.CoreDataField;
+import krisapps.biaminereloaded.types.config.CoreDataField;
 import krisapps.biaminereloaded.utilities.*;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;

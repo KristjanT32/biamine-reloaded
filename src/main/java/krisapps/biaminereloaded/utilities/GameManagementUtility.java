@@ -3,9 +3,9 @@ package krisapps.biaminereloaded.utilities;
 import krisapps.biaminereloaded.BiamineReloaded;
 import krisapps.biaminereloaded.gameloop.BiamineBiathlon;
 import krisapps.biaminereloaded.gameloop.Game;
-import krisapps.biaminereloaded.types.CoreDataField;
-import krisapps.biaminereloaded.types.GameProperty;
-import krisapps.biaminereloaded.types.InstanceStatus;
+import krisapps.biaminereloaded.gameloop.types.InstanceStatus;
+import krisapps.biaminereloaded.types.config.CoreDataField;
+import krisapps.biaminereloaded.types.config.GameProperty;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -122,11 +122,5 @@ public class GameManagementUtility {
             return;
         }
         Game.instance.getScoreboardManager().reset();
-    }
-
-    public void refreshScoreboard() {
-        if (Game.instance == null) {
-        }
-        // TODO: Either remove this, or add a way to manually trigger a refresh.
     }
 }

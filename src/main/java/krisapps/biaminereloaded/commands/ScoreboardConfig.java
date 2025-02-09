@@ -2,8 +2,8 @@ package krisapps.biaminereloaded.commands;
 
 import krisapps.biaminereloaded.BiamineReloaded;
 import krisapps.biaminereloaded.gameloop.Game;
+import krisapps.biaminereloaded.scoreboard.ScoreboardLine;
 import krisapps.biaminereloaded.scoreboard.ScoreboardManager;
-import krisapps.biaminereloaded.types.ScoreboardLine;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;

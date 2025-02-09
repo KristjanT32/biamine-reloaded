@@ -1,4 +1,4 @@
-package krisapps.biaminereloaded.types;
+package krisapps.biaminereloaded.types.config;
 
 public enum CoreDataField {
     LAST_VERSION("lastVersion"),

@@ -71,11 +71,13 @@ gameloop:
 
   scoreboard:
     shooting-stats:
-      title: "&e==[ Shooting Range ]========"
-      footer: "&e========================="
+      title: "%gameName% - &b&lShooting Range"
+      header: "&e========================="
+      footer: "&e=================[%page% / %maxPages%]"
     leaderboard:
-      title: "&e==[ Leaderboard ]========="
-      footer: "&e========================="
+      title: "%gameName% - &b&lLeaderboard"
+      header: "&e========================="
+      footer: "&e=================[%page% / %maxPages%]"
 
   runtime:
     prevterm-nopl: "&4[&cPREVTERM&4]&f: &cInstance &b%instance%&c has been preventatively terminated.\nReason: &eBiaMine was unable to find players to add to this game."
@@ -291,6 +293,8 @@ commands:
       completed: "&e[&bBia&fMine&e]: &aLocalization discovery completed."
     reset-default-lang:
       completed: "&e[&bBia&fMine&e]: &e%response%"
+      success: "Successfully reset the default language file."
+      error: "Something prevented the plugin from completing the operation. Check the logs for more info."
     invalid-operation: "&e[&bBia&fMine&e]: &cInvalid operation."
     reload-current-lang:
       start: "&e[&bBia&fMine&e]: &eReloading current language file ..."

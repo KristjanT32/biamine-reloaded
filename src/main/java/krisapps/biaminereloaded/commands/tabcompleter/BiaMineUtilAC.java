@@ -13,7 +13,15 @@ public class BiaMineUtilAC implements TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
         List<String> completions = new ArrayList<>();
-        List<String> operList = Arrays.asList("resetDefaultLanguageFile", "refreshFiles", "refreshActiveScoreboard", "resetScoreboard", "printActiveGameID", "reloadLocalizations", "rereadConfig", "reloadCurrentLanguageFile", "reload");
+        List<String> operList = Arrays.asList("resetDefaultLanguageFile",
+                "refreshFiles",
+                "resetScoreboard",
+                "printActiveGameID",
+                "reloadLocalizations",
+                "rereadConfig",
+                "reloadCurrentLanguageFile",
+                "reload"
+        );
 
 
         if (args.length == 1) {

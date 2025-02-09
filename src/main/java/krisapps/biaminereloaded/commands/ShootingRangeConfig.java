@@ -2,8 +2,8 @@ package krisapps.biaminereloaded.commands;
 
 import com.jeff_media.customblockdata.CustomBlockData;
 import krisapps.biaminereloaded.BiamineReloaded;
-import krisapps.biaminereloaded.types.CuboidRegion;
-import krisapps.biaminereloaded.types.VisualisationType;
+import krisapps.biaminereloaded.types.area.CuboidRegion;
+import krisapps.biaminereloaded.types.area.VisualisationType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;

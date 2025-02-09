@@ -1,6 +1,6 @@
 package krisapps.biaminereloaded.events;
 
-import krisapps.biaminereloaded.types.InstanceStatus;
+import krisapps.biaminereloaded.gameloop.types.InstanceStatus;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 

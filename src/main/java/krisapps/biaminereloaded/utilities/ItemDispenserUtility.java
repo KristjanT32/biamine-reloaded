@@ -1,7 +1,7 @@
 package krisapps.biaminereloaded.utilities;
 
 import krisapps.biaminereloaded.BiamineReloaded;
-import krisapps.biaminereloaded.types.DispenserEntry;
+import krisapps.biaminereloaded.gameloop.types.DispenserEntry;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;

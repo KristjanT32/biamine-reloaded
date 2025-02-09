@@ -1,7 +1,7 @@
 package krisapps.biaminereloaded.commands;
 
 import krisapps.biaminereloaded.BiamineReloaded;
-import krisapps.biaminereloaded.types.GameProperty;
+import krisapps.biaminereloaded.types.config.GameProperty;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -36,7 +36,10 @@ public class BiaEdit implements CommandExecutor {
 
                     if (!displayName.toString().isEmpty()) {
                         String oldName = main.dataUtility.getGameProperty(gameID, GameProperty.DISPLAY_NAME);
-                        main.dataUtility.setGameProperty(gameID, GameProperty.DISPLAY_NAME, displayName.toString());
+                        main.dataUtility.setGameProperty(gameID,
+                                GameProperty.DISPLAY_NAME,
+                                displayName.toString().trim()
+                        );
                         String newName = main.dataUtility.getGameProperty(gameID, GameProperty.DISPLAY_NAME);
 
                         main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.biaedit.set-success")

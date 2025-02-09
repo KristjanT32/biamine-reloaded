@@ -1,7 +1,7 @@
 package krisapps.biaminereloaded.commands;
 
 import krisapps.biaminereloaded.BiamineReloaded;
-import krisapps.biaminereloaded.types.GameProperty;
+import krisapps.biaminereloaded.types.config.GameProperty;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;

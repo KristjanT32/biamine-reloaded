@@ -1,7 +1,7 @@
 package krisapps.biaminereloaded.commands;
 
 import krisapps.biaminereloaded.BiamineReloaded;
-import krisapps.biaminereloaded.types.DispenserEntry;
+import krisapps.biaminereloaded.gameloop.types.DispenserEntry;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;

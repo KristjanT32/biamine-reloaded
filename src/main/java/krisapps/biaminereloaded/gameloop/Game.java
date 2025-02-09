@@ -2,11 +2,16 @@ package krisapps.biaminereloaded.gameloop;
 
 import krisapps.biaminereloaded.BiamineReloaded;
 import krisapps.biaminereloaded.events.*;
+import krisapps.biaminereloaded.gameloop.types.*;
 import krisapps.biaminereloaded.logging.BiaMineLogger;
+import krisapps.biaminereloaded.scoreboard.ScoreboardLine;
 import krisapps.biaminereloaded.scoreboard.ScoreboardManager;
 import krisapps.biaminereloaded.timers.BiathlonTimer;
 import krisapps.biaminereloaded.timers.TimerFormatter;
-import krisapps.biaminereloaded.types.*;
+import krisapps.biaminereloaded.types.area.AreaType;
+import krisapps.biaminereloaded.types.config.ConfigProperty;
+import krisapps.biaminereloaded.types.config.CoreDataField;
+import krisapps.biaminereloaded.types.config.GameProperty;
 import krisapps.biaminereloaded.utilities.ItemDispenserUtility;
 import krisapps.biaminereloaded.utilities.ReportUtility;
 import krisapps.biaminereloaded.utilities.SoundUtility;

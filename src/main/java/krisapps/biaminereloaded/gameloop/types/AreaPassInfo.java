@@ -1,4 +1,6 @@
-package krisapps.biaminereloaded.types;
+package krisapps.biaminereloaded.gameloop.types;
+
+import krisapps.biaminereloaded.types.area.AreaType;
 
 public class AreaPassInfo {
 

@@ -1,8 +1,8 @@
 package krisapps.biaminereloaded.utilities;
 
 import krisapps.biaminereloaded.BiamineReloaded;
-import krisapps.biaminereloaded.types.CollidableRegion;
-import krisapps.biaminereloaded.types.CuboidRegion;
+import krisapps.biaminereloaded.types.area.CollidableRegion;
+import krisapps.biaminereloaded.types.area.CuboidRegion;
 import org.bukkit.Location;
 
 public class RegionCollisionUtility {
