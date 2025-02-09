@@ -89,6 +89,13 @@ options:
   # Enable sound effects?
   sound-effects: true
 
+  scoreboards:
+    enable-shooting-range: true
+    enable-leaderboard: true
+
+  # How long should a scoreboard stay on screen before the next type is shown (e.g. Shooting Range, Leaderboard)
+  scoreboard-cycle-period: 15
+
   # Should BiaMine generate a game report file?
   # %dataFolder% will generate the report file in plugins/BiaMine-Reloaded/
   game-report:

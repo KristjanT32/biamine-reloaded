@@ -711,6 +711,12 @@ public class BiaMineDataUtility {
                 return main.pluginConfig.getString("options.halt-players-with-effect");
             case SEND_ITEM_DISPENSER_MESSAGES:
                 return main.pluginConfig.getString("options.send-dispenser-messages");
+            case SCOREBOARD_CYCLE_PERIOD:
+                return main.pluginConfig.getString("options.scoreboard-cycle-period");
+            case SHOOTING_RANGE_SCOREBOARD_ENABLED:
+                return main.pluginConfig.getString("options.scoreboards.enable-shooting-range");
+            case LEADERBOARD_ENABLED:
+                return main.pluginConfig.getString("options.scoreboards.enable-leaderboard");
             default:
                 throw new InvalidParameterException("Unknown config property provided.");
         }

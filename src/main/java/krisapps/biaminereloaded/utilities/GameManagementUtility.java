@@ -84,7 +84,7 @@ public class GameManagementUtility {
         if (Game.instance == null) {
             return false;
         }
-        return Game.instance.players.contains(p) && !Game.instance.finishedPlayers.containsKey(p);
+        return Game.instance.players.contains(p) && !Game.instance.getFinishedPlayers().containsKey(p);
     }
 
     public int kickPlayer(Player p, String reason) {
@@ -121,13 +121,12 @@ public class GameManagementUtility {
         if (Game.instance == null) {
             return;
         }
-        Game.instance.getScoreboardManager().resetScoreboard();
+        Game.instance.getScoreboardManager().reset();
     }
 
     public void refreshScoreboard() {
         if (Game.instance == null) {
-            return;
         }
-        Game.instance.getScoreboardManager().refreshScoreboardData(Game.instance.getCurrentGameInfo().scoreboardConfig, Game.instance.getCurrentGameInfo());
+        // TODO: Either remove this, or add a way to manually trigger a refresh.
     }
 }

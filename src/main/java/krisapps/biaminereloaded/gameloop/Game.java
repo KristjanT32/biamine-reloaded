@@ -43,7 +43,7 @@ public class Game implements Listener {
 
     // Statistics
     private final Map<String, BestTimeEntry> bestTimes = new HashMap<>();
-    public final LinkedHashMap<Player, FinishInfo> finishedPlayers = new LinkedHashMap<>();
+    private final LinkedHashMap<Player, FinishInfo> finishedPlayers = new LinkedHashMap<>();
     private final Map<UUID, Integer> playerPositions = new HashMap<>();
     private final Map<UUID, List<HitInfo>> shootingStats = new LinkedHashMap<>();
     private final Map<UUID, List<AreaPassInfo>> arrivalStats = new LinkedHashMap<>();
@@ -230,7 +230,14 @@ public class Game implements Listener {
                                 .replaceAll("%checkpoint%", checkpointID)
                                 .replaceAll("%player%", event.getPlayer().getName())
                                 .replaceAll("%time%", time)
-                                .replaceAll("%lag%", TimerFormatter.getDifference(time, bestTimes.get(checkpointID).getTime()))
+                                                                                                   .replaceAll("%lag%",
+                                                                                                           TimerFormatter.formatDifference(
+                                                                                                                   time,
+                                                                                                                   bestTimes
+                                                                                                                           .get(checkpointID)
+                                                                                                                           .getTime()
+                                                                                                           )
+                                                                                                   )
                         );
                     }
                 } else {
@@ -290,7 +297,8 @@ public class Game implements Listener {
                                         hitEvent.getTarget(),
                                         hitEvent.getSpot(),
                                         HitType.HIT,
-                                        getItemCount(hitEvent.getShooter().getInventory(), Material.ARROW)
+                                        getItemCount(hitEvent.getShooter().getInventory(), Material.ARROW),
+                                        getLap(hitEvent.getShooter().getUniqueId())
                                 ));
                         sounds.playHitSound(hitEvent.getShooter());
                         if (Objects.equals(main.dataUtility.getConfigPropertyRaw("notification-settings.target-hit.enabled"), "true")) {
@@ -323,7 +331,8 @@ public class Game implements Listener {
                             new HitInfo(
                                     hitEvent.getSpot(),
                                     HitType.MISS,
-                                    getItemCount(hitEvent.getShooter().getInventory(), Material.ARROW)
+                                    getItemCount(hitEvent.getShooter().getInventory(), Material.ARROW),
+                                    getLap(hitEvent.getShooter().getUniqueId())
                             ));
                     sounds.playMissSound(hitEvent.getShooter());
                     if (Objects.equals(main.dataUtility.getConfigPropertyRaw("notification-settings.target-hit.enabled"), "true")) {
@@ -580,7 +589,6 @@ public class Game implements Listener {
         }
     }
 
-
     /**
      * Schedules a countdown to pause the game due to a disconnected participating player.
      *
@@ -669,14 +677,14 @@ public class Game implements Listener {
         currentGameInfo.latestTime = timer.getFormattedTime();
 
         try {
-            scoreboardManager.refreshScoreboardLine(currentGameInfo,
+            scoreboardManager.refreshPrimaryScoreboardLine(currentGameInfo,
                     ScoreboardLine.asEnum(main.dataUtility.getPropertyLineNumber(currentGameInfo.scoreboardConfig, "%timer%")));
         } catch (DateTimeException e) {
             terminate(true, TerminationContext.INVALID_FORMAT, "The supplied timer format is invalid.");
             return;
         }
         try {
-            scoreboardManager.refreshScoreboardLine(currentGameInfo,
+            scoreboardManager.refreshPrimaryScoreboardLine(currentGameInfo,
                     ScoreboardLine.asEnum(main.dataUtility.getPropertyLineNumber(currentGameInfo.scoreboardConfig, "%dateTime%"))
             );
         } catch (DateTimeException e) {
@@ -684,7 +692,7 @@ public class Game implements Listener {
             return;
         }
         try {
-            scoreboardManager.refreshScoreboardLine(currentGameInfo,
+            scoreboardManager.refreshPrimaryScoreboardLine(currentGameInfo,
                     ScoreboardLine.asEnum(main.dataUtility.getPropertyLineNumber(currentGameInfo.scoreboardConfig, "%localTime%"))
             );
         } catch (DateTimeException e) {
@@ -699,28 +707,44 @@ public class Game implements Listener {
                     "The supplied title is invalid or contains datetime format errors.");
             return;
         }
-        scoreboardManager.refreshScoreboardLine(currentGameInfo, ScoreboardLine.asEnum(main.dataUtility.getPropertyLineNumber(currentGameInfo.scoreboardConfig, "%state%")));
+        scoreboardManager.refreshPrimaryScoreboardLine(currentGameInfo,
+                ScoreboardLine.asEnum(main.dataUtility.getPropertyLineNumber(currentGameInfo.scoreboardConfig,
+                        "%state%"
+                ))
+        );
 
         for (Player p : players) {
             if (finishedPlayers.containsKey(p)) {
                 continue;
             }
 
-            // Lag behind time
-            if (passedCheckpoints.get(p.getUniqueId()) != null) {
-                if (passedCheckpoints.get(p.getUniqueId()).size() < bestTimes.size()) {
-                    try {
-                        List<String> playerPassedCheckpoints = passedCheckpoints.get(p.getUniqueId());
-                        String lastPassedCheckpoint = playerPassedCheckpoints.get(playerPassedCheckpoints.size() - 1);
+            // If the player is in a shooting spot, show the progress of hitting the targets
+            if (getPlayerSpotID(p.getUniqueId()) != -1) {
+                main.messageUtility.sendActionbarMessage(p, getShootingProgressIndicatorForCurrentLap(p.getUniqueId()));
+            } else {
+                // Lag behind time
+                if (passedCheckpoints.get(p.getUniqueId()) != null) {
+                    if (passedCheckpoints.get(p.getUniqueId()).size() < bestTimes.size()) {
+                        try {
+                            List<String> playerPassedCheckpoints = passedCheckpoints.get(p.getUniqueId());
+                            String lastPassedCheckpoint = playerPassedCheckpoints.get(playerPassedCheckpoints.size() - 1);
 
-                        // You can't lag behind yourself, so skip if the best time is by the target player.
-                        if (bestTimes.get(lastPassedCheckpoint).getPlayer().getUniqueId() == p.getUniqueId()) {
-                            continue;
-                        }
+                            // You can't lag behind yourself, so skip if the best time is by the target player.
+                            if (bestTimes.get(lastPassedCheckpoint).getPlayer().getUniqueId() == p.getUniqueId()) {
+                                continue;
+                            }
 
-                        main.messageUtility.sendActionbarMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.player-lag")
-                                .replace("%lag%", TimerFormatter.getDifference(timer.getFormattedTime(), bestTimes.get(lastPassedCheckpoint).getTime())));
-                    } catch (IndexOutOfBoundsException ignored) {}
+                            main.messageUtility.sendActionbarMessage(p,
+                                    main.localizationUtility
+                                            .getLocalizedPhrase("gameloop.player-lag")
+                                            .replace("%lag%",
+                                                    TimerFormatter.formatDifference(timer.getFormattedTime(),
+                                                            bestTimes.get(lastPassedCheckpoint).getTime()
+                                                    )
+                                            )
+                            );
+                        } catch (IndexOutOfBoundsException ignored) {}
+                    }
                 }
             }
         }
@@ -871,7 +895,7 @@ public class Game implements Listener {
             }
             main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.RUNNING);
             timer.startGlobalTimer(main.dataUtility.getConfigProperty(ConfigProperty.TIMER_FORMAT));
-            scoreboardManager.showScoreboard();
+            scoreboardManager.showPrimaryScoreboard();
         });
     }
 
@@ -883,17 +907,22 @@ public class Game implements Listener {
 
     private void initScoreboard() {
         activeGameLogger.logInfo("[" + currentGameID + "/Service]: Scoreboard initialization started ");
-        scoreboardManager.setupScoreboard(currentGameInfo, currentGameID);
+        scoreboardManager.initScoreboardCycle(currentGameInfo);
     }
 
     private void initRefreshTask() {
-        activeGameLogger.logInfo("[" + currentGameID + "/Service]: Registering scoreboard refresh task ");
+        activeGameLogger.logInfo("[" + currentGameID + "/Service]: Registering game refresh task ");
+
+        // Register the task responsible for keeping the game data up to date.
+        // This also shows lag time and shooting stats ([] [X] []), as well as refreshing all time-related lines on the scoreboard
         REFRESH_TASK = Bukkit.getScheduler().runTaskTimerAsynchronously(main, () -> {
             if (!isPaused) {
                 gameLoop();
             }
-        }, 0, 20L).getTaskId();
+                }, 0, 10L
+        ).getTaskId();
     }
+
 
     private void gatherPlayers() {
         gameSetupLogger.logInfo("[" + currentGameID + "]: Gathering players for game");
@@ -932,7 +961,6 @@ public class Game implements Listener {
 
             activeGameLogger.logInfo("[" + currentGameID + "/Game]: Kicking player " + p.getName());
             players.remove(p);
-            scoreboardManager.refreshScoreboardData(currentGameInfo.scoreboardConfig, currentGameInfo);
             main.getServer().getPluginManager().callEvent(new BiathlonPlayerKickEvent(KickType.ADMIN_ACTION, p, currentGameInfo.gameID));
             for (Player player : players) {
                 if (finishedPlayers.containsKey(player)) {
@@ -1001,8 +1029,8 @@ public class Game implements Listener {
         scheduler.cancelTask(COUNTDOWN_TASK);
         scheduler.cancelTask(REFRESH_TASK);
         scheduler.cancelTasks(main);
-        scoreboardManager.hideScoreboard();
-        scoreboardManager.resetScoreboard();
+        scoreboardManager.hidePrimaryScoreboard();
+        scoreboardManager.reset();
         resetInstanceVariables();
     }
 
@@ -1051,8 +1079,8 @@ public class Game implements Listener {
         activeGameLogger.logInfo("[" + currentGameID + "/Service]: Cleaning up");
         resetInstanceVariables();
         scheduler.runTaskLater(main, () -> {
-            scoreboardManager.hideScoreboard();
-            scoreboardManager.resetScoreboard();
+            scoreboardManager.hidePrimaryScoreboard();
+            scoreboardManager.reset();
         }, 20L * 5);
         main.dataUtility.saveCoreData(CoreDataField.GAME_IN_PROGRESS, false);
         main.dataUtility.updateGameRunstate(lastGame, InstanceStatus.STANDBY);
@@ -1190,6 +1218,29 @@ public class Game implements Listener {
         );
     }
 
+    public String getShootingProgressIndicatorForCurrentLap(UUID player) {
+        StringBuilder progress = new StringBuilder();
+        LinkedList<HitInfo> shotsForLap = shootingStats
+                .get(player)
+                .stream()
+                .filter(hitInfo -> hitInfo.getLap() == getLap(player))
+                .collect(Collectors.toCollection(LinkedList::new));
+        int targetsPerSpot = main.dataUtility.getShootingTargetsForSpot(currentGameID, 1).size();
+
+        for (int i = 0; i < targetsPerSpot; i++) {
+            if (i < shotsForLap.size()) {
+                if (shotsForLap.get(i).getType() == HitType.HIT) {
+                    progress.append(" &a☒");
+                } else {
+                    progress.append(" &c☐");
+                }
+            } else {
+                progress.append(" &f☐");
+            }
+        }
+        return progress.toString().trim();
+    }
+
 
     /**
      * Gets the Shooting Spot ID for the supplied player.
@@ -1276,7 +1327,6 @@ public class Game implements Listener {
             );
 
             currentGameInfo.finishedPlayers = finishedPlayers.size();
-            scoreboardManager.refreshScoreboardData(currentGameInfo.scoreboardConfig, currentGameInfo);
             sounds.playFinishSound(player);
             if (Objects.equals(main.dataUtility.getConfigPropertyRaw("notification-settings.player-finish.enabled"), "true")) {
                 if (Objects.equals(main.dataUtility.getConfigPropertyRaw("notification-settings.player-finish.target"), "all")) {
@@ -1305,5 +1355,41 @@ public class Game implements Listener {
             return null;
         }
         return finishedPlayers.entrySet().stream().findFirst().get();
+    }
+
+    public Map<String, BestTimeEntry> getBestTimes() {
+        return bestTimes;
+    }
+
+    public LinkedHashMap<Player, FinishInfo> getFinishedPlayers() {
+        return finishedPlayers;
+    }
+
+    public Map<UUID, Integer> getPlayerPositions() {
+        return playerPositions;
+    }
+
+    public Map<UUID, List<HitInfo>> getShootingStats() {
+        return shootingStats;
+    }
+
+    public Map<UUID, List<AreaPassInfo>> getArrivalStats() {
+        return arrivalStats;
+    }
+
+    public Map<UUID, List<String>> getPassedCheckpoints() {
+        return passedCheckpoints;
+    }
+
+    public Map<UUID, Integer> getLapTracker() {
+        return lapTracker;
+    }
+
+    public Map<UUID, Location> getDisconnectedPlayers() {
+        return disconnectedPlayers;
+    }
+
+    public BiathlonTimer getTimer() {
+        return timer;
     }
 }

@@ -3,21 +3,25 @@ package krisapps.biaminereloaded.scoreboard;
 import krisapps.biaminereloaded.BiamineReloaded;
 import krisapps.biaminereloaded.gameloop.BiamineBiathlon;
 import krisapps.biaminereloaded.gameloop.Game;
-import krisapps.biaminereloaded.types.ConfigProperty;
-import krisapps.biaminereloaded.types.GameProperty;
-import krisapps.biaminereloaded.types.InstanceStatus;
-import krisapps.biaminereloaded.types.ScoreboardLine;
+import krisapps.biaminereloaded.logging.BiaMineLogger;
+import krisapps.biaminereloaded.timers.TimerFormatter;
+import krisapps.biaminereloaded.types.*;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class ScoreboardManager {
 
@@ -32,39 +36,370 @@ public class ScoreboardManager {
             ChatColor.BLACK + String.valueOf(ChatColor.LIGHT_PURPLE),
             ChatColor.BLACK + String.valueOf(ChatColor.DARK_GREEN)
     };
-    Scoreboard mainScoreboard;
-    Objective gameObjective;
-    Objective previewObjective;
-    BiamineReloaded main;
 
+    Scoreboard mainScoreboard;
+
+    // The task for refreshing the currently active scoreboard during the cycle.
+    private final int SCOREBOARD_REFRESH_TASK = -1;
+    // The task for advancing the visible scoreboard type to the next one / next page of current one.
+    private final int SCOREBOARD_ADVANCE_TASK = -1;
+    // One line length: nickname (max: 16ch) + space (1ch)
+    private final int SHOOTING_STAT_NICKNAME_SEGMENT_LENGTH = 17;
+    // The primary scoreboard
+    Objective gameObjective;
+
+    BiamineReloaded main;
+    // The scoreboard used for previewing the scoreboard config
+    Objective previewObjective;
+    // The scoreboard shown when one or more players are shooting
+    Objective shootingStatsObjective;
+    // The scoreboard periodically shown with the players sorted by their times
+    Objective playersScoreboardObjective;
+    BiaMineLogger logger;
+    BukkitScheduler scheduler = Bukkit.getScheduler();
+    private ScoreboardType currentScoreboardCycleBoard = ScoreboardType.PRIMARY;
+    private final HashMap<ScoreboardType, PaginationInfo> scoreboardPaginationInfo = new HashMap<>();
 
     public ScoreboardManager(BiamineReloaded main) {
         this.main = main;
         this.mainScoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-        if (mainScoreboard.getObjective("biathlonGame") == null) {
-            gameObjective = mainScoreboard.registerNewObjective("biathlonGame", "dummy", "name");
+        this.logger = new BiaMineLogger("BiaMine", "Scoreboard", main);
+
+        for (ScoreboardType type : ScoreboardType.values()) {
+            if (type == ScoreboardType.PREVIEW || type == ScoreboardType.PRIMARY) {continue;}
+            this.scoreboardPaginationInfo.put(type, new PaginationInfo(1, 1));
+        }
+
+        // Register all scoreboards' objectives.
+        Arrays.stream(ScoreboardType.values()).forEach(this::registerObjective);
+    }
+
+    /**
+     * Starts the scoreboard refresh cycle for the supplied game.
+     * This will also ensure the scoreboard is shown, if it wasn't already.
+     *
+     * @param game The game configuration.
+     */
+    @SuppressWarnings("ConstantConditions")
+    public void initScoreboardCycle(BiamineBiathlon game) {
+        if (SCOREBOARD_REFRESH_TASK != -1) {
+            scheduler.cancelTask(SCOREBOARD_REFRESH_TASK);
+            logger.logInfo("Cancelled existing scoreboard refresh task.");
+        }
+
+        if (SCOREBOARD_ADVANCE_TASK != -1) {
+            scheduler.cancelTask(SCOREBOARD_ADVANCE_TASK);
+            logger.logInfo("Cancelled existing scoreboard advance task.");
+        }
+
+        if (!main.dataUtility.scoreboardConfigExists(game.scoreboardConfig)) {
+            Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&',
+                    main.localizationUtility.getLocalizedPhrase("internals.setupsb-err-invconf")
+            ));
+            return;
+        }
+
+        scheduler.runTaskTimerAsynchronously(main, () -> {
+                    renderScoreboards(game);
+                }, 0L, 10L
+        );
+
+        scheduler.runTaskTimerAsynchronously(main,
+                this::advanceScoreboardType,
+                20L * 10L,
+                20L * Long.parseLong(main.dataUtility.getConfigProperty(ConfigProperty.SCOREBOARD_CYCLE_PERIOD))
+        );
+
+        logger.logInfo("Started scoreboard refresh cycle for '" + game.gameID + "'");
+    }
+
+    private void renderScoreboards(BiamineBiathlon gameInfo) {
+        if (currentScoreboardCycleBoard == null) {return;}
+        if (mainScoreboard.getObjective(DisplaySlot.SIDEBAR) != null) {
+            if (!mainScoreboard
+                    .getObjective(DisplaySlot.SIDEBAR)
+                    .getName()
+                    .equals(currentScoreboardCycleBoard.getObjectiveName())) {
+                mainScoreboard
+                        .getObjective(currentScoreboardCycleBoard.getObjectiveName())
+                        .setDisplaySlot(DisplaySlot.SIDEBAR);
+            }
         } else {
-            gameObjective = mainScoreboard.getObjective("biathlonGame");
-            mainScoreboard.getObjective("biathlonGame").setDisplaySlot(DisplaySlot.SIDEBAR);
+            mainScoreboard
+                    .getObjective(currentScoreboardCycleBoard.getObjectiveName())
+                    .setDisplaySlot(DisplaySlot.SIDEBAR);
+        }
+        switch (currentScoreboardCycleBoard) {
+            case PRIMARY:
+                refreshGameScoreboard(gameInfo);
+                break;
+            case LEADERBOARD:
+                refreshLeaderboard(gameInfo);
+                break;
+            case SHOOTING_RANGE:
+                refreshShootingScoreboard(gameInfo);
+                break;
+            case PREVIEW:
+                break;
         }
     }
 
-    private void setScoreboardLine(String text, String accessKey, int lineNumber) {
+    private void advanceScoreboardType() {
+        PaginationInfo paginationInfo = scoreboardPaginationInfo.get(currentScoreboardCycleBoard);
+        switch (currentScoreboardCycleBoard) {
+            case PRIMARY:
+                currentScoreboardCycleBoard = ScoreboardType.LEADERBOARD;
+                break;
+            case LEADERBOARD:
+                if (!Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.LEADERBOARD_ENABLED))) {
+                    currentScoreboardCycleBoard = ScoreboardType.SHOOTING_RANGE;
+                    return;
+                }
+                // If the current scoreboard has pages to show, instead of changing the scoreboard, paginate forward.
+                if (paginationInfo.getCurrentPage() < paginationInfo.getTotalPages()) {
+                    paginationInfo.setCurrentPage(paginationInfo.getCurrentPage() + 1);
+                    scoreboardPaginationInfo.replace(currentScoreboardCycleBoard, paginationInfo);
+                } else {
+                    paginationInfo.setCurrentPage(1);
+                    scoreboardPaginationInfo.replace(currentScoreboardCycleBoard, paginationInfo);
+                    currentScoreboardCycleBoard = ScoreboardType.SHOOTING_RANGE;
+                }
+                break;
+            case SHOOTING_RANGE:
+                if (!Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.SHOOTING_RANGE_SCOREBOARD_ENABLED))) {
+                    currentScoreboardCycleBoard = ScoreboardType.PRIMARY;
+                    return;
+                }
 
-        if (mainScoreboard.getObjective("biathlonGame") == null) {
-            gameObjective = mainScoreboard.registerNewObjective("biathlonGame", "dummy", "name");
+                // If the current scoreboard has pages to show, instead of changing the scoreboard, paginate forward.
+                if (paginationInfo.getCurrentPage() < paginationInfo.getTotalPages()) {
+                    paginationInfo.setCurrentPage(paginationInfo.getCurrentPage() + 1);
+                    scoreboardPaginationInfo.replace(currentScoreboardCycleBoard, paginationInfo);
+                } else {
+                    paginationInfo.setCurrentPage(1);
+                    scoreboardPaginationInfo.replace(currentScoreboardCycleBoard, paginationInfo);
+                    currentScoreboardCycleBoard = ScoreboardType.PRIMARY;
+                }
+                break;
+        }
+    }
+
+    private void refreshGameScoreboard(BiamineBiathlon gameInfo) {
+        String scoreboardConfigurationID = gameInfo.scoreboardConfig;
+
+        String l1 = main.dataUtility.getScoreboardConfigProperty(scoreboardConfigurationID, ScoreboardLine.LINE1);
+        String l2 = main.dataUtility.getScoreboardConfigProperty(scoreboardConfigurationID, ScoreboardLine.LINE2);
+        String l3 = main.dataUtility.getScoreboardConfigProperty(scoreboardConfigurationID, ScoreboardLine.LINE3);
+        String l4 = main.dataUtility.getScoreboardConfigProperty(scoreboardConfigurationID, ScoreboardLine.LINE4);
+        String l5 = main.dataUtility.getScoreboardConfigProperty(scoreboardConfigurationID, ScoreboardLine.LINE5);
+        String l6 = main.dataUtility.getScoreboardConfigProperty(scoreboardConfigurationID, ScoreboardLine.LINE6);
+        String l7 = main.dataUtility.getScoreboardConfigProperty(scoreboardConfigurationID, ScoreboardLine.LINE7);
+        String l8 = main.dataUtility.getScoreboardConfigProperty(scoreboardConfigurationID, ScoreboardLine.LINE8);
+
+        setScoreboardLine(ScoreboardType.PRIMARY, 1, "line1", findReplacePlaceholders(l1, gameInfo));
+        setScoreboardLine(ScoreboardType.PRIMARY, 2, "line2", findReplacePlaceholders(l2, gameInfo));
+        setScoreboardLine(ScoreboardType.PRIMARY, 3, "line3", findReplacePlaceholders(l3, gameInfo));
+        setScoreboardLine(ScoreboardType.PRIMARY, 4, "line4", findReplacePlaceholders(l4, gameInfo));
+        setScoreboardLine(ScoreboardType.PRIMARY, 5, "line5", findReplacePlaceholders(l5, gameInfo));
+        setScoreboardLine(ScoreboardType.PRIMARY, 6, "line6", findReplacePlaceholders(l6, gameInfo));
+        setScoreboardLine(ScoreboardType.PRIMARY, 7, "line7", findReplacePlaceholders(l7, gameInfo));
+        setScoreboardLine(ScoreboardType.PRIMARY, 8, "line8", findReplacePlaceholders(l8, gameInfo));
+    }
+
+    private void refreshShootingScoreboard(BiamineBiathlon gameInfo) {
+        Map<UUID, List<HitInfo>> shootingStats = Game.instance.getShootingStats();
+        List<String> playerProgresses = new ArrayList<>();
+
+        for (Player p : Game.instance.players) {
+            if (Game.instance.hasFinished(p)) {continue;}
+            if (Game.instance.getPlayerSpotID(p.getUniqueId()) != -1) {
+                playerProgresses.add("&b" + p.getName() + " ".repeat(SHOOTING_STAT_NICKNAME_SEGMENT_LENGTH - p
+                        .getName()
+                        .length()) + Game.instance.getShootingProgressIndicatorForCurrentLap(p.getUniqueId()));
+            }
         }
 
-        // Safeguard: if a line is already occupied, meaning a team already exists, reregister it.
-        if (mainScoreboard.getTeam(accessKey) != null) {
-            mainScoreboard.getTeam(accessKey).unregister();
+        setScoreboardLine(ScoreboardType.SHOOTING_RANGE,
+                1,
+                "s_line1",
+                main.localizationUtility.getLocalizedPhrase("gameloop.scoreboard.shooting-stats.title")
+        );
+        // Fills lines 2-7 with player progresses, if possible.
+        for (int i = 2; i < 8; i++) {
+            if ((i - 2) > playerProgresses.size() - 1) {
+                setScoreboardLine(ScoreboardType.SHOOTING_RANGE, i, "s_line" + i, "&8* ---");
+            } else {
+                setScoreboardLine(ScoreboardType.SHOOTING_RANGE, i, "s_line" + i, playerProgresses.get(i - 2));
+            }
         }
+        setScoreboardLine(ScoreboardType.SHOOTING_RANGE,
+                8,
+                "s_line8",
+                main.localizationUtility.getLocalizedPhrase("gameloop.scoreboard.shooting-stats.footer")
+        );
+    }
 
-        Team propertyToSet = gameObjective.getScoreboard().registerNewTeam(accessKey);
-        propertyToSet.addEntry(lineFillerSymbols[lineNumber - 1]);
-        propertyToSet.setPrefix(ChatColor.translateAlternateColorCodes('&', text));
+    private void refreshLeaderboard(BiamineBiathlon gameInfo) {
+        HashMap<Long, String> entries = new LinkedHashMap<>();
+        LinkedList<Long> sortedTimes;
+        for (Player p : Game.instance.players) {
+            if (Game.instance.hasFinished(p)) {continue;}
 
-        gameObjective.getScore(lineFillerSymbols[lineNumber - 1]).setScore(SCOREBOARD_FIRST_LINE - lineNumber);
+            Map<UUID, List<String>> passedCheckpoints = Game.instance.getPassedCheckpoints();
+            Map<String, BestTimeEntry> bestTimes = Game.instance.getBestTimes();
+
+            if (passedCheckpoints.get(p.getUniqueId()) != null) {
+
+                // Filter out players who can lag behind (if a player's passedCheckpoints list is >= bestTimes, it means they're the leader)
+                if (passedCheckpoints.get(p.getUniqueId()).size() < bestTimes.size()) {
+                    try {
+                        List<String> playerPassedCheckpoints = passedCheckpoints.get(p.getUniqueId());
+                        String lastPassedCheckpoint = playerPassedCheckpoints.get(playerPassedCheckpoints.size() - 1);
+
+                        // You can't lag behind yourself, so skip if the best time is by the target player.
+                        if (bestTimes.get(lastPassedCheckpoint).getPlayer().getUniqueId() == p.getUniqueId()) {
+                            continue;
+                        }
+
+                        entries.put(TimerFormatter.getDifferenceInSeconds(Game.instance.getTimer().getFormattedTime(),
+                                        bestTimes.get(lastPassedCheckpoint).getTime()
+                                ),
+                                "&b" + p.getName() + " ".repeat(SHOOTING_STAT_NICKNAME_SEGMENT_LENGTH - p
+                                        .getName()
+                                        .length()) + "&c" + TimerFormatter.formatDifference(Game.instance
+                                        .getTimer()
+                                        .getFormattedTime(), bestTimes.get(lastPassedCheckpoint).getTime()
+                                )
+                        );
+                    } catch (IndexOutOfBoundsException ignored) {}
+                } else {
+                    entries.put(0L, "&b&l" + p.getName());
+                }
+            }
+        }
+        sortedTimes = new LinkedList<>(entries.keySet().stream().sorted().collect(Collectors.toList()));
+
+        LinkedList<Map.Entry<Long, String>> sortedEntries = new LinkedList<>();
+        sortedTimes.forEach(time -> {
+            sortedEntries.add(new AbstractMap.SimpleEntry<>(time, entries.get(time)));
+        });
+
+        setScoreboardLine(ScoreboardType.LEADERBOARD,
+                1,
+                "l_line1",
+                main.localizationUtility.getLocalizedPhrase("gameloop.scoreboard.leaderboard.title")
+        );
+        for (int i = 2; i < 8; i++) {
+            if ((i - 2) > sortedEntries.size() - 1) {
+                setScoreboardLine(ScoreboardType.LEADERBOARD, i, "l_line" + i, "&8* ---");
+            } else {
+                setScoreboardLine(ScoreboardType.LEADERBOARD, i, "l_line" + i, sortedEntries.get(i - 2).getValue());
+            }
+        }
+        setScoreboardLine(ScoreboardType.LEADERBOARD,
+                8,
+                "l_line8",
+                main.localizationUtility.getLocalizedPhrase("gameloop.scoreboard.leaderboard.footer")
+        );
+    }
+
+
+    /**
+     * Sets the supplied scoreboard's n-th line's content to be equal to <code>content</code>.
+     *
+     * @param scoreboard The scoreboard whose line to modify.
+     * @param line       The line number (1-8)
+     * @param lineId     The access key for the supplied line.
+     * @param content    The content for the line.
+     */
+    private void setScoreboardLine(ScoreboardType scoreboard, int line, String lineId, String content) {
+        if (!objectiveExists(scoreboard)) {
+            registerObjective(scoreboard);
+        }
+        Objective o = getObjective(scoreboard);
+
+        // Safeguard: if a line is already occupied, meaning a team already exists, clear it (to re-register later)
+        if (mainScoreboard.getTeam(lineId) != null) {
+            try {
+                mainScoreboard.getTeam(lineId).unregister();
+            } catch (IllegalStateException ignored) {}
+        }
+        Team propertyToSet = mainScoreboard.registerNewTeam(lineId);
+
+        // Add a team entry with an empty name to allow for empty strings to appear on the scoreboard.
+        propertyToSet.addEntry(lineFillerSymbols[line - 1]);
+
+        // Add the actual line content as the prefix of the team.
+        propertyToSet.setPrefix(ChatColor.translateAlternateColorCodes('&', content));
+
+        // Set the line team's score to ensure correct line order.
+        o.getScore(lineFillerSymbols[line - 1]).setScore(SCOREBOARD_FIRST_LINE - line);
+    }
+
+
+    private boolean objectiveExists(ScoreboardType scoreboard) {
+        return mainScoreboard.getObjective(scoreboard.getObjectiveName()) != null;
+    }
+
+    private void registerObjective(ScoreboardType scoreboard) {
+        switch (scoreboard) {
+            case PRIMARY:
+                if (!objectiveExists(scoreboard)) {
+                    gameObjective = mainScoreboard.registerNewObjective(scoreboard.getObjectiveName(),
+                            "dummy",
+                            "primary"
+                    );
+                } else {
+                    gameObjective = mainScoreboard.getObjective(scoreboard.getObjectiveName());
+                }
+                break;
+            case LEADERBOARD:
+                if (!objectiveExists(scoreboard)) {
+                    playersScoreboardObjective = mainScoreboard.registerNewObjective(scoreboard.getObjectiveName(),
+                            "dummy",
+                            "players"
+                    );
+                } else {
+                    playersScoreboardObjective = mainScoreboard.getObjective(scoreboard.getObjectiveName());
+                }
+                break;
+            case SHOOTING_RANGE:
+                if (!objectiveExists(scoreboard)) {
+                    shootingStatsObjective = mainScoreboard.registerNewObjective(scoreboard.getObjectiveName(),
+                            "dummy",
+                            "shooting_range"
+                    );
+                } else {
+                    shootingStatsObjective = mainScoreboard.getObjective(scoreboard.getObjectiveName());
+                }
+                break;
+            case PREVIEW:
+                if (!objectiveExists(scoreboard)) {
+                    previewObjective = mainScoreboard.registerNewObjective(scoreboard.getObjectiveName(),
+                            "dummy",
+                            "preview"
+                    );
+                } else {
+                    previewObjective = mainScoreboard.getObjective(scoreboard.getObjectiveName());
+                }
+                break;
+        }
+    }
+
+    @NotNull
+    private Objective getObjective(ScoreboardType scoreboard) {
+        if (!objectiveExists(scoreboard)) {registerObjective(scoreboard);}
+        switch (scoreboard) {
+            case PRIMARY:
+                return gameObjective;
+            case LEADERBOARD:
+                return playersScoreboardObjective;
+            case SHOOTING_RANGE:
+                return shootingStatsObjective;
+            case PREVIEW:
+                return previewObjective;
+        }
+        return null;
     }
 
     private void setPreviewScoreboardLine(String text, String accessKey, int lineNumber) {
@@ -90,20 +425,6 @@ public class ScoreboardManager {
     private void updateScoreboardEntry(String entry, String newContent) {
         Team propertyToUpdate = mainScoreboard.getTeam(entry);
         propertyToUpdate.setPrefix(ChatColor.translateAlternateColorCodes('&', newContent));
-    }
-
-    public void setupScoreboard(BiamineBiathlon gameInfoObject, String gameID) {
-
-        if (mainScoreboard.getObjective("biathlonGame") == null) {
-            gameObjective = mainScoreboard.registerNewObjective("biathlonGame", "dummy", "name");
-        }
-
-        if (!main.dataUtility.scoreboardConfigExists(gameInfoObject.scoreboardConfig)) {
-            Bukkit.broadcastMessage(ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("internals.setupsb-err-invconf")));
-            return;
-        }
-
-        refreshScoreboardData(gameInfoObject.scoreboardConfig, gameInfoObject);
     }
 
     public void previewScoreboard(String scoreboardConfigurationID) {
@@ -148,38 +469,18 @@ public class ScoreboardManager {
         previewObjective.unregister();
     }
 
-    public void refreshScoreboardData(String scoreboardConfigurationID, BiamineBiathlon gameInfo) {
-
-        if (mainScoreboard.getObjective("biathlonGame") == null) {
-            gameObjective = mainScoreboard.registerNewObjective("biathlonGame", "dummy", "name");
-        }
-
-        String l1 = main.dataUtility.getScoreboardConfigProperty(scoreboardConfigurationID, ScoreboardLine.LINE1);
-        String l2 = main.dataUtility.getScoreboardConfigProperty(scoreboardConfigurationID, ScoreboardLine.LINE2);
-        String l3 = main.dataUtility.getScoreboardConfigProperty(scoreboardConfigurationID, ScoreboardLine.LINE3);
-        String l4 = main.dataUtility.getScoreboardConfigProperty(scoreboardConfigurationID, ScoreboardLine.LINE4);
-        String l5 = main.dataUtility.getScoreboardConfigProperty(scoreboardConfigurationID, ScoreboardLine.LINE5);
-        String l6 = main.dataUtility.getScoreboardConfigProperty(scoreboardConfigurationID, ScoreboardLine.LINE6);
-        String l7 = main.dataUtility.getScoreboardConfigProperty(scoreboardConfigurationID, ScoreboardLine.LINE7);
-        String l8 = main.dataUtility.getScoreboardConfigProperty(scoreboardConfigurationID, ScoreboardLine.LINE8);
-
-        setScoreboardLine(findReplacePlaceholders(l1, gameInfo), "line1", 1);
-        setScoreboardLine(findReplacePlaceholders(l2, gameInfo), "line2", 2);
-        setScoreboardLine(findReplacePlaceholders(l3, gameInfo), "line3", 3);
-        setScoreboardLine(findReplacePlaceholders(l4, gameInfo), "line4", 4);
-        setScoreboardLine(findReplacePlaceholders(l5, gameInfo), "line5", 5);
-        setScoreboardLine(findReplacePlaceholders(l6, gameInfo), "line6", 6);
-        setScoreboardLine(findReplacePlaceholders(l7, gameInfo), "line7", 7);
-        setScoreboardLine(findReplacePlaceholders(l8, gameInfo), "line8", 8);
-    }
-
-    public void refreshScoreboardLine(BiamineBiathlon gameInfo, ScoreboardLine line) {
-        if (!line.equals(ScoreboardLine.NO_SUCH_LINE)) {
-            setScoreboardLine(findReplacePlaceholders(
-                            main.dataUtility.getScoreboardConfigProperty(gameInfo.scoreboardConfig, line), gameInfo),
-                    "line" + line.asNumber(),
-                    line.asNumber()
-            );
+    public void refreshPrimaryScoreboardLine(BiamineBiathlon gameInfo, ScoreboardLine line) {
+        if (currentScoreboardCycleBoard == ScoreboardType.PRIMARY) {
+            if (!line.equals(ScoreboardLine.NO_SUCH_LINE)) {
+                setScoreboardLine(ScoreboardType.PRIMARY,
+                        line.asNumber(),
+                        "line" + line.asNumber(),
+                        findReplacePlaceholders(main.dataUtility.getScoreboardConfigProperty(gameInfo.scoreboardConfig,
+                                        line
+                                ), gameInfo
+                        )
+                );
+            }
         }
     }
 
@@ -285,17 +586,25 @@ public class ScoreboardManager {
     }
 
 
-    public void showScoreboard() {
-        mainScoreboard.getObjective("biathlonGame").setDisplaySlot(DisplaySlot.SIDEBAR);
+    public void showPrimaryScoreboard() {
+        mainScoreboard.getObjective(ScoreboardType.PRIMARY.getObjectiveName()).setDisplaySlot(DisplaySlot.SIDEBAR);
     }
 
-    public void hideScoreboard() {
-        mainScoreboard.getObjective("biathlonGame").setDisplaySlot(null);
+    public void hidePrimaryScoreboard() {
+        mainScoreboard.getObjective(ScoreboardType.PRIMARY.getObjectiveName()).setDisplaySlot(null);
     }
 
-    public void resetScoreboard() {
-        hideScoreboard();
+    public void clearSidebar() {
+        mainScoreboard.clearSlot(DisplaySlot.SIDEBAR);
         gameObjective.unregister();
+        playersScoreboardObjective.unregister();
+        shootingStatsObjective.unregister();
+    }
+
+    public void reset() {
+        clearSidebar();
+        scheduler.cancelTask(SCOREBOARD_ADVANCE_TASK);
+        scheduler.cancelTask(SCOREBOARD_REFRESH_TASK);
     }
 
 

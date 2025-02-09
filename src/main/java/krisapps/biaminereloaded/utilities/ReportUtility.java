@@ -87,10 +87,23 @@ public class ReportUtility {
                 writer.append(" Player " + (Bukkit.getPlayer(entry.getKey()) == null ? entry.getKey().toString() : Bukkit.getPlayer(entry.getKey()).getName()));
                 writer.newLine();
                 int shotOrder = 1;
-
                 int arrowsOnStart = entry.getValue().get(0).getArrowsRemaining();
                 int arrowsOnEnd = entry.getValue().get(entry.getValue().size() - 1).getArrowsRemaining();
+                int lastLap = 0;
+                boolean lapLabelAppended = false;
+
                 for (HitInfo shot : entry.getValue()) {
+                    if (lastLap != shot.getLap()) {
+                        lapLabelAppended = false;
+                        lastLap++;
+                    }
+                    if (!lapLabelAppended) {
+                        lapLabelAppended = true;
+                        writer.newLine();
+                        writer.append("     --- Lap " + lastLap + " ---");
+                        writer.newLine();
+                    }
+
                     if (shot.getType().equals(HitType.HIT)) {
                         writer.append("     #" + shotOrder + ": HIT - Target no. " + shot.getTarget() + " on spot no. " + shot.getSpot() + " - arrows remaining: " + shot.getArrowsRemaining());
                         writer.newLine();
@@ -103,6 +116,10 @@ public class ReportUtility {
                 // If the arrow count was constant, something's up
                 if (arrowsOnStart == arrowsOnEnd) {
                     writer.append("     [SUS!] Arrow count constant throughout shooting");
+                    writer.newLine();
+                }
+                if (arrowsOnEnd > 0) {
+                    writer.append("     [SUS!] Player had excess arrows (+" + arrowsOnEnd + " arrows)");
                     writer.newLine();
                 }
                 writer.newLine();
@@ -187,7 +204,7 @@ public class ReportUtility {
                             writer.newLine();
                             writer.append("[<--] Left " + departureEntry.getAreaName() + " at " + departureEntry.getTimerTime());
                             writer.newLine();
-                            writer.append("[<->] Total time spent: " + TimerFormatter.getDifference(departureEntry.getTimerTime(),
+                            writer.append("[<->] Total time spent: " + TimerFormatter.formatDifference(departureEntry.getTimerTime(),
                                     arrivalEntry.getTimerTime()
                             ));
                             writer.newLine();

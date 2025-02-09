@@ -28,7 +28,7 @@ public class TimerFormatter {
                 : String.valueOf(unit);
     }
 
-    public static String getDifference(String time1, String time2) {
+    public static String formatDifference(String time1, String time2) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
         LocalTime parsedTime1 = LocalTime.parse(time1, formatter);
         LocalTime parsedTime2 = LocalTime.parse(time2, formatter);
@@ -43,6 +43,23 @@ public class TimerFormatter {
             return String.format("%s:%s:%s", formatTimeUnit((int) dur.toHours()), formatTimeUnit(dur.toMinutesPart()), formatTimeUnit(dur.toSecondsPart()));
         }
         return "00:00:00";
+    }
+
+    public static long getDifferenceInSeconds(String time1, String time2) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        LocalTime parsedTime1 = LocalTime.parse(time1, formatter);
+        LocalTime parsedTime2 = LocalTime.parse(time2, formatter);
+
+        if (parsedTime1.isAfter(parsedTime2)) {
+            Duration dur = Duration.between(parsedTime2, parsedTime1);
+
+            return dur.toSeconds();
+        } else if (parsedTime2.isAfter(parsedTime1)) {
+            Duration dur = Duration.between(parsedTime1, parsedTime2);
+
+            return dur.toSeconds();
+        }
+        return 0;
     }
 
 

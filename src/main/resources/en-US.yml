@@ -69,6 +69,14 @@ gameloop:
     bronze: "&8[&7&l3.&r&8] &b%player% &f- &a%time%&r"
     generic: "&2[&a%orderNumber%.&2] &b%player% &f- &a%time%&r"
 
+  scoreboard:
+    shooting-stats:
+      title: "&e==[ Shooting Range ]========"
+      footer: "&e========================="
+    leaderboard:
+      title: "&e==[ Leaderboard ]========="
+      footer: "&e========================="
+
   runtime:
     prevterm-nopl: "&4[&cPREVTERM&4]&f: &cInstance &b%instance%&c has been preventatively terminated.\nReason: &eBiaMine was unable to find players to add to this game."
     prevterm-nostart: "&4[&cPREVTERM&4]&f: &cInstance &b%instance%&c has been preventatively terminated.\nReason: &eBiaMine was unable to find the starting area for this game.\n&eDetails: &f%details%"
