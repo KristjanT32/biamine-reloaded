@@ -53,7 +53,7 @@ options:
 
   # ===================================================================================================================#
   #                                               FORMAT OPTIONS                                                       #
-  #                               * Keep in mind: time formats are case sensitive                                      #
+  #                               * Keep in mind: time formats are case-sensitive                                      #
   # ===================================================================================================================#
 
   # __________________________________________________________________________________________________________________ #
@@ -90,8 +90,22 @@ options:
   sound-effects: true
 
   scoreboards:
+    # Should the Shooting Range scoreboard be shown?
     enable-shooting-range: true
+
+    # Should the Leaderboard be shown?
     enable-leaderboard: true
+
+    # Should BiaMine skip empty scoreboards if there are no entries in them?
+    # This will also hide the Leaderboard if there is only one player in the game.
+    skip-empty-when-cycling: false
+
+    # Should BiaMine switch to the Shooting Range when someone claims a Shooting Spot?
+    # This will override the scoreboard cycle (if another scoreboard was supposed to be shown, it will be postponed).
+    auto-show-shooting-range: false
+
+    # Should BiaMine only show the Shooting Range if all participating players are on a Shooting Spot?
+    show-shooting-range-if-all-present: true
 
   # How long should a scoreboard stay on screen before the next type is shown (e.g. Shooting Range, Leaderboard)
   scoreboard-cycle-period: 15

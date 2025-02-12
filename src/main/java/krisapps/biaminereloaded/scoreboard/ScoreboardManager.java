@@ -44,24 +44,37 @@ public class ScoreboardManager {
 
     // The task for refreshing the currently active scoreboard during the cycle.
     private final int SCOREBOARD_REFRESH_TASK = -1;
+
     // The task for advancing the visible scoreboard type to the next one / next page of current one.
     private final int SCOREBOARD_ADVANCE_TASK = -1;
+
     // One line length: nickname (max: 16ch) + space (1ch)
     private final int SHOOTING_STAT_NICKNAME_SEGMENT_LENGTH = 17;
+
     // The primary scoreboard
     Objective gameObjective;
 
     BiamineReloaded main;
+
     // The scoreboard used for previewing the scoreboard config
     Objective previewObjective;
+
     // The scoreboard shown when one or more players are shooting
     Objective shootingStatsObjective;
+
     // The scoreboard periodically shown with the players sorted by their times
     Objective playersScoreboardObjective;
+
     BiaMineLogger logger;
     BukkitScheduler scheduler = Bukkit.getScheduler();
 
+
     private ScoreboardType currentScoreboardCycleBoard = ScoreboardType.PRIMARY;
+
+    // Specifies whether the current scoreboard switch cycle should be skipped.
+    private boolean cycleOverrideActive = false;
+
+
     private final HashMap<ScoreboardType, PaginationInfo> scoreboardPaginationInfo = new HashMap<>();
 
     public ScoreboardManager(BiamineReloaded main) {
@@ -158,6 +171,11 @@ public class ScoreboardManager {
     }
 
     private void advanceScoreboardType() {
+        if (cycleOverrideActive) {
+            cycleOverrideActive = false;
+            return;
+        }
+
         PaginationInfo paginationInfo = scoreboardPaginationInfo.get(currentScoreboardCycleBoard);
         switch (currentScoreboardCycleBoard) {
             case PRIMARY:
@@ -168,6 +186,11 @@ public class ScoreboardManager {
                     currentScoreboardCycleBoard = ScoreboardType.SHOOTING_RANGE;
                     return;
                 }
+                if (Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.SKIP_EMPTY_SCOREBOARDS)) && Game.instance.players.size() <= 1) {
+                    currentScoreboardCycleBoard = ScoreboardType.SHOOTING_RANGE;
+                    return;
+                }
+
                 // If the current scoreboard has pages to show, instead of changing the scoreboard, paginate forward.
                 if (paginationInfo.getCurrentPage() < paginationInfo.getTotalPages()) {
                     paginationInfo.setCurrentPage(paginationInfo.getCurrentPage() + 1);
@@ -183,6 +206,16 @@ public class ScoreboardManager {
                     currentScoreboardCycleBoard = ScoreboardType.PRIMARY;
                     return;
                 }
+
+                if (Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.SKIP_EMPTY_SCOREBOARDS)) && Game.instance
+                        .getPlayersOnShootingRange()
+                        .isEmpty()) {
+                    currentScoreboardCycleBoard = ScoreboardType.PRIMARY;
+                    return;
+                }
+                if (Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.KEEP_SHOOTING_RANGE_IF_ALL_PRESENT)) && Game.instance
+                        .getPlayersOnShootingRange()
+                        .size() == Game.instance.players.size()) {return;}
 
                 // If the current scoreboard has pages to show, instead of changing the scoreboard, paginate forward.
                 if (paginationInfo.getCurrentPage() < paginationInfo.getTotalPages()) {
@@ -354,6 +387,31 @@ public class ScoreboardManager {
                                         .replace("%page%", (page > 9 ? page : "0" + page).toString())
                                         .replace("%maxPages%", (maxPages > 9 ? maxPages : "0" + maxPages).toString())
         );
+    }
+
+    /**
+     * Requests the supplied scoreboard type to be shown immediately.
+     * This method will do nothing, if the supplied scoreboard type
+     * has been disabled in the configuration file.
+     *
+     * @param type The scoreboard type to show - only {@link ScoreboardType#PRIMARY}, {@link ScoreboardType#LEADERBOARD} and {@link ScoreboardType#SHOOTING_RANGE} are supported.
+     */
+    public void forceShowScoreboard(ScoreboardType type) {
+        if (type == ScoreboardType.PREVIEW) {return;}
+
+        logger.logInfo("Force-showing scoreboard of type " + type);
+        if (type == ScoreboardType.SHOOTING_RANGE && !Boolean.parseBoolean(main.dataUtility.getConfigProperty(
+                ConfigProperty.SHOOTING_RANGE_SCOREBOARD_ENABLED))) {
+            logger.logInfo("The Shooting Range scoreboard has been disabled in the config and will not be shown.");
+            return;
+        }
+        if (type == ScoreboardType.LEADERBOARD && !Boolean.parseBoolean(main.dataUtility.getConfigProperty(
+                ConfigProperty.LEADERBOARD_ENABLED))) {
+            logger.logInfo("The Leaderboard scoreboard has been disabled in the config and will not be shown.");
+            return;
+        }
+        cycleOverrideActive = true;
+        currentScoreboardCycleBoard = type;
     }
 
 

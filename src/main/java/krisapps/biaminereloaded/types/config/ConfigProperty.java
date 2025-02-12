@@ -15,7 +15,7 @@ public enum ConfigProperty {
 
     ;
 
-    String configPath;
+    final String configPath;
 
     ConfigProperty(String configPath) {
         this.configPath = configPath;

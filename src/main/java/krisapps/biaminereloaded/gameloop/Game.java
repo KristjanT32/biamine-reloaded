@@ -6,6 +6,7 @@ import krisapps.biaminereloaded.gameloop.types.*;
 import krisapps.biaminereloaded.logging.BiaMineLogger;
 import krisapps.biaminereloaded.scoreboard.ScoreboardLine;
 import krisapps.biaminereloaded.scoreboard.ScoreboardManager;
+import krisapps.biaminereloaded.scoreboard.ScoreboardType;
 import krisapps.biaminereloaded.timers.BiathlonTimer;
 import krisapps.biaminereloaded.timers.TimerFormatter;
 import krisapps.biaminereloaded.types.area.AreaType;
@@ -366,7 +367,6 @@ public class Game implements Listener {
         activeGameLogger.logInfo("[" + currentGameID + "] Player " + enterEvent.getPlayer().getName() + " ENTERED SHOOTING SPOT #" + enterEvent.getSpotID());
         String time = timer.getFormattedTime();
 
-
         playerPositions.put(enterEvent.getPlayer().getUniqueId(), enterEvent.getSpotID());
         arrivalStats
                 .get(enterEvent.getPlayer().getUniqueId())
@@ -384,6 +384,10 @@ public class Game implements Listener {
                     .replaceAll("%player%", enterEvent.getPlayer().getName())
                     .replaceAll("%num%", String.valueOf(enterEvent.getSpotID()))
             );
+        }
+
+        if (Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.AUTO_SHOW_SHOOTING_RANGE))) {
+            scoreboardManager.forceShowScoreboard(ScoreboardType.SHOOTING_RANGE);
         }
     }
 
@@ -1396,5 +1400,13 @@ public class Game implements Listener {
 
     public BiathlonTimer getTimer() {
         return timer;
+    }
+
+    public List<UUID> getPlayersOnShootingRange() {
+        return players
+                .stream()
+                .map(Entity::getUniqueId)
+                .filter(uniqueId -> getPlayerSpotID(uniqueId) != -1)
+                .collect(Collectors.toList());
     }
 }
