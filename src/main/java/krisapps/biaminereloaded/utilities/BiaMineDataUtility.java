@@ -23,7 +23,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
-import java.security.InvalidParameterException;
 import java.util.*;
 
 public class BiaMineDataUtility {
@@ -695,40 +694,7 @@ public class BiaMineDataUtility {
     }
 
     public String getConfigProperty(ConfigProperty property) {
-        switch (property) {
-            case FOOTER_CONTENT:
-                return main.pluginConfig.getString("defaults.footer");
-            case HEADER_CONTENT:
-                return main.pluginConfig.getString("defaults.header");
-            case TIMER_FORMAT:
-                return main.pluginConfig.getString("options.timer-format");
-            case DATE_FORMAT:
-                return main.pluginConfig.getString("options.date-format");
-            case DATE_FORMAT_EXTENDED:
-                return main.pluginConfig.getString("options.date-format-full");
-            case TIME_FORMAT:
-                return main.pluginConfig.getString("options.time-format");
-            case NOTIFY_STATUS_CHANGE:
-                return main.pluginConfig.getString("options.notify-instance-status-change");
-            case PAUSE_IF_PLAYER_DISCONNECT:
-                return main.pluginConfig.getString("options.pause-if-player-disconnect.state");
-            case EMERGENCY_PAUSE_DELAY:
-                return main.pluginConfig.getString("options.pause-if-player-disconnect.delay");
-            case AUTOREJOIN:
-                return main.pluginConfig.getString("options.autorejoin");
-            case HALT_PLAYERS_WITH_POTIONEFFECT:
-                return main.pluginConfig.getString("options.halt-players-with-effect");
-            case SEND_ITEM_DISPENSER_MESSAGES:
-                return main.pluginConfig.getString("options.send-dispenser-messages");
-            case SCOREBOARD_CYCLE_PERIOD:
-                return main.pluginConfig.getString("options.scoreboard-cycle-period");
-            case SHOOTING_RANGE_SCOREBOARD_ENABLED:
-                return main.pluginConfig.getString("options.scoreboards.enable-shooting-range");
-            case LEADERBOARD_ENABLED:
-                return main.pluginConfig.getString("options.scoreboards.enable-leaderboard");
-            default:
-                throw new InvalidParameterException("Unknown config property provided.");
-        }
+        return main.pluginConfig.getString(property.getConfigPath());
     }
 
     public String getConfigPropertyRaw(String path) {
