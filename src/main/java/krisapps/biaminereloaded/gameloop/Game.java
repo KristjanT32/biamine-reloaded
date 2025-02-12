@@ -446,6 +446,7 @@ public class Game implements Listener {
             terminate(true, TerminationContext.CANNOT_GATHER_PLAYERS, "Could not gather any players for the game.");
         } else {
             teleportToStart();
+            startPreparationPeriod();
             initRefreshTask();
         }
     }
@@ -483,6 +484,7 @@ public class Game implements Listener {
             this.currentGameInfo.totalPlayers = players.size();
             this.currentGameInfo.finishedPlayers = finishedPlayers.size();
             teleportToStart();
+            startPreparationPeriod();
             initRefreshTask();
         }
     }
@@ -804,6 +806,8 @@ public class Game implements Listener {
     private void startFinalCountdown() {
         main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.COUNTDOWN);
         activeGameLogger.logInfo("[" + currentGameID + "/Service]: Final countdown started ");
+
+        scheduler.runTask(main, this::teleportToStart);
         haltPlayers();
         COUNTDOWN_TASK = scheduler.runTaskTimerAsynchronously(main, new Runnable() {
             int countdown = Integer.parseInt(main.dataUtility.getGameProperty(currentGameID, GameProperty.COUNTDOWN_TIME));
@@ -949,12 +953,10 @@ public class Game implements Listener {
 
     public void teleportToStart() {
         gameSetupLogger.logInfo("[" + currentGameID + "]: Teleporting players to starting area");
-
         for (Player p : players) {
             Location l = getRandomLocation(startLocation_bound1, startLocation_bound2);
             p.teleport(l);
         }
-        startPreparationPeriod();
     }
 
 
@@ -1207,7 +1209,7 @@ public class Game implements Listener {
     }
 
     private int randomInteger(int min, int max) {
-        return (int) (min + ThreadLocalRandom.current().nextDouble(Math.abs(max - min + 1)));
+        return ThreadLocalRandom.current().nextInt(min, max + 1);
     }
 
     private Location getRandomLocation(Location loc1, Location loc2) {
