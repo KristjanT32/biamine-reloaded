@@ -126,9 +126,9 @@ gameloop:
     finalcountdown-start-nohalt: "&eIt's the final countdown! &bPlease remain on your spot."
   phase:
     prep:
-      start: "&eYou've been given prep time. The game will start in &b%MM%&f:&b%SS%"
+      start: "&eYou've been given prep time. The game will start in &b%MM%:%SS%&e."
   timertick:
-    prep: "&ePreparation: &b%MM%&f:&b%SS%"
+    prep: "&eThe final countdown will begin in: &b%MM%:%SS%"
     countdown: "&eStarting in &b%time%s"
     ready:
       subtitle: "&cOn your marks!"
