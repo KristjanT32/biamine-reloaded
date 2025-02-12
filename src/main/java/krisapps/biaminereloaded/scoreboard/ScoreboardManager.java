@@ -179,52 +179,59 @@ public class ScoreboardManager {
         PaginationInfo paginationInfo = scoreboardPaginationInfo.get(currentScoreboardCycleBoard);
         switch (currentScoreboardCycleBoard) {
             case PRIMARY:
-                currentScoreboardCycleBoard = ScoreboardType.LEADERBOARD;
+                if (shouldSkipScoreboard(ScoreboardType.LEADERBOARD)) {
+                    if (!shouldSkipScoreboard(ScoreboardType.SHOOTING_RANGE)) {
+                        currentScoreboardCycleBoard = ScoreboardType.SHOOTING_RANGE;
+                    }
+                } else {
+                    currentScoreboardCycleBoard = ScoreboardType.LEADERBOARD;
+                }
                 break;
             case LEADERBOARD:
-                if (!Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.LEADERBOARD_ENABLED))) {
-                    currentScoreboardCycleBoard = ScoreboardType.SHOOTING_RANGE;
-                    return;
-                }
-                if (Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.SKIP_EMPTY_SCOREBOARDS)) && Game.instance.players.size() <= 1) {
-                    currentScoreboardCycleBoard = ScoreboardType.SHOOTING_RANGE;
-                    return;
-                }
-
                 // If the current scoreboard has pages to show, instead of changing the scoreboard, paginate forward.
-                if (paginationInfo.getCurrentPage() < paginationInfo.getTotalPages()) {
-                    paginationInfo.setCurrentPage(paginationInfo.getCurrentPage() + 1);
-                    scoreboardPaginationInfo.replace(currentScoreboardCycleBoard, paginationInfo);
+                if (paginationInfo.getTotalPages() > 1) {
+                    if (paginationInfo.getCurrentPage() < paginationInfo.getTotalPages()) {
+                        paginationInfo.setCurrentPage(paginationInfo.getCurrentPage() + 1);
+                        scoreboardPaginationInfo.replace(currentScoreboardCycleBoard, paginationInfo);
+                    } else {
+                        paginationInfo.setCurrentPage(1);
+                        scoreboardPaginationInfo.replace(currentScoreboardCycleBoard, paginationInfo);
+                        if (!shouldSkipScoreboard(ScoreboardType.SHOOTING_RANGE)) {
+                            currentScoreboardCycleBoard = ScoreboardType.SHOOTING_RANGE;
+                        } else {
+                            currentScoreboardCycleBoard = ScoreboardType.PRIMARY;
+                        }
+                    }
+                    return;
                 } else {
-                    paginationInfo.setCurrentPage(1);
-                    scoreboardPaginationInfo.replace(currentScoreboardCycleBoard, paginationInfo);
-                    currentScoreboardCycleBoard = ScoreboardType.SHOOTING_RANGE;
+                    if (!shouldSkipScoreboard(ScoreboardType.SHOOTING_RANGE)) {
+                        currentScoreboardCycleBoard = ScoreboardType.SHOOTING_RANGE;
+                    } else {
+                        currentScoreboardCycleBoard = ScoreboardType.PRIMARY;
+                    }
                 }
                 break;
             case SHOOTING_RANGE:
-                if (!Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.SHOOTING_RANGE_SCOREBOARD_ENABLED))) {
-                    currentScoreboardCycleBoard = ScoreboardType.PRIMARY;
-                    return;
-                }
-
-                if (Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.SKIP_EMPTY_SCOREBOARDS)) && Game.instance
-                        .getPlayersOnShootingRange()
-                        .isEmpty()) {
-                    currentScoreboardCycleBoard = ScoreboardType.PRIMARY;
-                    return;
-                }
-                if (Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.KEEP_SHOOTING_RANGE_IF_ALL_PRESENT)) && Game.instance
-                        .getPlayersOnShootingRange()
-                        .size() == Game.instance.players.size()) {return;}
-
                 // If the current scoreboard has pages to show, instead of changing the scoreboard, paginate forward.
-                if (paginationInfo.getCurrentPage() < paginationInfo.getTotalPages()) {
-                    paginationInfo.setCurrentPage(paginationInfo.getCurrentPage() + 1);
-                    scoreboardPaginationInfo.replace(currentScoreboardCycleBoard, paginationInfo);
+                if (paginationInfo.getTotalPages() > 1) {
+                    if (paginationInfo.getCurrentPage() < paginationInfo.getTotalPages()) {
+                        paginationInfo.setCurrentPage(paginationInfo.getCurrentPage() + 1);
+                        scoreboardPaginationInfo.replace(currentScoreboardCycleBoard, paginationInfo);
+                    } else {
+                        paginationInfo.setCurrentPage(1);
+                        scoreboardPaginationInfo.replace(currentScoreboardCycleBoard, paginationInfo);
+                        if (!(Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.KEEP_SHOOTING_RANGE_IF_ALL_PRESENT)) && Game.instance
+                                .getPlayersOnShootingRange()
+                                .size() == Game.instance.players.size())) {
+                            currentScoreboardCycleBoard = ScoreboardType.PRIMARY;
+                        }
+                    }
                 } else {
-                    paginationInfo.setCurrentPage(1);
-                    scoreboardPaginationInfo.replace(currentScoreboardCycleBoard, paginationInfo);
-                    currentScoreboardCycleBoard = ScoreboardType.PRIMARY;
+                    if (!(Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.KEEP_SHOOTING_RANGE_IF_ALL_PRESENT)) && Game.instance
+                            .getPlayersOnShootingRange()
+                            .size() == Game.instance.players.size())) {
+                        currentScoreboardCycleBoard = ScoreboardType.PRIMARY;
+                    }
                 }
                 break;
         }
@@ -414,6 +421,19 @@ public class ScoreboardManager {
         currentScoreboardCycleBoard = type;
     }
 
+    private boolean shouldSkipScoreboard(ScoreboardType type) {
+        if (type == ScoreboardType.PREVIEW || type == ScoreboardType.PRIMARY) {return false;}
+        if (type == ScoreboardType.LEADERBOARD) {
+            return Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.SKIP_EMPTY_SCOREBOARDS)) && Game.instance.players.size() <= 1 || !Boolean.parseBoolean(
+                    main.dataUtility.getConfigProperty(ConfigProperty.LEADERBOARD_ENABLED));
+        }
+        if (type == ScoreboardType.SHOOTING_RANGE) {
+            return Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.SKIP_EMPTY_SCOREBOARDS)) && Game.instance
+                    .getPlayersOnShootingRange()
+                    .isEmpty() || !Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.SHOOTING_RANGE_SCOREBOARD_ENABLED));
+        }
+        return false;
+    }
 
     /**
      * Sets the supplied scoreboard's n-th line's content to be equal to <code>content</code>.
