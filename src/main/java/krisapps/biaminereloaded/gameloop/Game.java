@@ -159,10 +159,17 @@ public class Game implements Listener {
         String checkpointID = event.getRegion().getRegionName();
         UUID playerUUID = event.getPlayer().getUniqueId();
 
-        // Record a new 'best' for a checkpoint, if none exists
+        // Record a new 'best' for a checkpoint, if none exist
         if (!bestTimes.containsKey(checkpointID)) {
-            activeGameLogger.logInfo("New best time for " + checkpointID + ": " + time);
-            bestTimes.put(checkpointID, new BestTimeEntry(event.getPlayer(), time));
+            if (event.getRegion().isFinish()) {
+                if (canFinish(playerUUID)) {
+                    activeGameLogger.logInfo("New best time for " + checkpointID + ": " + time);
+                    bestTimes.put(checkpointID, new BestTimeEntry(event.getPlayer(), time));
+                }
+            } else {
+                activeGameLogger.logInfo("New best time for " + checkpointID + ": " + time);
+                bestTimes.put(checkpointID, new BestTimeEntry(event.getPlayer(), time));
+            }
         }
 
         // If the player has not passed any checkpoints
@@ -185,7 +192,7 @@ public class Game implements Listener {
                 );
             }
         } else {
-            // If there are records of him passing a checkpoint, and a record of him passing the current checkpoint
+            // If there are records of them passing a checkpoint, and a record of them passing the current checkpoint
             if (getPassedCheckpoints(playerUUID).contains(checkpointID)) {
                 if (getPassedCheckpoints(playerUUID).size() < main.dataUtility.getCheckpoints(currentGameID).size() - 1) {
                     main.appendToLog("Player " + event.getPlayer().getName() + " attempted to pass through " + checkpointID + " again!");
@@ -195,7 +202,7 @@ public class Game implements Listener {
                     return;
                 }
 
-                // Clear his passed checkpoints, since he's started a new lap
+                // Clear their passed checkpoints, since they started a new lap
                 getPassedCheckpoints(playerUUID).clear();
                 int curLap = getLap(playerUUID);
                 lapTracker.replace(playerUUID, curLap + 1);
@@ -212,7 +219,13 @@ public class Game implements Listener {
                 bestTimes.replace(checkpointID, new BestTimeEntry(event.getPlayer(), time));
                 getPassedCheckpoints(playerUUID).add(checkpointID);
             } else {
-                getPassedCheckpoints(playerUUID).add(checkpointID);
+                if (event.getRegion().isFinish()) {
+                    if (canFinish(playerUUID)) {
+                        getPassedCheckpoints(playerUUID).add(checkpointID);
+                    }
+                } else {
+                    getPassedCheckpoints(playerUUID).add(checkpointID);
+                }
             }
         }
         if (!event.getRegion().isFinish()) {
@@ -256,7 +269,7 @@ public class Game implements Listener {
             }
         } else {
             // Only register the arrival statistic if the player can finish the game (ignore accidental passing of the finish line)
-            if (getLap(playerUUID) == currentGameInfo.shootingsCount) {
+            if (canFinish(playerUUID)) {
                 arrivalStats
                         .get(playerUUID)
                         .add(new AreaPassInfo(checkpointID, time, AreaType.FINISH_LINE, lapTracker.get(playerUUID)));
@@ -936,7 +949,6 @@ public class Game implements Listener {
         ).getTaskId();
     }
 
-
     private void gatherPlayers() {
         gameSetupLogger.logInfo("[" + currentGameID + "]: Gathering players for game");
         if (currentGameInfo != null) {
@@ -1229,6 +1241,18 @@ public class Game implements Listener {
         );
     }
 
+    private boolean canFinish(UUID playerUUID) {
+        return ((getLap(playerUUID) >= currentGameInfo.shootingsCount) && currentGameInfo.shootingsCount != 0) && (shootingStats
+                .getOrDefault(playerUUID, new ArrayList<>(0))
+                .size() >= getShotsRequiredForFinishing());
+    }
+
+    private int getShotsRequiredForFinishing() {
+        return (main.dataUtility.getTargetsForGame(currentGameID).size() / main.dataUtility
+                .getShootingSpots(currentGameID)
+                .size()) * currentGameInfo.shootingsCount;
+    }
+
     public String getShootingProgressIndicatorForCurrentLap(UUID player) {
         StringBuilder progress = new StringBuilder();
         LinkedList<HitInfo> shotsForLap = shootingStats
@@ -1315,7 +1339,7 @@ public class Game implements Listener {
         UUID playerUUID = player.getUniqueId();
         if (!hasFinished(player) && finishedPlayers.size() < players.size()) {
 
-            if (getLap(playerUUID) < currentGameInfo.shootingsCount) {
+            if ((getLap(playerUUID) < currentGameInfo.shootingsCount) && currentGameInfo.shootingsCount != 0) {
                 main.messageUtility.sendMessage(player, main.localizationUtility.getLocalizedPhrase("gameloop.too-early"));
                 for (Player p : players) {
                     if (finishedPlayers.containsKey(p)) {
@@ -1326,6 +1350,27 @@ public class Game implements Listener {
                     }
                     main.messageUtility.sendMessage(p, main.localizationUtility.getLocalizedPhrase("gameloop.too-early-others")
                             .replaceAll("%player%", player.getName())
+                    );
+                }
+                return;
+            }
+            if (shootingStats.getOrDefault(playerUUID, new ArrayList<>(0)).isEmpty() || shootingStats
+                    .getOrDefault(playerUUID, new ArrayList<>(0))
+                    .size() < getShotsRequiredForFinishing()) {
+                main.messageUtility.sendMessage(player,
+                        main.localizationUtility.getLocalizedPhrase("gameloop.too-early-shootings")
+                );
+                for (Player p : players) {
+                    if (finishedPlayers.containsKey(p)) {
+                        continue;
+                    }
+                    if (p.getUniqueId() == playerUUID) {
+                        continue;
+                    }
+                    main.messageUtility.sendMessage(p,
+                            main.localizationUtility
+                                    .getLocalizedPhrase("gameloop.too-early-shootings-others")
+                                    .replaceAll("%player%", player.getName())
                     );
                 }
                 return;
