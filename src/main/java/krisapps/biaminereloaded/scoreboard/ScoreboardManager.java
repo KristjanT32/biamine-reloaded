@@ -40,6 +40,8 @@ public class ScoreboardManager {
             ChatColor.BLACK + String.valueOf(ChatColor.DARK_GREEN)
     };
 
+    private static final String[] PLACEHOLDERS = {"%bestTime%", "%dateTime%", "%localTime%", "%date%", "%footer%", "%header%", "%shootings%", "%playersNotFinished", "%playersFinished", "%playersParticipating", "%timer%", "%empty%", "%bestTime%"};
+
     Scoreboard mainScoreboard;
 
     // The task for refreshing the currently active scoreboard during the cycle.
@@ -614,76 +616,23 @@ public class ScoreboardManager {
         }
     }
 
-    public void refreshScoreboardTitle(BiamineBiathlon info) {
-        String result = main.dataUtility.getScoreboardConfigProperty(info.scoreboardConfig, ScoreboardLine.LINE0);
-        result = result.replaceAll("%timer%", info.latestTime);
-        result = result.replaceAll("%state%", ChatColor.translateAlternateColorCodes('&', main.dataUtility.getGameProperty(info.gameID, GameProperty.RUN_STATE)));
-        result = result.replaceAll("%title%", ChatColor.translateAlternateColorCodes('&', main.dataUtility.getGameProperty(info.gameID, GameProperty.DISPLAY_NAME)));
-
-        if (mainScoreboard.getObjective("biathlonGame") == null) {
-            gameObjective = mainScoreboard.registerNewObjective("biathlonGame", "dummy", "name");
-        }
-
-        gameObjective.setDisplayName(ChatColor.translateAlternateColorCodes('&', result));
+    public static String[] getSupportedPlaceholders() {
+        return PLACEHOLDERS;
     }
 
-    private String findReplacePlaceholders(String input, BiamineBiathlon info) {
+    public void refreshScoreboardTitle(BiamineBiathlon info) {
+        if (!objectiveExists(ScoreboardType.PRIMARY)) {registerObjective(ScoreboardType.PRIMARY);}
 
-        // Replace built-in placeholders
-        input = input.replaceAll("%dateTime%", DateTimeFormatter.ofPattern(main.dataUtility.getConfigProperty(ConfigProperty.DATE_FORMAT_EXTENDED)).format(LocalDateTime.now()));
-        input = input.replaceAll("%localTime%", DateTimeFormatter.ofPattern(main.dataUtility.getConfigProperty(ConfigProperty.TIME_FORMAT)).format(LocalTime.now()));
-        input = input.replaceAll("%date%", DateTimeFormatter.ofPattern(main.dataUtility.getConfigProperty(ConfigProperty.DATE_FORMAT)).format(LocalDate.now()));
-        input = input.replaceAll("%footer%", main.dataUtility.getConfigProperty(ConfigProperty.FOOTER_CONTENT));
-        input = input.replaceAll("%header%", main.dataUtility.getConfigProperty(ConfigProperty.HEADER_CONTENT));
-        input = input.replaceAll("%shootings%", String.valueOf(info.shootingsCount));
-        input = input.replaceAll("%playersNotFinished%", (info.totalPlayers - info.finishedPlayers) + "/" + info.totalPlayers);
-        input = input.replaceAll("%playersFinished%", String.valueOf(info.finishedPlayers));
-        input = input.replaceAll("%playersParticipating%", String.valueOf(info.totalPlayers));
-        input = input.replaceAll("%timer%", info.latestTime);
-        input = input.replaceAll("%empty%", "");
-        input = input.replaceAll("%bestTime%", Game.instance.getBestFinishTime() == null ? "N/A" : Game.instance.getBestFinishTime().getKey().getName() + " - " + Game.instance.getBestFinishTime().getValue().getFinishTime());
+        String result = main.dataUtility.getScoreboardConfigProperty(info.scoreboardConfig, ScoreboardLine.LINE0);
+        result = result.replaceAll("%timer%", info.latestTime);
+        result = result.replaceAll("%state%",
+                getFormattedStateString(InstanceStatus.valueOf(main.dataUtility.getGameProperty(info.gameID,
+                        GameProperty.RUN_STATE
+                )))
+        );
+        result = result.replaceAll("%title%", ChatColor.translateAlternateColorCodes('&', main.dataUtility.getGameProperty(info.gameID, GameProperty.DISPLAY_NAME)));
 
-        // Find and replace all user-defined placeholders.
-        for (String word : input.split(" ")) {
-            if (word.startsWith("_")) {
-                if (main.dataUtility.globalPlaceholderExists(word)) {
-                    input = input.replaceAll(word, main.dataUtility.getGlobalPlaceholderReplacement(word));
-                }
-            }
-        }
-
-        // Handle state styling
-        switch (InstanceStatus.valueOf(main.dataUtility.getGameProperty(info.gameID, GameProperty.RUN_STATE).toUpperCase())) {
-            case STANDBY:
-                input = input.replaceAll("%state%", ChatColor.translateAlternateColorCodes('&', "&fStandby"));
-                break;
-            case PREP:
-                input = input.replaceAll("%state%", ChatColor.translateAlternateColorCodes('&', "&ePreparing"));
-                break;
-            case COUNTDOWN:
-                input = input.replaceAll("%state%", ChatColor.translateAlternateColorCodes('&', "&eCountdown"));
-                break;
-            case RUNNING:
-                input = input.replaceAll("%state%", ChatColor.translateAlternateColorCodes('&', "&aRunning"));
-                break;
-            case FINALIZING:
-                input = input.replaceAll("%state%", ChatColor.translateAlternateColorCodes('&', "&dFinalizing"));
-                break;
-            case CLEANUP:
-                input = input.replaceAll("%state%", ChatColor.translateAlternateColorCodes('&', "&bCleanup"));
-                break;
-            case PAUSED:
-                input = input.replaceAll("%state%", ChatColor.translateAlternateColorCodes('&', "&9Paused"));
-                break;
-            case TERMINATED:
-                input = input.replaceAll("%state%", ChatColor.translateAlternateColorCodes('&', "&cTerminated"));
-                break;
-            case PREVTERM:
-                input = input.replaceAll("%state%", ChatColor.translateAlternateColorCodes('&', "&4Preventatively Terminated"));
-                break;
-        }
-
-        return input;
+        gameObjective.setDisplayName(ChatColor.translateAlternateColorCodes('&', result));
     }
 
     private String findReplacePreviewPlaceholders(String input, BiamineBiathlon info) {
@@ -713,6 +662,67 @@ public class ScoreboardManager {
         }
 
         return input;
+    }
+
+    private String findReplacePlaceholders(String input, BiamineBiathlon info) {
+
+        // Replace built-in placeholders
+        input = input.replaceAll("%dateTime%", DateTimeFormatter.ofPattern(main.dataUtility.getConfigProperty(ConfigProperty.DATE_FORMAT_EXTENDED)).format(LocalDateTime.now()));
+        input = input.replaceAll("%localTime%", DateTimeFormatter.ofPattern(main.dataUtility.getConfigProperty(ConfigProperty.TIME_FORMAT)).format(LocalTime.now()));
+        input = input.replaceAll("%date%", DateTimeFormatter.ofPattern(main.dataUtility.getConfigProperty(ConfigProperty.DATE_FORMAT)).format(LocalDate.now()));
+        input = input.replaceAll("%footer%", main.dataUtility.getConfigProperty(ConfigProperty.FOOTER_CONTENT));
+        input = input.replaceAll("%header%", main.dataUtility.getConfigProperty(ConfigProperty.HEADER_CONTENT));
+        input = input.replaceAll("%shootings%", String.valueOf(info.shootingsCount));
+        input = input.replaceAll("%playersNotFinished%", (info.totalPlayers - info.finishedPlayers) + "/" + info.totalPlayers);
+        input = input.replaceAll("%playersFinished%", String.valueOf(info.finishedPlayers));
+        input = input.replaceAll("%playersParticipating%", String.valueOf(info.totalPlayers));
+        input = input.replaceAll("%timer%", info.latestTime);
+        input = input.replaceAll("%empty%", "");
+        input = input.replaceAll("%bestTime%", Game.instance.getBestFinishTime() == null ? "N/A" : Game.instance.getBestFinishTime().getKey().getName() + " - " + Game.instance.getBestFinishTime().getValue().getFinishTime());
+
+        // Find and replace all user-defined placeholders.
+        for (String word : input.split(" ")) {
+            if (word.startsWith("_")) {
+                if (main.dataUtility.globalPlaceholderExists(word)) {
+                    input = input.replaceAll(word, main.dataUtility.getGlobalPlaceholderReplacement(word));
+                }
+            }
+        }
+
+        // Handle state styling
+        input = input.replaceAll("%state%",
+                ChatColor.translateAlternateColorCodes('&',
+                        getFormattedStateString(InstanceStatus.valueOf(main.dataUtility
+                                .getGameProperty(info.gameID, GameProperty.RUN_STATE)
+                                .toUpperCase()))
+                )
+        );
+        return input;
+    }
+
+    private String getFormattedStateString(InstanceStatus status) {
+        switch (status) {
+            case STANDBY:
+                return "&f" + main.localizationUtility.getLocalizedPhrase("internals.states.stdby");
+            case PREP:
+                return "&e" + main.localizationUtility.getLocalizedPhrase("internals.states.prep");
+            case COUNTDOWN:
+                return "&e" + main.localizationUtility.getLocalizedPhrase("internals.states.ctdwn");
+            case RUNNING:
+                return "&a" + main.localizationUtility.getLocalizedPhrase("internals.states.run");
+            case FINALIZING:
+                return "&d" + main.localizationUtility.getLocalizedPhrase("internals.states.final");
+            case CLEANUP:
+                return "&b" + main.localizationUtility.getLocalizedPhrase("internals.states.cln");
+            case PAUSED:
+                return "&9" + main.localizationUtility.getLocalizedPhrase("internals.states.pause");
+            case TERMINATED:
+                return "&c" + main.localizationUtility.getLocalizedPhrase("internals.states.term");
+            case PREVTERM:
+                return "&4" + main.localizationUtility.getLocalizedPhrase("internals.states.prevterm");
+            default:
+                return "&4N/A";
+        }
     }
 
 

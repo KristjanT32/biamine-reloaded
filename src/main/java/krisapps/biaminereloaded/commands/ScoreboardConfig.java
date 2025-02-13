@@ -224,16 +224,25 @@ public class ScoreboardConfig implements CommandExecutor {
                                         return true;
                                     }
                                     String editType;
-                                    if (List.of("%timer%", "%playersParticipating%", "%playersNotFinished%", "%shootings%", "%header%", "%footer%", "%date%", "%dateTime%", "%localTime%", "%state%", "%playersFinished%").contains(replacement)) {
-                                        editType = "built-in placeholder";
+                                    if (List
+                                            .of(ScoreboardManager.getSupportedPlaceholders())
+                                            .contains(replacement.toString().trim())) {
+                                        editType = main.localizationUtility.getLocalizedPhrase(
+                                                "commands.sconfig.edit-types.built-in");
                                     } else {
-                                        editType = "text or global placeholder";
+                                        editType = main.localizationUtility.getLocalizedPhrase(
+                                                "commands.sconfig.edit-types.text-or-global");
                                     }
                                     // If the line edited was in fact the title
                                     if (line.equals(ScoreboardLine.LINE0)) {
                                         if (main.dataUtility.overwriteScoreboardProperty(id, line.asNumber(), replacement.toString().trim())) {
                                             main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.edit-titleedit")
-                                                    .replaceAll("%newValue%", replacement.toString())
+                                                                                                            .replaceAll(
+                                                                                                                    "%newValue%",
+                                                                                                                    replacement
+                                                                                                                            .toString()
+                                                                                                                            .trim()
+                                                                                                            )
                                             );
                                         } else {
                                             main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.edit-error-save"));
@@ -244,7 +253,12 @@ public class ScoreboardConfig implements CommandExecutor {
                                             main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.edit-customedit")
                                                     .replaceAll("%lineNumber%", String.valueOf(line.asNumber() != 0 ? line.asNumber() : "title"))
                                                     .replaceAll("%editType%", editType)
-                                                    .replaceAll("%newValue%", replacement.toString())
+                                                                                                            .replaceAll(
+                                                                                                                    "%newValue%",
+                                                                                                                    replacement
+                                                                                                                            .toString()
+                                                                                                                            .trim()
+                                                                                                            )
                                             );
                                         } else {
                                             main.messageUtility.sendMessage(sender, main.localizationUtility.getLocalizedPhrase("commands.sconfig.edit-error-save"));

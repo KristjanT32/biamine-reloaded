@@ -1,6 +1,7 @@
 package krisapps.biaminereloaded.commands.tabcompleter;
 
 import krisapps.biaminereloaded.BiamineReloaded;
+import krisapps.biaminereloaded.scoreboard.ScoreboardManager;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
@@ -66,7 +67,7 @@ public class ScoreboardConfigAC implements TabCompleter {
                         }
                     } else {
                         if (args[4].startsWith("%")) {
-                            completions.addAll(Arrays.asList("%timer%", "%playersParticipating%", "%playersNotFinished%", "%shootings%", "%header%", "%footer%", "%date%", "%dateTime%", "%localTime%", "%state%", "%playersFinished%"));
+                            completions.addAll(List.of(ScoreboardManager.getSupportedPlaceholders()));
                         } else if (args[4].startsWith("_")) {
                             completions.addAll(main.dataUtility.getUserDefinedPlaceholders());
                         } else {
