@@ -25,6 +25,17 @@ internals:
   reload-complete: "&e[&bBia&fMine&e]: &aPlugin reloaded."
   reload-termination: "&e[&bBia&fMine&e]: &eThe currently active game was terminated due to a &bserver-wide reload."
 
+  states:
+    stdby: "Standby"
+    prep: "Preparing"
+    ctdwn: "Countdown"
+    run: "Running"
+    final: "Finalizing"
+    cln: "Cleanup"
+    pause: "Paused"
+    term: "Terminated"
+    prevterm: "Preventatively terminated"
+
 orderphrases:
   1: "st"
   2: "nd"
@@ -53,6 +64,9 @@ gameloop:
 
   too-early: "&bToo early! &eYou've not finished all of the laps yet!"
   too-early-others: "&cWrong way! &b%player% &ethought they'd finished all their laps!"
+
+  too-early-shootings: "&bToo early! &eYou've not finished all of the shootings yet!"
+  too-early-shootings-others: "&cWrong way! &b%player% &eforgot do finish their shooting!"
 
   player-finish: "&b%player% &ehas just reached the finish line at &a%time%&e!"
   player-finish-target: "&b&lYou've finished the run!"
@@ -238,6 +252,10 @@ commands:
     edit-titleedit: "&dScoreboard title updated: &enew content: &f\"&b%newValue%&f\""
     edit-linecleared: "&dApplied the following change: content on &bline %lineNumber% &ereset&d. (line cleared)"
     edit-error-defaultconf: "&cSorry, but the default configuration cannot be edited using /sconfig. &eIf you wish to directly alter the default config, do so using &bconfig.yml"
+
+    edit-types:
+      built-in: "built-in placeholder"
+      text-or-global: "text or global placeholder"
 
     list-item: "&f- &bConfiguration &e%item%"
     list-item-uses: "&f- &bConfiguration &e%item% &b(in use: &e%uses%&b)"
