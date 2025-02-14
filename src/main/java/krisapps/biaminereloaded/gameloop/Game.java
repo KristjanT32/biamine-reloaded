@@ -747,6 +747,8 @@ public class Game implements Listener {
                 main.messageUtility.sendActionbarMessage(p, getShootingProgressIndicatorForCurrentLap(p.getUniqueId()));
             } else {
                 // Lag behind time
+                long lag = getLagTime(p);
+                /*
                 if (passedCheckpoints.get(p.getUniqueId()) != null) {
                     if (passedCheckpoints.get(p.getUniqueId()).size() < bestTimes.size()) {
                         try {
@@ -770,6 +772,13 @@ public class Game implements Listener {
                         } catch (IndexOutOfBoundsException ignored) {}
                     }
                 }
+                 */
+                main.messageUtility.sendActionbarMessage(p,
+                        main.localizationUtility
+                                .getLocalizedPhrase("gameloop.player-lag")
+                                .replace("%lag%", TimerFormatter.formatTimer((int) lag))
+                );
+
             }
         }
     }
@@ -1274,6 +1283,65 @@ public class Game implements Listener {
             }
         }
         return progress.toString().trim();
+    }
+
+    private Player getLeader() {
+        Player leader = null;
+
+        int maxLap = -1;
+        int maxCheckpointsPassed = -1;
+        long maxTimerDifference = Long.MAX_VALUE;
+
+        for (Player p : players) {
+            int playerLap = lapTracker.get(p.getUniqueId());
+            List<AreaPassInfo> playerArrivals = arrivalStats
+                    .get(p.getUniqueId())
+                    .stream()
+                    .filter(area -> area.getAreaType() == AreaType.CHECKPOINT)
+                    .collect(Collectors.toList());
+            int _passedCheckpoints = playerArrivals.size();
+
+            long timerDifference = TimerFormatter.getTimeFromString(_passedCheckpoints > 0 ? playerArrivals
+                    .get(_passedCheckpoints - 1)
+                    .getTimerTime() : "00:00:00");
+
+            if (playerLap > maxLap || (playerLap == maxLap && _passedCheckpoints > maxCheckpointsPassed) || (playerLap == maxLap && _passedCheckpoints == maxCheckpointsPassed && timerDifference < maxTimerDifference)) {
+                leader = p;
+                maxLap = playerLap;
+                maxCheckpointsPassed = _passedCheckpoints;
+                maxTimerDifference = timerDifference;
+            }
+        }
+        return leader;
+    }
+
+    private long getLagTime(Player p) {
+        Player leader = getLeader();
+        if (leader == null || p.equals(leader)) {return 0;}
+        List<AreaPassInfo> leaderArrivals = arrivalStats
+                .get(leader.getUniqueId())
+                .stream()
+                .filter(area -> area.getAreaType() == AreaType.CHECKPOINT)
+                .collect(Collectors.toList());
+        List<AreaPassInfo> playerArrivals = arrivalStats
+                .get(p.getUniqueId())
+                .stream()
+                .filter(area -> area.getAreaType() == AreaType.CHECKPOINT)
+                .collect(Collectors.toList());
+
+        long playerTime;
+        if (!playerArrivals.isEmpty()) {
+            AreaPassInfo lastCheckpoint = playerArrivals.get(playerArrivals.size() - 1);
+            playerTime = TimerFormatter.getTimeFromString(lastCheckpoint.getTimerTime());
+        } else {
+            playerTime = timer.getElapsedSeconds();
+        }
+
+        long leaderTime = !leaderArrivals.isEmpty() ? TimerFormatter.getTimeFromString(leaderArrivals
+                .get(leaderArrivals.size() - 1)
+                .getTimerTime()) : 0;
+
+        return Math.max(playerTime - leaderTime, 0);
     }
 
 
