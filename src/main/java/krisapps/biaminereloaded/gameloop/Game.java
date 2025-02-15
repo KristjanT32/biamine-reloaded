@@ -1303,12 +1303,12 @@ public class Game implements Listener {
                     .collect(Collectors.toList());
             int _passedCheckpoints = playerArrivals.size();
 
-            long timerDifference = timer.getElapsedSeconds() - TimerFormatter.getTimeFromString(_passedCheckpoints > 0
+            long timerDifference = TimerFormatter.getTimeFromString(_passedCheckpoints > 0
                     ? playerArrivals
                     .get(_passedCheckpoints - 1)
                     .getTimerTime() : "00:00:00");
 
-            if (playerLap > maxLap || (playerLap == maxLap && _passedCheckpoints > maxCheckpointsPassed) || (playerLap == maxLap && _passedCheckpoints == maxCheckpointsPassed && timerDifference > maxTimerDifference)) {
+            if (playerLap > maxLap || (playerLap == maxLap && _passedCheckpoints > maxCheckpointsPassed) || (playerLap == maxLap && _passedCheckpoints == maxCheckpointsPassed && timerDifference < maxTimerDifference)) {
                 leader = p;
                 maxLap = playerLap;
                 maxCheckpointsPassed = _passedCheckpoints;
@@ -1316,20 +1316,6 @@ public class Game implements Listener {
             }
         }
         return leader;
-    }
-
-    private void printGlobalLagTime() {
-        Player leader = getLeader();
-        List<AreaPassInfo> leaderArrivals = arrivalStats
-                .get(leader.getUniqueId())
-                .stream()
-                .filter(area -> area.getAreaType() == AreaType.CHECKPOINT)
-                .collect(Collectors.toList());
-
-        long leaderTime = !leaderArrivals.isEmpty() ? TimerFormatter.getTimeFromString(leaderArrivals
-                .get(leaderArrivals.size() - 1)
-                .getTimerTime()) : 0;
-        System.out.println(TimerFormatter.formatTimer((int) (timer.getElapsedSeconds() - leaderTime)));
     }
 
     public long getLagTime(Player p) {
@@ -1351,7 +1337,7 @@ public class Game implements Listener {
             AreaPassInfo lastCheckpoint = playerArrivals.get(playerArrivals.size() - 1);
             playerTime = TimerFormatter.getTimeFromString(lastCheckpoint.getTimerTime());
         } else {
-            playerTime = timer.getElapsedSeconds();
+            playerTime = 0;
         }
 
         long leaderTime = !leaderArrivals.isEmpty() ? TimerFormatter.getTimeFromString(leaderArrivals
