@@ -746,6 +746,8 @@ public class Game implements Listener {
             if (getPlayerSpotID(p.getUniqueId()) != -1) {
                 main.messageUtility.sendActionbarMessage(p, getShootingProgressIndicatorForCurrentLap(p.getUniqueId()));
             } else {
+                if (getLeader().equals(p)) {continue;}
+
                 // Lag behind time
                 long lag = getLagTime(p);
                 /*
@@ -1301,11 +1303,12 @@ public class Game implements Listener {
                     .collect(Collectors.toList());
             int _passedCheckpoints = playerArrivals.size();
 
-            long timerDifference = TimerFormatter.getTimeFromString(_passedCheckpoints > 0 ? playerArrivals
+            long timerDifference = timer.getElapsedSeconds() - TimerFormatter.getTimeFromString(_passedCheckpoints > 0
+                    ? playerArrivals
                     .get(_passedCheckpoints - 1)
                     .getTimerTime() : "00:00:00");
 
-            if (playerLap > maxLap || (playerLap == maxLap && _passedCheckpoints > maxCheckpointsPassed) || (playerLap == maxLap && _passedCheckpoints == maxCheckpointsPassed && timerDifference < maxTimerDifference)) {
+            if (playerLap > maxLap || (playerLap == maxLap && _passedCheckpoints > maxCheckpointsPassed) || (playerLap == maxLap && _passedCheckpoints == maxCheckpointsPassed && timerDifference > maxTimerDifference)) {
                 leader = p;
                 maxLap = playerLap;
                 maxCheckpointsPassed = _passedCheckpoints;
@@ -1313,6 +1316,20 @@ public class Game implements Listener {
             }
         }
         return leader;
+    }
+
+    private void printGlobalLagTime() {
+        Player leader = getLeader();
+        List<AreaPassInfo> leaderArrivals = arrivalStats
+                .get(leader.getUniqueId())
+                .stream()
+                .filter(area -> area.getAreaType() == AreaType.CHECKPOINT)
+                .collect(Collectors.toList());
+
+        long leaderTime = !leaderArrivals.isEmpty() ? TimerFormatter.getTimeFromString(leaderArrivals
+                .get(leaderArrivals.size() - 1)
+                .getTimerTime()) : 0;
+        System.out.println(TimerFormatter.formatTimer((int) (timer.getElapsedSeconds() - leaderTime)));
     }
 
     private long getLagTime(Player p) {
