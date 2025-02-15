@@ -3,7 +3,6 @@ package krisapps.biaminereloaded.scoreboard;
 import krisapps.biaminereloaded.BiamineReloaded;
 import krisapps.biaminereloaded.gameloop.BiamineBiathlon;
 import krisapps.biaminereloaded.gameloop.Game;
-import krisapps.biaminereloaded.gameloop.types.BestTimeEntry;
 import krisapps.biaminereloaded.gameloop.types.InstanceStatus;
 import krisapps.biaminereloaded.logging.BiaMineLogger;
 import krisapps.biaminereloaded.timers.TimerFormatter;
@@ -315,43 +314,30 @@ public class ScoreboardManager {
     private void refreshLeaderboard(BiamineBiathlon gameInfo) {
         HashMap<Long, String> entries = new LinkedHashMap<>();
         LinkedList<Long> sortedTimes;
+
+        // Map all players' lag times to their scoreboard entries.
         for (Player p : Game.instance.players) {
             if (Game.instance.hasFinished(p)) {continue;}
+            long playerLag = Game.instance.getLagTime(p);
 
-            Map<UUID, List<String>> passedCheckpoints = Game.instance.getPassedCheckpoints();
-            Map<String, BestTimeEntry> bestTimes = Game.instance.getBestTimes();
-
-            if (passedCheckpoints.get(p.getUniqueId()) != null) {
-
-                // Filter out players who can lag behind (if a player's passedCheckpoints list is >= bestTimes, it means they're the leader)
-                if (passedCheckpoints.get(p.getUniqueId()).size() < bestTimes.size()) {
-                    try {
-                        List<String> playerPassedCheckpoints = passedCheckpoints.get(p.getUniqueId());
-                        String lastPassedCheckpoint = playerPassedCheckpoints.get(playerPassedCheckpoints.size() - 1);
-
-                        // You can't lag behind yourself, so skip if the best time is by the target player.
-                        if (bestTimes.get(lastPassedCheckpoint).getPlayer().getUniqueId() == p.getUniqueId()) {
-                            continue;
-                        }
-
-                        entries.put(TimerFormatter.getDifferenceInSeconds(Game.instance.getTimer().getFormattedTime(),
-                                        bestTimes.get(lastPassedCheckpoint).getTime()
-                                ),
-                                "&b" + p.getName() + " ".repeat(SHOOTING_STAT_NICKNAME_SEGMENT_LENGTH - p
-                                        .getName()
-                                        .length()) + "&c" + TimerFormatter.formatDifference(Game.instance
-                                        .getTimer()
-                                        .getFormattedTime(), bestTimes.get(lastPassedCheckpoint).getTime()
-                                )
-                        );
-                    } catch (IndexOutOfBoundsException ignored) {}
-                } else {
-                    entries.put(0L, "&b&l" + p.getName());
-                }
+            if (playerLag == 0) {
+                entries.put(0L, "&b&l" + p.getName());
+            } else {
+                entries.put((Game.instance.getTimer().getElapsedSeconds() - playerLag),
+                        "&b" + p.getName() + " ".repeat(SHOOTING_STAT_NICKNAME_SEGMENT_LENGTH - p
+                                .getName()
+                                .length()) + "&f+&c" + TimerFormatter.formatTimer(Math.toIntExact(Game.instance
+                                .getTimer()
+                                .getElapsedSeconds() - playerLag))
+                );
             }
         }
-        sortedTimes = new LinkedList<>(entries.keySet().stream().sorted().collect(Collectors.toList()));
 
+        // Sort the entries' keys in descending order
+        sortedTimes = entries.keySet().stream().sorted().collect(Collectors.toCollection(LinkedList::new));
+
+
+        // Map the now sorted keys back to their values into a new map.
         LinkedList<Map.Entry<Long, String>> sortedEntries = new LinkedList<>();
         sortedTimes.forEach(time -> {
             sortedEntries.add(new AbstractMap.SimpleEntry<>(time, entries.get(time)));

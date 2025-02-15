@@ -1287,7 +1287,7 @@ public class Game implements Listener {
         return progress.toString().trim();
     }
 
-    private Player getLeader() {
+    public Player getLeader() {
         Player leader = null;
 
         int maxLap = -1;
@@ -1332,7 +1332,7 @@ public class Game implements Listener {
         System.out.println(TimerFormatter.formatTimer((int) (timer.getElapsedSeconds() - leaderTime)));
     }
 
-    private long getLagTime(Player p) {
+    public long getLagTime(Player p) {
         Player leader = getLeader();
         if (leader == null || p.equals(leader)) {return 0;}
         List<AreaPassInfo> leaderArrivals = arrivalStats
