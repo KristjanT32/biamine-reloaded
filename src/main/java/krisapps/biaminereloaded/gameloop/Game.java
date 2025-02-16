@@ -752,16 +752,26 @@ public class Game implements Listener {
                 long lag = getLagTime(p);
 
                 // If the leader and player are close (same lap, matching amount of checkpoints passed), show a difference message instead of a lag message.
-                main.messageUtility.sendActionbarMessage(p,
-                        getLap(p.getUniqueId()) == getLap(getLeader().getUniqueId()) && getPassedCheckpoints(p.getUniqueId()) == getPassedCheckpoints(
-                                getLeader().getUniqueId())
-                                ? main.localizationUtility
-                                .getLocalizedPhrase("gameloop.player-difference")
-                                .replace("%diff%", TimerFormatter.formatTimer((int) lag))
-                                : main.localizationUtility
+                if (getLap(p.getUniqueId()) == getLap(getLeader().getUniqueId()) && getPassedCheckpoints(p.getUniqueId()) == getPassedCheckpoints(
+                        getLeader().getUniqueId())) {
+                    main.messageUtility.sendActionbarMessage(p,
+                            main.localizationUtility
+                                    .getLocalizedPhrase("gameloop.player-difference")
+                                    .replace("%diff%", TimerFormatter.formatTimer((int) lag))
+                    );
+                } else {
+                    if (lag != 0) {
+                        main.messageUtility.sendActionbarMessage(p, main.localizationUtility
                                         .getLocalizedPhrase("gameloop.player-lag")
                                         .replace("%lag%", TimerFormatter.formatTimer((int) lag))
-                );
+                        );
+                    } else {
+                        main.messageUtility.sendActionbarMessage(p,
+                                main.localizationUtility.getLocalizedPhrase("gameloop.player-tied")
+                        );
+                    }
+
+                }
             }
         }
     }

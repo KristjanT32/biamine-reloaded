@@ -59,6 +59,7 @@ gameloop:
 
   player-lag: "&eYou're &f+&c%lag% &ebehind the leader."
   player-difference: "&bYou're &f+&e%diff% &bbehind the leader."
+  player-tied: "&a&lYou're tied with the leader!"
 
   report-generate: "&fGenerating a report file for this game..."
   report-ready: "&fReport file saved: "
