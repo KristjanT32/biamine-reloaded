@@ -14,11 +14,18 @@ public class TimerFormatter {
         return formattedTimer;
     }
 
-    public static int getMinutesFrom(int seconds) {
+    public static String formatTimer(int seconds) {
+        int hours = seconds / 3600;
+        int minutes = (seconds % 3600) / 60;
+        int remainingSeconds = seconds % 60;
+        return String.format("%02d:%02d:%02d", hours, minutes, remainingSeconds);
+    }
+
+    public static int toMinutes(int seconds) {
         return (int) Math.floor((double) seconds / 60);
     }
 
-    public static int getHoursFrom(int seconds) {
+    public static int toHours(int seconds) {
         return (int) Math.floor((double) (int) Math.floor((double) seconds / 60) / 60);
     }
 
@@ -63,4 +70,15 @@ public class TimerFormatter {
     }
 
 
+    /**
+     * Returns the amount of seconds that the supplied string represents.
+     *
+     * @param formattedTime A formatted time string. Must use <code>HH:mm:ss</code>
+     * @return The amount of seconds represented by the supplied time.
+     */
+    public static long getTimeFromString(String formattedTime) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+        LocalTime t = LocalTime.parse(formattedTime, formatter);
+        return t.toSecondOfDay();
+    }
 }

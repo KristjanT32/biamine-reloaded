@@ -756,29 +756,31 @@ public class Game implements Listener {
             if (getPlayerSpotID(p.getUniqueId()) != -1) {
                 main.messageUtility.sendActionbarMessage(p, getShootingProgressIndicatorForCurrentLap(p.getUniqueId()));
             } else {
+                if (getLeader().equals(p)) {continue;}
+
                 // Lag behind time
-                if (passedCheckpoints.get(p.getUniqueId()) != null) {
-                    if (passedCheckpoints.get(p.getUniqueId()).size() < bestTimes.size()) {
-                        try {
-                            List<String> playerPassedCheckpoints = passedCheckpoints.get(p.getUniqueId());
-                            String lastPassedCheckpoint = playerPassedCheckpoints.get(playerPassedCheckpoints.size() - 1);
+                long lag = getLagTime(p);
 
-                            // You can't lag behind yourself, so skip if the best time is by the target player.
-                            if (bestTimes.get(lastPassedCheckpoint).getPlayer().getUniqueId() == p.getUniqueId()) {
-                                continue;
-                            }
-
-                            main.messageUtility.sendActionbarMessage(p,
-                                    main.localizationUtility
-                                            .getLocalizedPhrase("gameloop.player-lag")
-                                            .replace("%lag%",
-                                                    TimerFormatter.formatDifference(timer.getFormattedTime(),
-                                                            bestTimes.get(lastPassedCheckpoint).getTime()
-                                                    )
-                                            )
-                            );
-                        } catch (IndexOutOfBoundsException ignored) {}
+                // If the leader and player are close (same lap, matching amount of checkpoints passed), show a difference message instead of a lag message.
+                if (getLap(p.getUniqueId()) == getLap(getLeader().getUniqueId()) && getPassedCheckpoints(p.getUniqueId()) == getPassedCheckpoints(
+                        getLeader().getUniqueId())) {
+                    main.messageUtility.sendActionbarMessage(p,
+                            main.localizationUtility
+                                    .getLocalizedPhrase("gameloop.player-difference")
+                                    .replace("%diff%", TimerFormatter.formatTimer((int) lag))
+                    );
+                } else {
+                    if (lag != 0) {
+                        main.messageUtility.sendActionbarMessage(p, main.localizationUtility
+                                        .getLocalizedPhrase("gameloop.player-lag")
+                                        .replace("%lag%", TimerFormatter.formatTimer((int) lag))
+                        );
+                    } else {
+                        main.messageUtility.sendActionbarMessage(p,
+                                main.localizationUtility.getLocalizedPhrase("gameloop.player-tied")
+                        );
                     }
+
                 }
             }
         }
@@ -1284,6 +1286,111 @@ public class Game implements Listener {
             }
         }
         return progress.toString().trim();
+    }
+
+    /**
+     * Returns the leader of the current run (the player furthest ahead).
+     *
+     * @return The leader {@link Player}
+     */
+    public Player getLeader() {
+        Player leader = null;
+
+        int maxLap = -1;
+        int maxCheckpointsPassed = -1;
+        long minTimestampForLastCheckpoint = Long.MAX_VALUE;
+
+        for (Player p : players) {
+            int playerLap = lapTracker.get(p.getUniqueId());
+            List<AreaPassInfo> playerArrivals = arrivalStats
+                    .get(p.getUniqueId())
+                    .stream()
+                    .filter(area -> area.getAreaType() == AreaType.CHECKPOINT)
+                    .collect(Collectors.toList());
+            int _passedCheckpoints = playerArrivals.size();
+
+            long timestampForLastCheckpoint = TimerFormatter.getTimeFromString(_passedCheckpoints > 0
+                    ? playerArrivals
+                    .get(_passedCheckpoints - 1)
+                    .getTimerTime() : "00:00:00");
+
+            /*
+             * This covers the following cases:
+             * 1. The player is on a later lap than the current max.
+             * 2. The player is on the same lap as the current max, but has passed more checkpoints.
+             * 3. The player is on the same lap as the current max, and has passed the same amount of checkpoints as the current max, but has passed the last checkpoint more recently in relation to the start of the game.
+             */
+            if (playerLap > maxLap || (playerLap == maxLap && _passedCheckpoints > maxCheckpointsPassed) || (playerLap == maxLap && _passedCheckpoints == maxCheckpointsPassed && timestampForLastCheckpoint < minTimestampForLastCheckpoint)) {
+                leader = p;
+                maxLap = playerLap;
+                maxCheckpointsPassed = _passedCheckpoints;
+                minTimestampForLastCheckpoint = timestampForLastCheckpoint;
+            }
+        }
+        return leader;
+    }
+
+    /**
+     * Returns the amount of seconds between the supplied player and the game's leader.
+     * If the player has passed the same amount of checkpoints and is on the same lap,
+     * this will return a static difference between the leader's and the supplied player's
+     * timestamps for passing the last checkpoints.
+     * @param p The {@link Player} to check.
+     * @return The amount of seconds between the leader and the supplied player.
+     */
+    public long getLagTime(Player p) {
+        Player leader = getLeader();
+        if (leader == null || p.equals(leader)) {return 0;}
+        List<AreaPassInfo> leaderArrivals = arrivalStats
+                .get(leader.getUniqueId())
+                .stream()
+                .filter(area -> area.getAreaType() == AreaType.CHECKPOINT)
+                .collect(Collectors.toList());
+        List<AreaPassInfo> playerArrivals = arrivalStats
+                .get(p.getUniqueId())
+                .stream()
+                .filter(area -> area.getAreaType() == AreaType.CHECKPOINT)
+                .collect(Collectors.toList());
+
+
+        // If the player is behind by one or more checkpoints
+        if (playerArrivals.size() < leaderArrivals.size()) {
+            // Get the timestamp for when the leader passed their last checkpoint
+            long leaderTimestampForLastCheckpoint = TimerFormatter.getTimeFromString(leaderArrivals
+                    .get(leaderArrivals.size() - 1)
+                    .getTimerTime());
+
+            // Return the amount of time passed since the leader's passing of the checkpoint.
+            return timer.getElapsedSeconds() - leaderTimestampForLastCheckpoint;
+        } else {
+            // The player's and leader's last checkpoints should always match at this point - if they don't, log it!
+            if (!leaderArrivals
+                    .get(leaderArrivals.size() - 1)
+                    .getAreaName()
+                    .equals(playerArrivals.get(playerArrivals.size() - 1).getAreaName())) {
+                activeGameLogger.logCritError(
+                        "Attempting to retrieve lag-behind time when leader and player have different last checkpoints but the same total amount of checkpoints passed!\n" + "Leader - " + leader.getName() + ", last checkpoint: " + leaderArrivals
+                                .get(leaderArrivals.size() - 1)
+                                .getAreaName() + " (passed: " + leaderArrivals
+                                .get(leaderArrivals.size() - 1)
+                                .getTimerTime() + ")\n" + "Player - " + p.getName() + ", last checkpoint: " + playerArrivals
+                                .get(playerArrivals.size() - 1)
+                                .getAreaName() + " (passed: " + playerArrivals
+                                .get(playerArrivals.size() - 1)
+                                .getTimerTime() + ")");
+            }
+
+            // If the player's last checkpoint is the same as the leader's (cannot be a later checkpoint since the player is not the leader).
+            long leaderTimestampForLastCheckpoint = TimerFormatter.getTimeFromString(leaderArrivals
+                    .get(leaderArrivals.size() - 1)
+                    .getTimerTime());
+            long playerTimestampForLastCheckpoint = TimerFormatter.getTimeFromString(playerArrivals
+                    .get(playerArrivals.size() - 1)
+                    .getTimerTime());
+
+            // Return the difference between the timestamps of the leader's and the player's passing of the same checkpoint.
+            return leaderTimestampForLastCheckpoint - playerTimestampForLastCheckpoint;
+        }
     }
 
 
