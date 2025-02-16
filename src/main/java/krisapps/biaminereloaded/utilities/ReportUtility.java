@@ -6,6 +6,7 @@ import krisapps.biaminereloaded.gameloop.types.AreaPassInfo;
 import krisapps.biaminereloaded.gameloop.types.FinishInfo;
 import krisapps.biaminereloaded.gameloop.types.HitInfo;
 import krisapps.biaminereloaded.gameloop.types.HitType;
+import krisapps.biaminereloaded.logging.BiaMineLogger;
 import krisapps.biaminereloaded.timers.TimerFormatter;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
@@ -25,22 +26,31 @@ import java.util.stream.Collectors;
 public class ReportUtility {
 
     BiamineReloaded main;
+    BiaMineLogger logger;
 
     public ReportUtility(BiamineReloaded main) {
         this.main = main;
+        this.logger = new BiaMineLogger("BiaMine", "Report", main);
     }
 
     public void generateGameReport(Map<UUID, List<HitInfo>> shootingStats, HashMap<Player, FinishInfo> finishInfo, BiamineBiathlon gameInfo, Map<UUID, List<AreaPassInfo>> arrivals, CommandSender initiator) {
         File file;
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
-        SimpleDateFormat timeFormat = new SimpleDateFormat("HH-mm-ss");
-        SimpleDateFormat timeFormat2 = new SimpleDateFormat("HH:mm:ss");
+        SimpleDateFormat timeFormatDashed = new SimpleDateFormat("HH-mm-ss");
+        SimpleDateFormat timeFormatColons = new SimpleDateFormat("HH:mm:ss");
 
-        main.appendToLog("Generating a game report file: " + main.dataUtility.getConfigPropertyRaw("options.game-report.path"));
+        logger.logInfo("Generating a game report file: " + main.dataUtility.getConfigPropertyRaw(
+                "options.game-report.path"));
         if (main.dataUtility.getConfigPropertyRaw("options.game-report.path").equals("%dataFolder%")) {
-            file = new File(main.getDataFolder(), "report-biathlon-" + dateFormat.format(Date.from(Instant.now())) + "-" + timeFormat.format(Date.from(Instant.now())) + ".txt");
+            file = new File(main.getDataFolder(),
+                    "report-biathlon-" + dateFormat.format(Date.from(Instant.now())) + "-" + timeFormatDashed.format(
+                            Date.from(Instant.now())) + ".txt"
+            );
         } else {
-            file = new File(main.dataUtility.getConfigPropertyRaw("options.game-report.path"), "report-biathlon-" + dateFormat.format(Date.from(Instant.now())) + "-" + timeFormat.format(Date.from(Instant.now())) + ".txt");
+            file = new File(main.dataUtility.getConfigPropertyRaw("options.game-report.path"),
+                    "report-biathlon-" + dateFormat.format(Date.from(Instant.now())) + "-" + timeFormatDashed.format(
+                            Date.from(Instant.now())) + ".txt"
+            );
         }
 
         try {
@@ -54,7 +64,7 @@ public class ReportUtility {
             writer.newLine();
             writer.append(String.format("Date: %s", dateFormat.format(Date.from(Instant.now()))));
             writer.newLine();
-            writer.append(String.format("Report generated at: %s", timeFormat2.format(Date.from(Instant.now()))));
+            writer.append(String.format("Report generated at: %s", timeFormatColons.format(Date.from(Instant.now()))));
             writer.newLine();
             writer.append("===============================================================================");
             writer.newLine();
@@ -118,6 +128,7 @@ public class ReportUtility {
                     writer.append("     [SUS!] Arrow count constant throughout shooting");
                     writer.newLine();
                 }
+                // If the player has arrows left after the game has ended, something's up.
                 if (arrowsOnEnd > 0) {
                     writer.append("     [SUS!] Player had excess arrows (+" + arrowsOnEnd + " arrows)");
                     writer.newLine();
@@ -214,12 +225,9 @@ public class ReportUtility {
                             appendedAreas.add(departureEntry.getAreaName());
                             break;
                         case FINISH_LINE:
-                            writer.append("[!!!] Reached the finish line at: " + info.getTimerTime());
+                            writer.append("[!!!] Reached the finish line at: ").append(info.getTimerTime());
                             break;
                     }
-
-
-
                 }
                 writer.newLine();
                 writer.newLine();
@@ -232,8 +240,7 @@ public class ReportUtility {
 
             initiator.spigot().sendMessage(new TextComponent(ChatColor.translateAlternateColorCodes('&', main.localizationUtility.getLocalizedPhrase("gameloop.report-ready"))), main.messageUtility.createFileButton("clicktext.view-report", file.toPath().toString().replaceAll("\\\\", "/"), "hovertext.report-file"));
         } catch (IOException e) {
-            main.getLogger().info("Failed to generate the game report: " + e.getMessage());
-            main.appendToLog("Failed to generate the game report: " + e.getMessage());
+            logger.logError("Failed to generate the game report: " + e.getMessage());
         }
 
     }

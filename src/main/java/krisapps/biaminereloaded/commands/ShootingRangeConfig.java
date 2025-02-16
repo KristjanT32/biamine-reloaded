@@ -280,7 +280,7 @@ public class ShootingRangeConfig implements CommandExecutor, Listener {
                         String spotNumber = main.dataUtility.getTemporaryValue("pendingOperation.spotNumber");
 
                         if (target == null) {
-                            main.appendToLog("Failed to register clicked block while processing operation.");
+                            main.logger.logError("Failed to register clicked block while processing operation.");
                             main.messageUtility.sendActionbarMessage(interactEvent.getPlayer(), main.localizationUtility.getLocalizedPhrase("commands.shootingrange.generic.invalidblock"));
                             return;
                         }

@@ -97,8 +97,8 @@ public class Game implements Listener {
         this.reporter = new ReportUtility(main);
         this.sounds = new SoundUtility(main);
 
-        activeGameLogger = new BiaMineLogger("BiaMine", "Active Game", main);
-        gameSetupLogger = new BiaMineLogger("BiaMine", "Setup", main);
+        activeGameLogger = new BiaMineLogger("BiaMine", id, main);
+        gameSetupLogger = new BiaMineLogger("BiaMine", "Service", main);
 
         instance = this;
     }
@@ -116,7 +116,7 @@ public class Game implements Listener {
     @EventHandler
     public void onPlayerDisconnect(PlayerQuitEvent event) {
         if (players.contains(event.getPlayer()) && !finishedPlayers.containsKey(event.getPlayer())) {
-            activeGameLogger.logInfo("[" + currentGameID + "/Service]: Lost player " + event.getPlayer().getName());
+            activeGameLogger.logInfo("Lost player " + event.getPlayer().getName());
             main.getServer().getPluginManager().callEvent(new BiathlonPlayerKickEvent(KickType.UNINTENTIONAL, event.getPlayer(), currentGameInfo.gameID));
         }
     }
@@ -129,6 +129,7 @@ public class Game implements Listener {
 
         if (disconnectedPlayers.containsKey(event.getPlayer().getUniqueId())) {
             activeGameLogger.logInfo("[" + currentGameID + "/Service]: Attempting to rejoin " + event.getPlayer().getName());
+
 
             broadcastToEveryone(main.localizationUtility.getLocalizedPhrase("gameloop.player-rejoin")
                     .replaceAll("%player%", event.getPlayer().getName())
@@ -183,7 +184,7 @@ public class Game implements Listener {
             } else {
                 lapTracker.replace(playerUUID, getLap(playerUUID) + 1);
             }
-            main.appendToLog(event.getPlayer().getName() + " has started a new lap: " + getLap(playerUUID));
+            activeGameLogger.logInfo(event.getPlayer().getName() + " has started a new lap: " + getLap(playerUUID));
             if (Objects.equals(main.dataUtility.getConfigPropertyRaw("notification-settings.new-lap.enabled"), "true")) {
                 broadcastToEveryone(main.localizationUtility.getLocalizedPhrase("gameloop.player-new-lap")
                         .replaceAll("%lap%", String.valueOf(getLap(playerUUID)))
@@ -195,7 +196,9 @@ public class Game implements Listener {
             // If there are records of them passing a checkpoint, and a record of them passing the current checkpoint
             if (getPassedCheckpoints(playerUUID).contains(checkpointID)) {
                 if (getPassedCheckpoints(playerUUID).size() < main.dataUtility.getCheckpoints(currentGameID).size() - 1) {
-                    main.appendToLog("Player " + event.getPlayer().getName() + " attempted to pass through " + checkpointID + " again!");
+                    activeGameLogger.logInfo("Player " + event
+                            .getPlayer()
+                            .getName() + " attempted to pass through " + checkpointID + " again!");
                     return;
                 }
                 if (event.getRegion().isFinish()) {
@@ -208,7 +211,7 @@ public class Game implements Listener {
                 lapTracker.replace(playerUUID, curLap + 1);
                 int lap = getLap(playerUUID);
 
-                    main.appendToLog(event.getPlayer().getName() + " has started a new lap: " + lap);
+                activeGameLogger.logInfo(event.getPlayer().getName() + " has started a new lap: " + lap);
                 if (Objects.equals(main.dataUtility.getConfigPropertyRaw("notification-settings.new-lap.enabled"), "true")) {
                     broadcastToEveryone(main.localizationUtility.getLocalizedPhrase("gameloop.player-new-lap")
                             .replaceAll("%lap%", String.valueOf(lap))
@@ -280,7 +283,7 @@ public class Game implements Listener {
 
     @EventHandler
     public void onInstanceStatusChanged(InstanceStatusChangeEvent event) {
-        activeGameLogger.logInfo("[" + currentGameID + "/Status Update] Now: " + event.getNewStatus());
+        activeGameLogger.logInfo("Instance status changed. Now: " + event.getNewStatus());
         if (Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.NOTIFY_STATUS_CHANGE))) {
             main.messageUtility.sendMessage(initiator, main.localizationUtility.getLocalizedPhrase("gameloop.runtime.statechange")
                     .replaceAll("%instance%", lastGame)
@@ -377,7 +380,9 @@ public class Game implements Listener {
 
     @EventHandler
     public void onShootingSpotEnter(BiathlonShootingSpotEnterEvent enterEvent) {
-        activeGameLogger.logInfo("[" + currentGameID + "] Player " + enterEvent.getPlayer().getName() + " ENTERED SHOOTING SPOT #" + enterEvent.getSpotID());
+        activeGameLogger.logInfo("Player " + enterEvent
+                .getPlayer()
+                .getName() + " entered Shooting Spot #" + enterEvent.getSpotID());
         String time = timer.getFormattedTime();
 
         playerPositions.put(enterEvent.getPlayer().getUniqueId(), enterEvent.getSpotID());
@@ -406,7 +411,9 @@ public class Game implements Listener {
 
     @EventHandler
     public void onOccupiedShootingSpotEnter(BiathlonOccupiedShootingSpotEnterEvent occupiedEvent) {
-        activeGameLogger.logInfo("[" + currentGameID + "] Player " + occupiedEvent.getPlayer().getName() + " ATTEMPTED TO CLAIM SHOOTING SPOT #" + occupiedEvent.getSpotID() + " (FAIL, OCCUPIED)");
+        activeGameLogger.logInfo("Player " + occupiedEvent
+                .getPlayer()
+                .getName() + " attempted to claim Shooting Spot #" + occupiedEvent.getSpotID() + " (FAIL, OCCUPIED)");
         main.messageUtility.sendActionbarMessage(occupiedEvent.getPlayer(), main.localizationUtility.getLocalizedPhrase("gameloop.runtime.spot-occupied")
                 .replaceAll("%num%", String.valueOf(occupiedEvent.getSpotID())
                 ));
@@ -416,7 +423,9 @@ public class Game implements Listener {
     public void onShootingSpotExit(BiathlonShootingSpotExitEvent exitEvent) {
         String time = timer.getFormattedTime();
 
-        activeGameLogger.logInfo("[" + currentGameID + "] Player " + exitEvent.getPlayer().getName() + " EXITED SHOOTING SPOT #" + exitEvent.getSpotID());
+        activeGameLogger.logInfo("Player " + exitEvent
+                .getPlayer()
+                .getName() + " left Shooting Spot #" + exitEvent.getSpotID());
 
         playerPositions.remove(exitEvent.getPlayer().getUniqueId());
         arrivalStats
@@ -567,7 +576,7 @@ public class Game implements Listener {
                 }
             }
         }
-        activeGameLogger.logInfo("[" + currentGameID + "] PAUSED");
+        activeGameLogger.logInfo("Instance paused");
         isPaused = true;
         timer.pauseTimer();
         main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.PAUSED);
@@ -577,8 +586,9 @@ public class Game implements Listener {
      * Resumes the game, if paused.
      */
     public void resumeGame() {
+        if (!isPaused) {return;}
         if (RESUME_COUNTDOWN_TASK == -1) {
-            activeGameLogger.logInfo("[" + currentGameID + "] RESUMING");
+            activeGameLogger.logInfo("Resuming instance");
             RESUME_COUNTDOWN_TASK = scheduler.runTaskTimerAsynchronously(main, new Runnable() {
                 int countdown = 3;
 
@@ -692,7 +702,7 @@ public class Game implements Listener {
             main.messageUtility.sendMessage(p, "&e_________________________________");
             main.messageUtility.sendMessage(p, "&e=================================");
         }
-        activeGameLogger.logInfo("[" + currentGameID + "/Service]: Finishing game ... ");
+        activeGameLogger.logInfo("Finishing game ... ");
         terminate(false, TerminationContext.GAME_FINISHED, "");
     }
     private void gameLoop() {
@@ -779,7 +789,7 @@ public class Game implements Listener {
     private void startPreparationPeriod() {
 
         main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.PREP);
-        activeGameLogger.logInfo("[" + currentGameID + "/Service]: Prep period started ");
+        activeGameLogger.logInfo("Prep period started ");
 
         int prepTime = Integer.parseInt(main.dataUtility.getGameProperty(currentGameID, GameProperty.PREPARATION_TIME));
 
@@ -818,7 +828,7 @@ public class Game implements Listener {
     }
     private void startFinalCountdown() {
         main.dataUtility.updateGameRunstate(currentGameID, InstanceStatus.COUNTDOWN);
-        activeGameLogger.logInfo("[" + currentGameID + "/Service]: Final countdown started ");
+        activeGameLogger.logInfo("Final countdown started ");
 
         scheduler.runTask(main, this::teleportToStart);
         haltPlayers();
@@ -897,7 +907,7 @@ public class Game implements Listener {
     }
 
     private void haltPlayers() {
-        activeGameLogger.logInfo("[" + currentGameID + "/Service]: Halting players ");
+        activeGameLogger.logInfo("Halting players");
         Bukkit.getScheduler().runTask(main, () -> {
             for (Player p : players) {
                 if (Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.HALT_PLAYERS_WITH_POTIONEFFECT))) {
@@ -911,7 +921,7 @@ public class Game implements Listener {
         });
     }
     private void releasePlayers() {
-        activeGameLogger.logInfo("[" + currentGameID + "/Service]: Starting run ");
+        activeGameLogger.logInfo("Starting run");
         main.dataUtility.setActiveGame(currentGameID);
         main.getServer().getPluginManager().registerEvents(this, main);
         Bukkit.getScheduler().runTask(main, () -> {
@@ -932,12 +942,12 @@ public class Game implements Listener {
     }
 
     private void initScoreboard() {
-        activeGameLogger.logInfo("[" + currentGameID + "/Service]: Scoreboard initialization started ");
+        activeGameLogger.logInfo("Initializing scoreboards");
         scoreboardManager.initScoreboardCycle(currentGameInfo);
     }
 
     private void initRefreshTask() {
-        activeGameLogger.logInfo("[" + currentGameID + "/Service]: Registering game refresh task ");
+        activeGameLogger.logInfo("Registering game refresh task ");
 
         // Register the task responsible for keeping the game data up to date.
         // This also shows lag time and shooting stats ([] [X] []), as well as refreshing all time-related lines on the scoreboard
@@ -950,7 +960,7 @@ public class Game implements Listener {
     }
 
     private void gatherPlayers() {
-        gameSetupLogger.logInfo("[" + currentGameID + "]: Gathering players for game");
+        gameSetupLogger.logInfo("Gathering players for game");
         if (currentGameInfo != null) {
             ArrayList<UUID> excluded = (ArrayList<UUID>) main.dataUtility.getExcludedPlayersUUIDList(currentGameInfo.exclusionList);
             for (Player p : Bukkit.getOnlinePlayers()) {
@@ -964,7 +974,7 @@ public class Game implements Listener {
     }
 
     public void teleportToStart() {
-        gameSetupLogger.logInfo("[" + currentGameID + "]: Teleporting players to starting area");
+        gameSetupLogger.logInfo("Teleporting players to starting area");
         for (Player p : players) {
             Location l = getRandomLocation(startLocation_bound1, startLocation_bound2);
             p.teleport(l);
@@ -982,7 +992,7 @@ public class Game implements Listener {
     public int kickPlayer(Player p, @Nullable String reason) {
         if (players.contains(p) && !finishedPlayers.containsKey(p)) {
 
-            activeGameLogger.logInfo("[" + currentGameID + "/Game]: Kicking player " + p.getName());
+            activeGameLogger.logInfo("Kicking player " + p.getName());
             players.remove(p);
             main.getServer().getPluginManager().callEvent(new BiathlonPlayerKickEvent(KickType.ADMIN_ACTION, p, currentGameInfo.gameID));
             for (Player player : players) {
@@ -1000,10 +1010,10 @@ public class Game implements Listener {
             );
             return 200;
         } else if (!players.contains(p)) {
-            activeGameLogger.logInfo("[" + currentGameID + "/Service]: Kicking failed, player not found");
+            activeGameLogger.logInfo("Kicking failed, player not found");
             return 404;
         } else if (players.contains(p) && finishedPlayers.containsKey(p)) {
-            activeGameLogger.logInfo("[" + currentGameID + "/Service]: Kicking failed, player already finished.");
+            activeGameLogger.logInfo("Kicking failed, player already finished.");
             return 302;
         }
         return 500;
@@ -1017,7 +1027,7 @@ public class Game implements Listener {
      */
     public boolean rejoinPlayer(Player target) {
         if (disconnectedPlayers.containsKey(target.getUniqueId())) {
-            activeGameLogger.logInfo("[" + currentGameID + "/Game]: Manual rejoin request for " + target.getName());
+            activeGameLogger.logInfo("Manual rejoin request received for " + target.getName());
             broadcastToEveryone(main.localizationUtility.getLocalizedPhrase("gameloop.player-rejoin")
                     .replaceAll("%player%", target.getName())
             );
@@ -1099,7 +1109,7 @@ public class Game implements Listener {
         HandlerList.unregisterAll(this);
     }
     private void cleanup() {
-        activeGameLogger.logInfo("[" + currentGameID + "/Service]: Cleaning up");
+        activeGameLogger.logInfo("Cleaning up");
         resetInstanceVariables();
         scheduler.runTaskLater(main, () -> {
             scoreboardManager.hidePrimaryScoreboard();

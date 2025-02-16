@@ -211,7 +211,7 @@ public class ExclusionListConfig implements CommandExecutor {
                                     String playerName = "";
                                     if (bukkitPlayer == null) {
                                         if (!Bukkit.getOfflinePlayer(UUID.fromString(playerUUID)).hasPlayedBefore()) {
-                                            main.appendToLog("Found invalid player entry in exclusion list #" + targetList + " - UUID: " + playerUUID);
+                                            main.logger.logError("Found invalid player entry in exclusion list #" + targetList + " - UUID: " + playerUUID);
                                             continue;
                                         } else {
                                             offlinePlayer = Bukkit.getOfflinePlayer(UUID.fromString(playerUUID));

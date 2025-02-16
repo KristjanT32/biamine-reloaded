@@ -887,7 +887,7 @@ public class BiaMineDataUtility {
                 }
                 if (blockData.get(new NamespacedKey(main, "ownerGameID"), PersistentDataType.STRING).equalsIgnoreCase(gameID)) {
                     if (blockData.get(new NamespacedKey(main, "range_spot_number"), PersistentDataType.INTEGER) == spotID) {
-                        main.appendToLog("Deleting shooting target for spot #" + spotID + " of game {" + gameID + "}");
+                        main.logger.logInfo("Deleting shooting target for spot #" + spotID + " of game {" + gameID + "}");
                         blockData.clear();
                         removeTarget(gameID, "shootingSpot" + spotID, target);
                     }
@@ -900,7 +900,10 @@ public class BiaMineDataUtility {
         int spotNumber = 1;
         for (String spotID : getShootingSpots(gameID)) {
             if (!spotID.equalsIgnoreCase("shootingSpot" + spotNumber)) {
-                main.appendToLog("Shooting spot ID mismatch found: expected " + spotNumber + " |actual " + spotID.replaceAll("shootingSpot", "") + "]: Fixing");
+                main.logger.logError("Shooting spot ID mismatch found: expected " + spotNumber + " | actual " + spotID.replaceAll(
+                        "shootingSpot",
+                        ""
+                ) + "]: Fixing");
                 Location bound1 = getShootingSpotBound(gameID, Integer.parseInt(spotID.replaceAll("shootingSpot", "")), 1);
                 Location bound2 = getShootingSpotBound(gameID, Integer.parseInt(spotID.replaceAll("shootingSpot", "")), 2);
                 List<Location> targets = getShootingTargetsForSpot(gameID, Integer.parseInt(spotID.replaceAll("shootingSpot", "")));

@@ -1,6 +1,7 @@
 package krisapps.biaminereloaded.utilities;
 
 import krisapps.biaminereloaded.BiamineReloaded;
+import krisapps.biaminereloaded.logging.BiaMineLogger;
 import krisapps.biaminereloaded.types.area.CollidableRegion;
 import krisapps.biaminereloaded.types.area.CuboidRegion;
 import krisapps.biaminereloaded.types.area.VisualisationType;
@@ -16,11 +17,13 @@ import java.util.Map;
 public class VisualisationUtility {
 
     BiamineReloaded main;
+    BiaMineLogger logger;
     Map<Integer, VisualisationType> runningTasks;
 
     public VisualisationUtility(BiamineReloaded main) {
         this.main = main;
         this.runningTasks = new HashMap<>();
+        this.logger = new BiaMineLogger("BiaMine", "Visalisations", main);
     }
 
     public boolean isRunning() {
@@ -134,7 +137,7 @@ public class VisualisationUtility {
 
     public void cancelAllVisualisations() {
         for (Map.Entry<Integer, VisualisationType> entry : runningTasks.entrySet()) {
-            main.appendToLog("Cancelling visualisation task: " + entry.getKey() + " (of type " + entry.getValue() + ")");
+            logger.logInfo("Cancelling visualisation task: " + entry.getKey() + " (of type " + entry.getValue() + ")");
             main.getServer().getScheduler().cancelTask(entry.getKey());
         }
     }

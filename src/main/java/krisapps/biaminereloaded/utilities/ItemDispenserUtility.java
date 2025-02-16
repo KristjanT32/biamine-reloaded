@@ -2,6 +2,7 @@ package krisapps.biaminereloaded.utilities;
 
 import krisapps.biaminereloaded.BiamineReloaded;
 import krisapps.biaminereloaded.gameloop.types.DispenserEntry;
+import krisapps.biaminereloaded.logging.BiaMineLogger;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -13,9 +14,11 @@ import java.util.List;
 public class ItemDispenserUtility {
 
     BiamineReloaded main;
+    BiaMineLogger logger;
 
     public ItemDispenserUtility(BiamineReloaded main) {
         this.main = main;
+        this.logger = new BiaMineLogger("BiaMine", "Dispenser", main);
     }
 
     public void dispense(Player p, String gameID, int shootings) {
@@ -78,10 +81,12 @@ public class ItemDispenserUtility {
             if (entry.isAuto()) {
                 ItemStack toAdd = entry.getItem();
                 toAdd.setAmount(main.dataUtility.getShootingTargetsForSpot(gameID, 1).size() * shootings);
-                main.appendToLog("Auto-determined amount of " + entry.getItem().getType() + ": " + main.dataUtility.getShootingTargetsForSpot(gameID, 1).size() * shootings);
+                logger.logInfo("Auto-determined amount of " + entry.getItem().getType() + ": " + main.dataUtility
+                        .getShootingTargetsForSpot(gameID, 1)
+                        .size() * shootings);
                 items.add(toAdd);
             } else {
-                main.appendToLog("Regular item: " + entry.getItem().getType());
+                logger.logInfo("Regular item: " + entry.getItem().getType());
                 items.add(entry.getItem());
             }
         }

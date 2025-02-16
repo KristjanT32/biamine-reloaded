@@ -59,7 +59,7 @@ public class LocalizationUtility {
         try {
             Files.copy(main.getResource("en-US.yml"), Path.of(main.getDataFolder().toPath() + "/localization/en-US.yml"), StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            main.appendToLog("Failed to replace en-US.yml with an internal copy: " + e.getMessage());
+            main.logger.logCritError("Failed to replace en-US.yml with an internal copy: " + e.getMessage());
             main.messageUtility.sendMessage(reportTo, main.localizationUtility.getLocalizedPhrase("internals.rplanfile-error"));
         }
     }

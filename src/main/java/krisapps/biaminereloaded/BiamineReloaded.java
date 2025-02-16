@@ -4,6 +4,7 @@ import krisapps.biaminereloaded.commands.*;
 import krisapps.biaminereloaded.commands.tabcompleter.*;
 import krisapps.biaminereloaded.events.listeners.ArrowHitListener;
 import krisapps.biaminereloaded.events.listeners.PlayerMoveListener;
+import krisapps.biaminereloaded.logging.BiaMineLogger;
 import krisapps.biaminereloaded.types.config.CoreDataField;
 import krisapps.biaminereloaded.utilities.*;
 import org.bukkit.Bukkit;
@@ -56,6 +57,7 @@ public final class BiamineReloaded extends JavaPlugin {
 
     // Logging
     File logFile = new File(getDataFolder(), "biamine.log");
+    public BiaMineLogger logger = new BiaMineLogger(this);
 
 
     @Override
