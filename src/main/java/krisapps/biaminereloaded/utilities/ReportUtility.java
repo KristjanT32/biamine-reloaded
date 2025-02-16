@@ -40,7 +40,7 @@ public class ReportUtility {
         SimpleDateFormat timeFormatColons = new SimpleDateFormat("HH:mm:ss");
 
         logger.logInfo("Generating a game report file: " + main.dataUtility.getConfigPropertyRaw(
-                "options.game-report.path"));
+                "options.game-report.path").replace("%dataFolder%", "[data folder]"));
         if (main.dataUtility.getConfigPropertyRaw("options.game-report.path").equals("%dataFolder%")) {
             file = new File(main.getDataFolder(),
                     "report-biathlon-" + dateFormat.format(Date.from(Instant.now())) + "-" + timeFormatDashed.format(

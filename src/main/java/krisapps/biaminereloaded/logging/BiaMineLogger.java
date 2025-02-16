@@ -35,15 +35,15 @@ public class BiaMineLogger {
     }
 
     public void logCritError(String msg) {
-        main.appendToLog(String.format("[%s] [%s/%s CRIT]: " + msg, getTimeStamp(), loggerPrefix, modulePrefix));
+        main.appendToLog(String.format("[%s] [%s/%s CRIT]: ", getTimeStamp(), loggerPrefix, modulePrefix) + msg);
     }
 
     public void logError(String msg) {
-        main.appendToLog(String.format("[%s] [%s/%s ERR]: " + msg, getTimeStamp(), loggerPrefix, modulePrefix));
+        main.appendToLog(String.format("[%s] [%s/%s ERR]: ", getTimeStamp(), loggerPrefix, modulePrefix) + msg);
     }
 
     public void logInfo(String msg) {
-        main.appendToLog(String.format("[%s] [%s/%s INFO]: " + msg, getTimeStamp(), loggerPrefix, modulePrefix));
+        main.appendToLog(String.format("[%s] [%s/%s INFO]: ", getTimeStamp(), loggerPrefix, modulePrefix) + msg);
     }
 
 }
