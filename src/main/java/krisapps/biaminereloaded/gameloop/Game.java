@@ -1341,6 +1341,7 @@ public class Game implements Listener {
     public long getLagTime(Player p) {
         Player leader = getLeader();
         if (leader == null || p.equals(leader)) {return 0;}
+
         List<AreaPassInfo> leaderArrivals = arrivalStats
                 .get(leader.getUniqueId())
                 .stream()
@@ -1351,6 +1352,10 @@ public class Game implements Listener {
                 .stream()
                 .filter(area -> area.getAreaType() == AreaType.CHECKPOINT)
                 .collect(Collectors.toList());
+
+        if (leaderArrivals.isEmpty() && playerArrivals.isEmpty()) {
+            return 0;
+        }
 
 
         // If the player is behind by one or more checkpoints
