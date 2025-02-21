@@ -232,41 +232,47 @@ public class Game implements Listener {
             }
         }
         if (!event.getRegion().isFinish()) {
-            main.messageUtility.sendActionbarMessage(event.getPlayer(), main.localizationUtility.getLocalizedPhrase("gameloop.checkpoint-reached-target")
-                    .replaceAll("%time%", time)
-            );
             arrivalStats
                     .get(playerUUID)
                     .add(new AreaPassInfo(checkpointID, time, AreaType.CHECKPOINT, lapTracker.get(playerUUID)));
 
             if (Objects.equals(main.dataUtility.getConfigPropertyRaw("notification-settings.checkpoint-reached.enabled"), "true")) {
                 if (Objects.equals(main.dataUtility.getConfigPropertyRaw("notification-settings.checkpoint-reached.target"), "all")) {
-                    if (bestTimes.get(checkpointID).getPlayer().getUniqueId() == playerUUID) {
-                        main.messageUtility.sendMessage(event.getPlayer(), main.localizationUtility.getLocalizedPhrase("gameloop.checkpoint-reached")
-                                .replaceAll("%checkpoint%", checkpointID)
-                                .replaceAll("%player%", event.getPlayer().getName())
-                                .replaceAll("%time%", time)
-                        );
-                    } else {
-                        main.messageUtility.sendMessage(event.getPlayer(), main.localizationUtility.getLocalizedPhrase("gameloop.checkpoint-reached-lagbehind")
-                                .replaceAll("%checkpoint%", checkpointID)
-                                .replaceAll("%player%", event.getPlayer().getName())
-                                .replaceAll("%time%", time)
-                                                                                                   .replaceAll("%lag%",
-                                                                                                           TimerFormatter.formatDifference(
-                                                                                                                   time,
-                                                                                                                   bestTimes
-                                                                                                                           .get(checkpointID)
-                                                                                                                           .getTime()
-                                                                                                           )
-                                                                                                   )
-                        );
+                    for (Player _p : players) {
+                        if (_p.equals(event.getPlayer())) {continue;}
+                        if (bestTimes.get(checkpointID).getPlayer().getUniqueId() == playerUUID) {
+                            main.messageUtility.sendMessage(_p,
+                                    main.localizationUtility
+                                            .getLocalizedPhrase("gameloop.checkpoint-reached")
+                                            .replaceAll("%checkpoint%", checkpointID)
+                                            .replaceAll("%player%", event.getPlayer().getName())
+                                            .replaceAll("%time%", time)
+                            );
+                        } else {
+                            main.messageUtility.sendMessage(_p,
+                                    main.localizationUtility
+                                            .getLocalizedPhrase("gameloop.checkpoint-reached-lagbehind")
+                                            .replaceAll("%checkpoint%", checkpointID)
+                                            .replaceAll("%player%", event.getPlayer().getName())
+                                            .replaceAll("%time%", time)
+                                            .replaceAll("%lag%",
+                                                    TimerFormatter.formatDifference(time,
+                                                            bestTimes.get(checkpointID).getTime()
+                                                    )
+                                            )
+                            );
+                        }
                     }
+                    main.messageUtility.sendActionbarMessage(event.getPlayer(),
+                            main.localizationUtility
+                                    .getLocalizedPhrase("gameloop.checkpoint-reached-target")
+                                    .replaceAll("%time%", time)
+                    );
                 } else {
-                    main.messageUtility.sendMessage(event.getPlayer(), main.localizationUtility.getLocalizedPhrase("gameloop.checkpoint-reached")
-                            .replaceAll("%checkpoint%", checkpointID)
-                            .replaceAll("%player%", event.getPlayer().getName())
-                            .replaceAll("%time%", time)
+                    main.messageUtility.sendActionbarMessage(event.getPlayer(),
+                            main.localizationUtility
+                                    .getLocalizedPhrase("gameloop.checkpoint-reached-target")
+                                    .replaceAll("%time%", time)
                     );
                 }
             }
@@ -1394,7 +1400,8 @@ public class Game implements Listener {
                     .getTimerTime());
 
             // Return the difference between the timestamps of the leader's and the player's passing of the same checkpoint.
-            return leaderTimestampForLastCheckpoint - playerTimestampForLastCheckpoint;
+            // They are reversed, since the higher timestamp is the player's.
+            return playerTimestampForLastCheckpoint - leaderTimestampForLastCheckpoint;
         }
     }
 
@@ -1506,12 +1513,21 @@ public class Game implements Listener {
 
             currentGameInfo.finishedPlayers = finishedPlayers.size();
             sounds.playFinishSound(player);
-            if (Objects.equals(main.dataUtility.getConfigPropertyRaw("notification-settings.player-finish.enabled"), "true")) {
-                if (Objects.equals(main.dataUtility.getConfigPropertyRaw("notification-settings.player-finish.target"), "all")) {
-                    main.messageUtility.sendMessage(player, main.localizationUtility.getLocalizedPhrase("gameloop.player-finish")
-                            .replaceAll("%player%", player.getName())
-                            .replaceAll("%time%", finishedPlayers.get(player).getFinishTime())
-                    );
+            if (Objects.equals(main.dataUtility.getConfigPropertyRaw("notification-settings.player-finished.enabled"),
+                    "true"
+            )) {
+                if (Objects.equals(main.dataUtility.getConfigPropertyRaw("notification-settings.player-finished.target"),
+                        "all"
+                )) {
+                    for (Player _p : players) {
+                        if (_p.equals(player)) {continue;}
+                        main.messageUtility.sendMessage(_p,
+                                main.localizationUtility
+                                        .getLocalizedPhrase("gameloop.player-finish")
+                                        .replaceAll("%player%", player.getName())
+                                        .replaceAll("%time%", finishedPlayers.get(player).getFinishTime())
+                        );
+                    }
                     main.messageUtility.sendActionbarMessage(player, main.localizationUtility.getLocalizedPhrase("gameloop.player-finish-target"));
                 } else {
                     main.messageUtility.sendActionbarMessage(player, main.localizationUtility.getLocalizedPhrase("gameloop.player-finish-target"));
