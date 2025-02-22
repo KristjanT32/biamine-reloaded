@@ -1364,7 +1364,6 @@ public class Game implements Listener {
             return 0;
         }
 
-
         // If the player is behind by one or more checkpoints
         if (playerArrivals.size() < leaderArrivals.size()) {
             // Get the timestamp for when the leader passed their last checkpoint
@@ -1390,6 +1389,11 @@ public class Game implements Listener {
                                 .getAreaName() + " (passed: " + playerArrivals
                                 .get(playerArrivals.size() - 1)
                                 .getTimerTime() + ")");
+            }
+
+            if (leaderArrivals.isEmpty()) {
+                activeGameLogger.logError("Leader's arrival map is empty - this should not be possible!");
+                return 0;
             }
 
             // If the player's last checkpoint is the same as the leader's (cannot be a later checkpoint since the player is not the leader).

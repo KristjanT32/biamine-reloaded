@@ -75,6 +75,9 @@ public class ScoreboardManager {
     // Specifies whether the current scoreboard switch cycle should be skipped.
     private boolean cycleOverrideActive = false;
 
+    // Specifies whether to force the next scoreboard refresh to clear the scoreboard.
+    private boolean forceClearScoreboard = false;
+
 
     private final HashMap<ScoreboardType, PaginationInfo> scoreboardPaginationInfo = new HashMap<>();
 
@@ -169,6 +172,7 @@ public class ScoreboardManager {
             case PREVIEW:
                 break;
         }
+        forceClearScoreboard = false;
     }
 
     private void advanceScoreboardType() {
@@ -203,7 +207,6 @@ public class ScoreboardManager {
                             currentScoreboardCycleBoard = ScoreboardType.PRIMARY;
                         }
                     }
-                    return;
                 } else {
                     if (!shouldSkipScoreboard(ScoreboardType.SHOOTING_RANGE)) {
                         currentScoreboardCycleBoard = ScoreboardType.SHOOTING_RANGE;
@@ -236,6 +239,7 @@ public class ScoreboardManager {
                 }
                 break;
         }
+        forceClearScoreboard = true;
     }
 
     private void refreshGameScoreboard(BiamineBiathlon gameInfo) {
@@ -408,6 +412,7 @@ public class ScoreboardManager {
             return;
         }
         cycleOverrideActive = true;
+        forceClearScoreboard = true;
         currentScoreboardCycleBoard = type;
     }
 
@@ -438,31 +443,50 @@ public class ScoreboardManager {
             registerObjective(scoreboard);
         }
         Objective o = getObjective(scoreboard);
+        boolean skipInit = false;
 
         // Safeguard: if a line is already occupied, meaning a team already exists, clear it (to re-register later)
         if (mainScoreboard.getTeam(lineId) != null) {
-            // Has the actual content changed?
-            if (mainScoreboard
-                    .getTeam(lineId)
-                    .getPrefix()
-                    .equals(ChatColor.translateAlternateColorCodes('&', content))) {
-                logger.logInfo("Skipping update for " + lineId + "(line: " + line + ") since content has not changed.");
-                return;
-            }
-            try {
+
+            // If we shouldn't forcibly clear the scoreboard
+            if (!forceClearScoreboard) {
+
+                // Check if the line content has changed
+                if (mainScoreboard
+                        .getTeam(lineId)
+                        .getPrefix()
+                        .equals(ChatColor.translateAlternateColorCodes('&', content))) {
+                    skipInit = true;
+                } else {
+                    try {
+                        mainScoreboard.getTeam(lineId).unregister();
+                    } catch (IllegalStateException e) {
+                        logger.logError("Failed to reset scoreboard team for line '" + lineId + "' - " + e.getMessage());
+                        return;
+                    }
+                }
+            } else try {
                 mainScoreboard.getTeam(lineId).unregister();
             } catch (IllegalStateException e) {
-                logger.logError("Failed to register new scoreboard team for line '" + lineId + "' - " + e.getMessage());
+                logger.logError("Failed to reset scoreboard team for line '" + lineId + "' - " + e.getMessage());
                 return;
             }
         }
-        Team propertyToSet = mainScoreboard.registerNewTeam(lineId);
 
-        // Add a team entry with an empty name to allow for empty strings to appear on the scoreboard.
-        propertyToSet.addEntry(lineFillerSymbols[line - 1]);
+        if (!skipInit) {
+            Team propertyToSet = mainScoreboard.getTeam(lineId);
+            if (propertyToSet == null) {
+                propertyToSet = mainScoreboard.registerNewTeam(lineId);
+            }
 
-        // Add the actual line content as the prefix of the team.
-        propertyToSet.setPrefix(ChatColor.translateAlternateColorCodes('&', content));
+            // Add a team entry with an empty name to allow for empty strings to appear on the scoreboard.
+            propertyToSet.addEntry(lineFillerSymbols[line - 1]);
+
+            // Add the actual line content as the prefix of the team.
+            propertyToSet.setPrefix(ChatColor.translateAlternateColorCodes('&', content));
+
+            logger.logInfo("Refreshed scoreboard line '" + lineId + "' (line no. " + line + ")");
+        }
 
         // Set the line team's score to ensure correct line order.
         o.getScore(lineFillerSymbols[line - 1]).setScore(SCOREBOARD_FIRST_LINE - line);
@@ -735,6 +759,17 @@ public class ScoreboardManager {
 
     public void clearSidebar() {
         mainScoreboard.clearSlot(DisplaySlot.SIDEBAR);
+        for (int i = 0; i < 7; i++) {
+            if (mainScoreboard.getTeam("line" + (i + 1)) != null) {
+                mainScoreboard.getTeam("line" + (i + 1)).unregister();
+            }
+            if (mainScoreboard.getTeam("s_line" + (i + 1)) != null) {
+                mainScoreboard.getTeam("s_line" + (i + 1)).unregister();
+            }
+            if (mainScoreboard.getTeam("l_line" + (i + 1)) != null) {
+                mainScoreboard.getTeam("l_line" + (i + 1)).unregister();
+            }
+        }
         gameObjective.unregister();
         playersScoreboardObjective.unregister();
         shootingStatsObjective.unregister();
