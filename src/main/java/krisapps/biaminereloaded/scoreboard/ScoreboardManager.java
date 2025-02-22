@@ -76,7 +76,8 @@ public class ScoreboardManager {
     private boolean cycleOverrideActive = false;
 
     // Specifies whether to force the next scoreboard refresh to clear the scoreboard.
-    private boolean forceClearScoreboard = false;
+    // Starts as true to ensure the primary scoreboard is drawn from scratch the first time.
+    private boolean forceClearScoreboard = true;
 
 
     private final HashMap<ScoreboardType, PaginationInfo> scoreboardPaginationInfo = new HashMap<>();
@@ -136,7 +137,7 @@ public class ScoreboardManager {
 
         scheduler.runTaskTimerAsynchronously(main,
                 this::advanceScoreboardType,
-                20L * 10L,
+                20L * Long.parseLong(main.dataUtility.getConfigProperty(ConfigProperty.SCOREBOARD_CYCLE_PERIOD)),
                 20L * Long.parseLong(main.dataUtility.getConfigProperty(ConfigProperty.SCOREBOARD_CYCLE_PERIOD))
         );
 
