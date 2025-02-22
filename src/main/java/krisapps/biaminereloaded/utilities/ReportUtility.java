@@ -28,6 +28,8 @@ public class ReportUtility {
     BiamineReloaded main;
     BiaMineLogger logger;
 
+    // TODO: Add timeline feature (show all events in chronological order)
+
     public ReportUtility(BiamineReloaded main) {
         this.main = main;
         this.logger = new BiaMineLogger("BiaMine", "Report", main);

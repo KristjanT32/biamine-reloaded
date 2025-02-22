@@ -128,8 +128,7 @@ public class Game implements Listener {
         }
 
         if (disconnectedPlayers.containsKey(event.getPlayer().getUniqueId())) {
-            activeGameLogger.logInfo("[" + currentGameID + "/Service]: Attempting to rejoin " + event.getPlayer().getName());
-
+            activeGameLogger.logInfo("Attempting to rejoin " + event.getPlayer().getName());
 
             broadcastToEveryone(main.localizationUtility.getLocalizedPhrase("gameloop.player-rejoin")
                     .replaceAll("%player%", event.getPlayer().getName())
@@ -151,6 +150,7 @@ public class Game implements Listener {
                 players.add(event.getPlayer());
             }
             event.getPlayer().teleport(disconnectedPlayers.get(event.getPlayer().getUniqueId()));
+            activeGameLogger.logInfo("Player '" + event.getPlayer().getName() + "' successfully rejoined");
         }
     }
 
@@ -953,7 +953,6 @@ public class Game implements Listener {
         activeGameLogger.logInfo("Initializing scoreboards");
         scoreboardManager.initScoreboardCycle(currentGameInfo);
     }
-
     private void initRefreshTask() {
         activeGameLogger.logInfo("Registering game refresh task ");
 
@@ -1203,6 +1202,8 @@ public class Game implements Listener {
 
     // Utility methods
     private int getItemCount(Inventory inv, Material item) {
+        if (inv == null || item == null) {return 0;}
+
         ItemStack[] items = inv.getContents();
         for (ItemStack stack : items) {
             if (stack == null) {
@@ -1510,6 +1511,10 @@ public class Game implements Listener {
                     player,
                     new FinishInfo(timer.getFormattedTime(), !finishedPlayers.isEmpty() ? finishedPlayers.size() + 1 : 1)
             );
+
+            activeGameLogger.logInfo("Player '" + player.getName() + "' has finished (" + finishedPlayers
+                    .get(player)
+                    .getFinishTime() + ")");
 
             currentGameInfo.finishedPlayers = finishedPlayers.size();
             sounds.playFinishSound(player);

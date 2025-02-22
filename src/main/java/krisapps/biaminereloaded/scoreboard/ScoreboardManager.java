@@ -317,7 +317,9 @@ public class ScoreboardManager {
 
         // Map all players' lag times to their scoreboard entries.
         for (Player p : Game.instance.players) {
-            if (Game.instance.hasFinished(p)) {continue;}
+            if (Game.instance.hasFinished(p) && !Boolean.parseBoolean(main.dataUtility.getConfigProperty(ConfigProperty.INCLUDE_FINISHED_PLAYERS_IN_LEADERBOARD))) {
+                continue;
+            }
             long playerLag = Game.instance.getLagTime(p);
 
             if (playerLag == 0) {
@@ -439,9 +441,20 @@ public class ScoreboardManager {
 
         // Safeguard: if a line is already occupied, meaning a team already exists, clear it (to re-register later)
         if (mainScoreboard.getTeam(lineId) != null) {
+            // Has the actual content changed?
+            if (mainScoreboard
+                    .getTeam(lineId)
+                    .getPrefix()
+                    .equals(ChatColor.translateAlternateColorCodes('&', content))) {
+                logger.logInfo("Skipping update for " + lineId + "(line: " + line + ") since content has not changed.");
+                return;
+            }
             try {
                 mainScoreboard.getTeam(lineId).unregister();
-            } catch (IllegalStateException ignored) {}
+            } catch (IllegalStateException e) {
+                logger.logError("Failed to register new scoreboard team for line '" + lineId + "' - " + e.getMessage());
+                return;
+            }
         }
         Team propertyToSet = mainScoreboard.registerNewTeam(lineId);
 

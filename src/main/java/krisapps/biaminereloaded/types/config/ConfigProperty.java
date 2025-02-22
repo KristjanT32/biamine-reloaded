@@ -11,8 +11,8 @@ public enum ConfigProperty {
             "options.scoreboards.enable-shooting-range"), LEADERBOARD_ENABLED("options.scoreboards.enable-leaderboard"), AUTO_SHOW_SHOOTING_RANGE(
             "options.scoreboards.auto-show-shooting-range"), SKIP_EMPTY_SCOREBOARDS(
             "options.scoreboards.skip-empty-when-cycling"), KEEP_SHOOTING_RANGE_IF_ALL_PRESENT(
-            "options.scoreboards.show-shooting-range-if-all-present"),
-
+            "options.scoreboards.show-shooting-range-if-all-present"), INCLUDE_FINISHED_PLAYERS_IN_LEADERBOARD(
+            "options.scoreboards.include-finished-players-in-leaderboard")
     ;
 
     final String configPath;

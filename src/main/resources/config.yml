@@ -96,6 +96,9 @@ options:
     # Should the Leaderboard be shown?
     enable-leaderboard: true
 
+    # Include players who have finished in the leaderboard?
+    include-finished-players-in-leaderboard: false
+
     # Should BiaMine skip empty scoreboards if there are no entries in them?
     # This will also hide the Leaderboard if there is only one player in the game.
     skip-empty-when-cycling: false
